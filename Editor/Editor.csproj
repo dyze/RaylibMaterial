@@ -15,15 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="resources\shaders\base.frag">
+    <Content Include="resources\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="resources\shaders\base.vert">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="resources\shaders\grayscale.frag">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
 
 </Project>

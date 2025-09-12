@@ -1,9 +1,7 @@
-﻿using System.Drawing;
-using System.Numerics;
+﻿using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using rlImGui_cs;
-using static System.Net.Mime.MediaTypeNames;
 using Color = Raylib_cs.Color;
 
 namespace Editor;
@@ -98,6 +96,7 @@ class App
 
             RenderShaderList();
             RenderShaderCode();
+            RenderVariables();
 
             rlImGui.End();
             Raylib.EndDrawing();
@@ -140,7 +139,7 @@ class App
 
                             }
 
-                        if(code.IsValid == false)
+                        if (code.IsValid == false)
                             ImGui.TextColored(new Vector4(1f, 0, 0, 1f),
                                 "not valid");
 
@@ -151,7 +150,6 @@ class App
                 ImGui.EndTabBar();
             }
             ImGui.Separator();
-
 
             ImGui.End();
         }
@@ -186,8 +184,6 @@ class App
 
             ImGui.End();
         }
-
-
     }
 
     private void RetrieveShaders()
@@ -222,6 +218,22 @@ class App
                     fragmentShaderFileName);
                 _shaders.Add(name, shaderInfo);
             }
+        }
+    }
+
+    private void RenderVariables()
+    {
+        if (ImGui.Begin("Variables"))
+        {
+            foreach (var (key, code) in _shaderCode)
+            {
+                foreach(var variable in code.Variables)
+                {
+                    ImGui.LabelText(variable.Name, variable.Type.ToString());
+                }
+            }
+
+            ImGui.End();
         }
     }
 
@@ -263,13 +275,17 @@ class App
 
         if (shaderInfo.VertexShaderFileName != null)
         {
-            _shaderCode.Add(shaderInfo.VertexShaderFileName, new ShaderCode(
-                File.ReadAllText($"{ShaderFolderPath}\\{shaderInfo.VertexShaderFileName}")));
+            var code = new ShaderCode(
+                File.ReadAllText($"{ShaderFolderPath}\\{shaderInfo.VertexShaderFileName}"));
+            code.ParseVariables();
+            _shaderCode.Add(shaderInfo.VertexShaderFileName, code);
         }
         if (shaderInfo.FragmentShaderFileName != null)
         {
-            _shaderCode.Add(shaderInfo.FragmentShaderFileName, new ShaderCode(
-                File.ReadAllText($"{ShaderFolderPath}\\{shaderInfo.FragmentShaderFileName}")));
+            var code = new ShaderCode(
+                File.ReadAllText($"{ShaderFolderPath}\\{shaderInfo.FragmentShaderFileName}"));
+            code.ParseVariables();
+            _shaderCode.Add(shaderInfo.FragmentShaderFileName, code);
         }
     }
 
