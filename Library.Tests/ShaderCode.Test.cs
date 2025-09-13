@@ -1,4 +1,6 @@
-﻿using Editor;
+﻿
+
+using Editor;
 using Raylib_cs;
 
 namespace Library.Tests;
@@ -37,9 +39,10 @@ public sealed class ShaderCodeTest
         var shaderCode = new ShaderCode(code);
         Assert.IsNotNull(shaderCode);
 
-        var variables = shaderCode.ParseVariables();
+       shaderCode.ParseVariables();
+       var variables = shaderCode.Variables;
 
-        Assert.AreEqual(variables.Count, 2);
+       Assert.AreEqual(variables.Count, 2);
 
         Assert.AreEqual(variables[0].Type, ShaderUniformDataType.Sampler2D);
         Assert.AreEqual(variables[0].Name, "texture0");

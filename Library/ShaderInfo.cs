@@ -1,6 +1,6 @@
 ﻿namespace Editor;
 
-class ShaderInfo
+public class ShaderInfo
 {
     public string? VertexShaderFileName;
     public string? FragmentShaderFileName;

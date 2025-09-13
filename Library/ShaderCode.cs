@@ -3,18 +3,6 @@ using System.Text.RegularExpressions;
 
 namespace Editor;
 
-public class CodeVariable
-{
-    public ShaderUniformDataType Type;
-    public string Name;
-
-    public CodeVariable(ShaderUniformDataType type, string name)
-    {
-        Type = type;
-        Name = name;
-    }
-}
-
 public class ShaderCode(string code)
 {
     public bool Modified = false;
