@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using NLog;
 using Raylib_cs;
 using rlImGui_cs;
 using Color = Raylib_cs.Color;
@@ -8,48 +9,19 @@ namespace Editor;
 
 class App
 {
-    private class ToolConfig
-    {
-        public string Name { get; set; }
-        public string ImageFileName;
-        public Image Image;
-        public Texture2D Texture;
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public ToolConfig(string name,
-            string imageFileName)
-        {
-            ImageFileName = imageFileName;
-            Name = name;
-        }
-    }
-
+    private const string ResourceUiPath = "resources/ui";
     private const string ShaderFolderPath = "resources\\shaders";
 
-    private Vector2 ScreenSize = new(1280, 720); // initial size of window
+    private readonly Vector2 _screenSize = new(1280, 720); // initial size of window
 
-    private Vector2 OutputSize = new(1280 / 2, 720 / 2);
-
-
-    //private int _windowWidthBeforeFullscreen = ScreenWidth;
-    //private int _windowHeightBeforeFullscreen = ScreenWidth;
-    //private bool _windowSizeChanged; // set to true when switching to fullscreen
-
-    //private readonly List<Size> _displayResolutions =
-    //[
-    //    new(320, 180), // 0
-    //    new(640, 36), // 1
-    //    new(1280, 720), // 2
-    //    new(1600, 900), // 3
-    //    new(1920, 1080) // 4
-    //];
-
-    //private int _currentDisplayResolutionIndex = 2;
-
+    private readonly Vector2 _outputSize = new(1280 / 2, 720 / 2);
 
     private Camera3D _camera;
-    private float CameraXAngle = 0f;
-    private float CameraYAngle = 0f;
-    private float Distance = 7f;
+    private float _modelXAngle = (float)(Math.PI / 4);
+    private float _modelYAngle = (float)(Math.PI / 4);
+    private float _distance = 0f;
 
     private Model _currentModel;
     private Shader _shader;
@@ -78,31 +50,52 @@ class App
         { ModelType.Sphere, new ToolConfig("sphere", "sphere.png") },
     };
 
+    enum BackgroundType
+    {
+        None = 0,
+        Cloud = 1,
+        WildPark = 2,
+    }
+
+    private BackgroundType _backgroundType = BackgroundType.None;
+
+    private readonly Dictionary<BackgroundType, BackgroundConfig> _backgrounds = new()
+    {
+        { BackgroundType.None, new BackgroundConfig("none", null) },
+        { BackgroundType.Cloud, new BackgroundConfig("clouds", "clouds.jpg") },
+        { BackgroundType.WildPark, new BackgroundConfig("wild park", "wildpark.png") },
+    };
+
+    private readonly MessageWindow _messageWindow = new();
+    private bool _messageWindowIsVisible = true;
+    public static MessageQueue? MessageQueue { get; set; } = new();
+
+    // private Model _backgroundModel;
+
     public void Run()
     {
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
-        Raylib.InitWindow((int)ScreenSize.X, (int)ScreenSize.Y, "Terrain Erosion (.NET)");
+        Raylib.InitWindow((int)_screenSize.X, (int)_screenSize.Y, "Raylib Material Editor");
         rlImGui.Setup();
 
         PrepareUi();
 
-        _viewTexture = Raylib.LoadRenderTexture((int)OutputSize.X, (int)OutputSize.Y);
+        _viewTexture = Raylib.LoadRenderTexture((int)_outputSize.X, (int)_outputSize.Y);
 
         RetrieveShaders();
 
         SelectModelType();
 
-
-
         Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
         Raylib.SetTraceLogLevel(TraceLogLevel.None); // disable logging from now on
 
-
-        SetCamera();
+        PrepareCamera();
 
         var prevMousePos = Raylib.GetMousePosition();
+
+        Logger.Info("all is set");
 
         while (!Raylib.WindowShouldClose())
         {
@@ -113,29 +106,15 @@ class App
 
             Raylib.ClearBackground(Color.Black);
 
-            Raylib.BeginTextureMode(_viewTexture);
-
-
-            Raylib.BeginMode3D(_camera);
-
-            Raylib.ClearBackground(Color.Black);
-
-            Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
-
-            //Raylib.DrawGrid(10, 1.0f);
-
-
-            Raylib.EndMode3D();
-
-            Raylib.DrawFPS(10, 10);
-
-            Raylib.EndTextureMode();
+            RenderOutput();
 
             RenderToolBar();
             RenderShaderList();
             RenderShaderCode();
             RenderVariables();
-            RenderOutput();
+            RenderOutputWindow();
+
+            _messageWindow.Render(MessageQueue, ref _messageWindowIsVisible);
 
             rlImGui.End();
             Raylib.EndDrawing();
@@ -144,15 +123,41 @@ class App
         rlImGui.Shutdown();
     }
 
+    private void RenderOutput()
+    {
+        Raylib.BeginTextureMode(_viewTexture);
+
+        Raylib.BeginMode3D(_camera);
+        Raylib.ClearBackground(Color.Black);
+
+        if (_backgroundType != BackgroundType.None)
+        {
+            var background = _backgrounds[_backgroundType];
+            Raylib.DrawBillboard(_camera, background.Texture, new Vector3(0f, 0f, 2f), 10f, Color.White);
+        }
+
+        // Raylib.DrawPlane(new Vector3(0f, 0f, 1f), new Vector2(10f, 10f), Color.Blue);
+
+
+        Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
+
+
+        Raylib.EndMode3D();
+
+        Raylib.DrawFPS(10, 10);
+
+        Raylib.EndTextureMode();
+    }
+
     private Vector2 HandleCamera(Vector2 prevMousePos)
     {
         var mouseDelta = Raylib.GetMouseWheelMove();
 
-        var newDistance = Distance + mouseDelta * 0.01f;
+        var newDistance = _distance + mouseDelta * 0.01f;
         if (newDistance <= 0)
             newDistance = 0.01f;
 
-        Distance = newDistance;
+        _distance = newDistance;
 
 
         var thisPos = Raylib.GetMousePosition();
@@ -162,16 +167,17 @@ class App
 
         if (Raylib.IsMouseButtonDown(MouseButton.Right))
         {
-            CameraXAngle += delta.X / 100;
-            CameraYAngle += delta.Y / 100;
-
-            //_camera.Position = Raymath.Vector3RotateByAxisAngle(_camera.Position, Vector3.UnitY, delta.X/100);
-            //_camera.Position = Raymath.Vector3RotateByAxisAngle(_camera.Position, Vector3.UnitX, delta.Y / 100);
+            _modelXAngle += delta.X / 100;
+            _modelYAngle += delta.Y / 100;
         }
 
-        _camera.Position = new Vector3((float)(Math.Cos(CameraXAngle) * Distance),
-            (float)(Math.Sin(CameraYAngle) * Distance),
-                Distance);
+        _currentModel.Transform = Raymath.MatrixRotateXYZ(new Vector3(_modelXAngle, _modelYAngle, 0));
+        _currentModel.Transform.Translation = new Vector3(0, 0, _distance);
+
+
+        //_camera.Position = new Vector3((float)(Math.Cos(_modelXAngle) * _distance),
+        //    (float)(Math.Sin(_modelYAngle) * _distance),
+        //    _distance);
 
         return prevMousePos;
     }
@@ -193,7 +199,6 @@ class App
                 throw new ArgumentOutOfRangeException();
         }
 
-
         _defaultMaterialShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
 
         _currentShaderName = "base";
@@ -201,19 +206,26 @@ class App
     }
 
 
-
     private void PrepareUi()
     {
-        foreach (var (key, tool) in _configs)
+        foreach (var (_, tool) in _configs)
         {
-            tool.Image = Raylib.LoadImage($"resources/ui/{tool.ImageFileName}");
+            tool.Image = Raylib.LoadImage($"{ResourceUiPath}/{tool.ImageFileName}");
             tool.Texture = Raylib.LoadTextureFromImage(tool.Image);
+        }
+
+        foreach (var (_, background) in _backgrounds)
+        {
+            if (background.ImageFileName == null)
+                continue;
+            background.Image = Raylib.LoadImage($"{ResourceUiPath}/{background.ImageFileName}");
+            background.Texture = Raylib.LoadTextureFromImage(background.Image);
         }
     }
 
     private void RenderToolBar()
     {
-        ImGui.SetNextWindowSize(new Vector2(200, 80));
+        ImGui.SetNextWindowSize(new Vector2(400, 80));
         if (ImGui.Begin("Tools", ImGuiWindowFlags.NoTitleBar))
         {
             foreach (var (key, tool) in _configs)
@@ -224,7 +236,23 @@ class App
                         new Vector2(32, 32)))
                 {
                     _modelType = key;
+                    Logger.Trace($"{_modelType} selected");
                     SelectModelType();
+                }
+            }
+
+            ImGui.SameLine(40);
+
+            foreach (var (key, background) in _backgrounds)
+            {
+                ImGui.SameLine();
+                if (rlImGui.ImageButtonSize(background.Name,
+                        background.Texture,
+                        new Vector2(32, 32)))
+                {
+                    _backgroundType = key;
+                    Logger.Trace($"{_backgroundType} selected");
+                    // SelectBackgroundType();
                 }
             }
 
@@ -232,9 +260,14 @@ class App
         }
     }
 
-    private void RenderOutput()
+    //private void SelectBackgroundType()
+    //{
+    //    backgroundModel = GenerateBackground();
+    //}
+
+    private void RenderOutputWindow()
     {
-        ImGui.SetNextWindowSize(OutputSize);
+        ImGui.SetNextWindowSize(_outputSize);
         if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
         {
             rlImGui.ImageRenderTexture(_viewTexture);
@@ -298,18 +331,18 @@ class App
         if (ImGui.Begin("Shaders"))
         {
             string[] items = new string[_shaders.Count];
-            var item_current = -1;
+            var itemCurrent = -1;
             for (var i = 0; i < _shaders.Count; i++)
             {
                 items[i] = _shaders.Keys.ElementAt(i);
                 if (_currentShaderName == items[i])
-                    item_current = i;
+                    itemCurrent = i;
             }
 
 
-            if (ImGui.ListBox("Shaders", ref item_current, items, items.Length))
+            if (ImGui.ListBox("Shaders", ref itemCurrent, items, items.Length))
             {
-                _currentShaderName = items[item_current];
+                _currentShaderName = items[itemCurrent];
                 SelectShader(_currentShaderName);
             }
 
@@ -361,7 +394,7 @@ class App
     {
         if (ImGui.Begin("Variables"))
         {
-            foreach (var (key, code) in _shaderCode)
+            foreach (var (_, code) in _shaderCode)
             {
                 foreach (var variable in code.Variables)
                 {
@@ -375,6 +408,8 @@ class App
 
     private void ApplyShader()
     {
+        Logger.Info($"Apply shader");
+
         Raylib.SetMaterialShader(ref _currentModel, 0, ref _shader);
     }
 
@@ -389,6 +424,8 @@ class App
 
     private bool LoadShader(string shaderName)
     {
+        Logger.Info($"Loading shader {shaderName}");
+
         var item = _shaders[shaderName];
 
         _shader = Raylib.LoadShaderFromMemory(
@@ -440,6 +477,14 @@ class App
         return model;
     }
 
+    //private Model GenerateBackground()
+    //{
+    //    var mesh = Raylib.GenMeshPlane(2, 2, 1, 1);
+    //    var model = Raylib.LoadModelFromMesh(mesh);
+    //    model.Transform = Raymath.MatrixTranslate(0f, 0f, 2f);
+    //    return model;
+    //}
+
     private Model GenerateSphereModel()
     {
         var mesh = Raylib.GenMeshSphere(2, 10, 10);
@@ -447,10 +492,10 @@ class App
         return model;
     }
 
-    private void SetCamera()
+    private void PrepareCamera()
     {
         // Define our custom camera to look into our 3d world
-        _camera = new Camera3D(new Vector3(6.0f, 6, 6),
+        _camera = new Camera3D(new Vector3(0f, 0f, -5),
             new Vector3(0.0f, 0.0f, 0.0f),
             new Vector3(0.0f, 1.0f, 0.0f),
             45f,
