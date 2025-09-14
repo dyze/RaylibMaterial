@@ -31,7 +31,7 @@ class App
     private Model _currentModel;
     private Shader _shader;
     private Shader _defaultMaterialShader;
-    private string? _currentShaderName;
+    private string? _currentShaderName = "base";
 
     private Dictionary<string, ShaderInfo> _shaders = new();
 
@@ -225,7 +225,7 @@ class App
 
         _defaultMaterialShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
 
-        _currentShaderName = "base";
+
         SelectShader(_currentShaderName);
     }
 
