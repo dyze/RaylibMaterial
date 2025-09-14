@@ -19,7 +19,7 @@ namespace Editor.Windows
             {
                 foreach (var (name, variable) in variables)
                 {
-                    ImGui.LabelText(name, variable.Type.ToString());
+                   
                     if (variable.Type == typeof(Vector4))
                     {
                         var currentValue = (Vector4)variable.Value;
@@ -46,6 +46,10 @@ namespace Editor.Windows
                             variable.Value = currentValue;
                             variableChanged = true;
                         }
+                    }
+                    else
+                    {
+                        ImGui.LabelText(name, variable.Type.ToString());
                     }
                 }
             }

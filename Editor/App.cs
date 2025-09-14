@@ -550,14 +550,14 @@ class App
     {
         _shaderCode = new Dictionary<string, ShaderCode>();
 
-        Dictionary<string, CodeVariable> variables = [];
+        Dictionary<string, CodeVariable> shaderVariables = [];
 
         if (shaderInfo.VertexShaderFileName != null)
         {
             var code = new ShaderCode(
                 File.ReadAllText($"{ShaderFolderPath}\\{shaderInfo.VertexShaderFileName}"));
             code.ParseVariables();
-            variables = code.Variables;
+            shaderVariables = code.Variables;
             _shaderCode.Add(shaderInfo.VertexShaderFileName, code);
         }
 
@@ -566,14 +566,14 @@ class App
             var code = new ShaderCode(
                 File.ReadAllText($"{ShaderFolderPath}\\{shaderInfo.FragmentShaderFileName}"));
             code.ParseVariables();
-            variables = variables.Concat(code.Variables).ToDictionary(x => x.Key, x => x.Value);
+            shaderVariables = shaderVariables.Concat(code.Variables).ToDictionary(x => x.Key, x => x.Value);
             _shaderCode.Add(shaderInfo.FragmentShaderFileName, code);
         }
 
-        Logger.Info($"{variables.Count} variables detected");
+        Logger.Info($"{shaderVariables.Count} variables detected");
 
         // Sync material variables
-        foreach (var (key, variable) in variables)
+        foreach (var (key, variable) in shaderVariables)
         {
             var result = _material.Variables.TryGetValue(key, out var materialVariable);
             if (result == false)
@@ -595,7 +595,7 @@ class App
         List<string> toDelete = [];
         foreach (var (key, _) in _material.Variables)
         {
-            var result = _material.Variables.TryGetValue(key, out var _);
+            var result = shaderVariables.TryGetValue(key, out var _);
             if (result == false)
             {
                 Logger.Trace($"{key}: doesn't exist in code -> remove from material");
