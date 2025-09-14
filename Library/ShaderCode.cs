@@ -1,7 +1,8 @@
-﻿using Raylib_cs;
+﻿using System.Numerics;
 using System.Text.RegularExpressions;
+using Raylib_cs;
 
-namespace Editor;
+namespace Library;
 
 public class ShaderCode(string code)
 {
@@ -60,29 +61,27 @@ public class ShaderCode(string code)
 
             Console.WriteLine($"{typeString} {name}");
 
-            var type = stringToShaderUniformDataType(typeString);
-            if(type != null)
-                result.Add(new CodeVariable(type.Value, name));
+            var type = stringToType(typeString);
+            if (type != null)
+                result.Add(new CodeVariable(type, name));
         }
 
         return result;
     }
 
-    private static ShaderUniformDataType? stringToShaderUniformDataType(string input)
+    private static Type? stringToType(string input)
     {
-        Dictionary<string, ShaderUniformDataType> table = new(){
-            { "float", ShaderUniformDataType.Float },
-            { "vec2", ShaderUniformDataType.Vec2 },
-            { "vec3", ShaderUniformDataType.Vec3 },
-            { "vec4", ShaderUniformDataType.Vec4 },
-            { "int", ShaderUniformDataType.Int },
-            { "uint", ShaderUniformDataType.UInt },
-            { "sampler2D", ShaderUniformDataType.Sampler2D },
+        Dictionary<string, Type> table = new()
+        {
+            { "float", typeof(float) },
+            { "vec2", typeof(Vector2) },
+            { "vec3", typeof(Vector3) },
+            { "vec4", typeof(Vector4) },
+            { "int", typeof(int) },
+            { "uint", typeof(uint) },
+            { "sampler2D", typeof(string) },
         };
 
-        if (table.TryGetValue(input, out var type))
-            return type;
-        else
-            return null;
+        return table.GetValueOrDefault(input);
     }
 }

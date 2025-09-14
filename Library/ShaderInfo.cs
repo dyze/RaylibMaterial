@@ -1,4 +1,4 @@
-﻿namespace Editor;
+﻿namespace Library;
 
 public class ShaderInfo
 {

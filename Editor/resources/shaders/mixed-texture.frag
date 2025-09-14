@@ -6,6 +6,8 @@ in vec4 fragColor;
 
 // Input uniform values
 uniform sampler2D texture0;
+uniform sampler2D texture1;
+uniform float ratio;
 
 // Output fragment color
 out vec4 finalColor;
@@ -15,8 +17,9 @@ out vec4 finalColor;
 void main()
 {
     // Texel color fetching from texture sampler
-    vec4 texelColor = texture(texture0, fragTexCoord);
+    vec4 tex0Color = texture(texture0, fragTexCoord);
+	vec4 tex1Color = texture(texture1, fragTexCoord);
 
-    finalColor = texelColor;
+    finalColor = mix(tex0Color, tex1Color, ratio);
 }
 

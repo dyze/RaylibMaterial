@@ -1,15 +1,30 @@
-﻿using Raylib_cs;
-
-namespace Editor;
+﻿namespace Library;
 
 public class CodeVariable
 {
-    public ShaderUniformDataType Type;
+    public Type Type;
     public string Name;
 
-    public CodeVariable(ShaderUniformDataType type, string name)
+    public CodeVariable(Type type, string name)
     {
         Type = type;
         Name = name;
+
+        if (type == typeof(string))
+            Value = "";
+        else
+            Value = GetDefault(type);
+    }
+
+    public object Value { get; set; }
+
+    public static object GetDefault(Type type)
+    {
+        if (type.IsValueType)
+        {
+            return Activator.CreateInstance(type);
+        }
+
+        return null;
     }
 }
