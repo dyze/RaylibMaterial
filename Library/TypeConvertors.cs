@@ -3,7 +3,7 @@ using System.Numerics;
 using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
-namespace Editor;
+namespace Library;
 
 public static class TypeConvertors
 {
@@ -38,5 +38,19 @@ public static class TypeConvertors
         return new RectangleF(src.X, src.Y, src.Width, src.Height);
     }
 
+    public static Type? StringToType(string input)
+    {
+        Dictionary<string, Type> table = new()
+        {
+            { "float", typeof(float) },
+            { "vec2", typeof(Vector2) },
+            { "vec3", typeof(Vector3) },
+            { "vec4", typeof(Vector4) },
+            { "int", typeof(int) },
+            { "uint", typeof(uint) },
+            { "sampler2D", typeof(string) },
+        };
 
+        return table.GetValueOrDefault(input);
+    }
 }

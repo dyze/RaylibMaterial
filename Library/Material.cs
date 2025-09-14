@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 
 namespace Library;
 
+[Serializable]
 public class Material
 {
     [JsonIgnore] public string _fileName = "no name";
@@ -20,11 +21,12 @@ public class Material
 
     [JsonIgnore] public string FullFilePath = "not saved yet";
 
-    [Required] [JsonProperty("Description")]
-    public string Description = "?";
+    [Required] [JsonProperty("Description")] public string Description = "?";
 
     [Required] [JsonProperty("Author")] public string Author = "?";
     [Required] [JsonProperty("Tags")] public List<string> Tags = [];
+
+    [Required][JsonProperty("Variables")] public Dictionary<string, CodeVariable> Variables = [];
 
     [JsonIgnore] public bool IsModified { get; set; } = true;
 

@@ -128,11 +128,12 @@ class App
             RenderToolBar();
             RenderShaderList();
             _shaderCodeWindow.Render(_shaderCode);
-            if (VariablesWindow.Render(_shaderCode))
+            if (VariablesWindow.Render(_material.Variables))
             {
                 _material.SetModified();
                 ApplyVariables();
             }
+
             RenderOutputWindow();
             RenderMaterial();
 
@@ -289,8 +290,8 @@ class App
 
                 ImGui.EndDisabled();
             }
-
         }
+
         ImGui.End();
     }
 
@@ -353,8 +354,8 @@ class App
         if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
         {
             rlImGui.ImageRenderTexture(_viewTexture);
-
         }
+
         ImGui.End();
     }
 
@@ -382,9 +383,8 @@ class App
             {
                 RetrieveShaders();
             }
-
-
         }
+
         ImGui.End();
     }
 
@@ -424,43 +424,41 @@ class App
     }
 
 
-
     private void ApplyVariables()
     {
         Logger.Info("ApplyVariables");
 
-        foreach (var (_, code) in _shaderCode)
-        {
-            foreach (var variable in code.Variables)
-            {
-                var location = Raylib.GetShaderLocation(_shader, variable.Name);
-                if (location < 0)
-                {
-                    Logger.Error($"location for {variable.Name} not found in shader");
-                    continue;
-                }
 
-                if (variable.Type == typeof(Vector4))
-                {
-                    var currentValue = (Vector4)variable.Value;
-                    Raylib.SetShaderValue(_shader, location, currentValue, ShaderUniformDataType.Vec4);
-                    Logger.Trace($"{variable.Name}={currentValue}");
-                }
-                else if (variable.Type == typeof(float))
-                {
-                    var currentValue = (float)variable.Value;
-                    Raylib.SetShaderValue(_shader, location, currentValue, ShaderUniformDataType.Float);
-                    Logger.Trace($"{variable.Name}={currentValue}");
-                }
-                else if (variable.Type == typeof(string))
-                {
-                    SetUniformTexture(variable);
-                }
+        foreach (var (name, variable) in _material.Variables)
+        {
+            var location = Raylib.GetShaderLocation(_shader, name);
+            if (location < 0)
+            {
+                Logger.Error($"location for {name} not found in shader");
+                continue;
+            }
+
+            if (variable.Type == typeof(Vector4))
+            {
+                var currentValue = (Vector4)variable.Value;
+                Raylib.SetShaderValue(_shader, location, currentValue, ShaderUniformDataType.Vec4);
+                Logger.Trace($"{name}={currentValue}");
+            }
+            else if (variable.Type == typeof(float))
+            {
+                var currentValue = (float)variable.Value;
+                Raylib.SetShaderValue(_shader, location, currentValue, ShaderUniformDataType.Float);
+                Logger.Trace($"{name}={currentValue}");
+            }
+            else if (variable.Type == typeof(string))
+            {
+                SetUniformTexture(name, variable);
             }
         }
     }
 
-    private void SetUniformTexture(CodeVariable variable)
+    private void SetUniformTexture(string variableName, 
+        CodeVariable variable)
     {
         var currentValue = (string)variable.Value;
 
@@ -468,7 +466,7 @@ class App
         var image = Raylib.LoadImage(imagePath);
         if (Raylib.IsImageValid(image) == false)
         {
-            Logger.Error($"image {variable.Name} is not valid");
+            Logger.Error($"image {variableName} is not valid");
             return;
         }
 
@@ -478,7 +476,7 @@ class App
 
         if (Raylib.IsTextureValid(texture) == false)
         {
-            Logger.Error($"texture {variable.Name} is not valid");
+            Logger.Error($"texture {variableName} is not valid");
             return;
         }
 
@@ -497,14 +495,14 @@ class App
             { "texture10", MaterialMapIndex.Brdf },
         };
 
-        if (table.TryGetValue(variable.Name, out var index))
+        if (table.TryGetValue(variableName, out var index))
         {
             Raylib.SetMaterialTexture(ref _currentModel, 0, index, ref texture);
         }
         else
-            Logger.Error($"texture index for {variable.Name} can't be found");
+            Logger.Error($"texture index for {variableName} can't be found");
 
-        Logger.Trace($"{variable.Name}={currentValue}");
+        Logger.Trace($"{variableName}={currentValue}");
     }
 
     private void ApplyShader()
@@ -552,11 +550,14 @@ class App
     {
         _shaderCode = new Dictionary<string, ShaderCode>();
 
+        Dictionary<string, CodeVariable> variables = [];
+
         if (shaderInfo.VertexShaderFileName != null)
         {
             var code = new ShaderCode(
                 File.ReadAllText($"{ShaderFolderPath}\\{shaderInfo.VertexShaderFileName}"));
             code.ParseVariables();
+            variables = code.Variables;
             _shaderCode.Add(shaderInfo.VertexShaderFileName, code);
         }
 
@@ -565,8 +566,49 @@ class App
             var code = new ShaderCode(
                 File.ReadAllText($"{ShaderFolderPath}\\{shaderInfo.FragmentShaderFileName}"));
             code.ParseVariables();
+            variables = variables.Concat(code.Variables).ToDictionary(x => x.Key, x => x.Value);
             _shaderCode.Add(shaderInfo.FragmentShaderFileName, code);
         }
+
+        Logger.Info($"{variables.Count} variables detected");
+
+        // Sync material variables
+        foreach (var (key, variable) in variables)
+        {
+            var result = _material.Variables.TryGetValue(key, out var materialVariable);
+            if (result == false)
+            {
+                Logger.Trace($"{key}: doesn't exist in material -> create it");
+                _material.Variables.Add(key, new CodeVariable(variable.Type));
+            }
+            else
+            {
+                // exist check type
+                if (materialVariable.Type != variable.Type)
+                {
+                    Logger.Trace($"{key}: type changed");
+                    materialVariable.Type = variable.Type;
+                }
+            }
+        }
+
+        List<string> toDelete = [];
+        foreach (var (key, _) in _material.Variables)
+        {
+            var result = _material.Variables.TryGetValue(key, out var _);
+            if (result == false)
+            {
+                Logger.Trace($"{key}: doesn't exist in code -> remove from material");
+                toDelete.Add(key);
+            }
+        }
+
+        foreach (var name in toDelete)
+        {
+            _material.Variables.Remove(name);
+        }
+
+        Logger.Trace($"{toDelete.Count} variables removed from material");
     }
 
     private Model GenerateCubeModel()

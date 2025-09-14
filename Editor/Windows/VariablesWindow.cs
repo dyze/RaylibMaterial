@@ -11,43 +11,40 @@ namespace Editor.Windows
         /// </summary>
         /// <param name="shaderCodes"></param>
         /// <returns>true if variables changed</returns>
-        public static bool Render(Dictionary<string, ShaderCode> shaderCodes)
+        public static bool Render(Dictionary<string, CodeVariable> variables)
         {
             var variableChanged = false;
 
             if (ImGui.Begin("Variables"))
             {
-                foreach (var (_, code) in shaderCodes)
+                foreach (var (name, variable) in variables)
                 {
-                    foreach (var variable in code.Variables)
+                    ImGui.LabelText(name, variable.Type.ToString());
+                    if (variable.Type == typeof(Vector4))
                     {
-                        ImGui.LabelText(variable.Name, variable.Type.ToString());
-                        if (variable.Type == typeof(Vector4))
+                        var currentValue = (Vector4)variable.Value;
+                        if (ImGui.InputFloat4(name, ref currentValue))
                         {
-                            var currentValue = (Vector4)variable.Value;
-                            if (ImGui.InputFloat4(variable.Name, ref currentValue))
-                            {
-                                variable.Value = currentValue;
-                                variableChanged = true;
-                            }
+                            variable.Value = currentValue;
+                            variableChanged = true;
                         }
-                        else if (variable.Type == typeof(float))
+                    }
+                    else if (variable.Type == typeof(float))
+                    {
+                        var currentValue = (float)variable.Value;
+                        if (ImGui.InputFloat(name, ref currentValue))
                         {
-                            var currentValue = (float)variable.Value;
-                            if (ImGui.InputFloat(variable.Name, ref currentValue))
-                            {
-                                variable.Value = currentValue;
-                                variableChanged = true;
-                            }
+                            variable.Value = currentValue;
+                            variableChanged = true;
                         }
-                        else if (variable.Type == typeof(string))
+                    }
+                    else if (variable.Type == typeof(string))
+                    {
+                        var currentValue = (string)variable.Value;
+                        if (ImGui.InputText(name, ref currentValue, 200))
                         {
-                            var currentValue = (string)variable.Value;
-                            if (ImGui.InputText(variable.Name, ref currentValue, 200))
-                            {
-                                variable.Value = currentValue;
-                                variableChanged = true;
-                            }
+                            variable.Value = currentValue;
+                            variableChanged = true;
                         }
                     }
                 }
@@ -57,5 +54,4 @@ namespace Editor.Windows
             return variableChanged;
         }
     }
-    
 }

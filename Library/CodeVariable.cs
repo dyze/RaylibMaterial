@@ -1,22 +1,34 @@
-﻿namespace Library;
+﻿using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 
+namespace Library;
+
+[Serializable]
 public class CodeVariable
 {
-    public Type Type;
-    public string Name;
+    [JsonIgnore] private Type _type;
 
-    public CodeVariable(Type type, string name)
+    [Required] [JsonProperty("Type")] public Type Type
     {
-        Type = type;
-        Name = name;
-
-        if (type == typeof(string))
-            Value = "";
-        else
-            Value = GetDefault(type);
+        get => _type;
+        set
+        {
+            // reset value
+            _type = value;
+            if (_type == typeof(string))
+                Value = "";
+            else
+                Value = GetDefault(_type);
+        }
     }
 
-    public object Value { get; set; }
+    [Required] [JsonProperty("Value")] public object Value { get; set; }
+
+
+    public CodeVariable(Type type)
+    {
+        Type = type;
+    }
 
     public static object GetDefault(Type type)
     {

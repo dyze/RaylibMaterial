@@ -15,8 +15,16 @@ public class MaterialStorage
 
     public static Material ParseJson(string json)
     {
-        var content = JsonConvert.DeserializeObject<Material>(json) ??
-                            throw new ApplicationException("json can't be deserialized");
+        JsonSerializerSettings jsonDeserializerSettings = new()
+        {
+            TypeNameHandling = TypeNameHandling.All,
+            TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
+            SerializationBinder = new SerializationBinder(PayloadValidator.GetAllowedPayloadTypes()),
+        };
+
+        var content = JsonConvert.DeserializeObject<Material>(json,
+                          jsonDeserializerSettings) ??
+                      throw new ApplicationException("json can't be deserialized");
 
         if (content == null)
             throw new InvalidDataException("invalid file");
@@ -26,8 +34,16 @@ public class MaterialStorage
 
     public static string ToJson(Material projectConfiguration)
     {
+        JsonSerializerSettings jsonSerializerSettings = new()
+        {
+            TypeNameHandling = TypeNameHandling.All,
+            Formatting = Formatting.Indented,
+            TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
+            SerializationBinder = new SerializationBinder(PayloadValidator.GetAllowedPayloadTypes())
+        };
+
         return JsonConvert.SerializeObject(projectConfiguration,
-            Formatting.Indented);
+            jsonSerializerSettings);
     }
 
     public static void Save(Material material,

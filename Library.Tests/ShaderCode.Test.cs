@@ -1,4 +1,4 @@
-﻿using Raylib_cs;
+﻿using System.Numerics;
 
 namespace Library.Tests;
 
@@ -36,12 +36,12 @@ public sealed class ShaderCodeTest
         var shaderCode = new ShaderCode(code);
         Assert.IsNotNull(shaderCode);
 
-       shaderCode.ParseVariables();
-       var variables = shaderCode.Variables;
+        shaderCode.ParseVariables();
+        var variables = shaderCode.Variables;
 
-       Assert.AreEqual(variables.Count, 2);
+        Assert.AreEqual(variables.Count, 2);
 
-        Assert.AreEqual(variables[0].Type, ShaderUniformDataType.Sampler2D);
-        Assert.AreEqual(variables[0].Name, "texture0");
+        Assert.AreEqual(variables["texture0"].Type, typeof(string));
+        Assert.AreEqual(variables["colDiffuse"].Type, typeof(Vector4));
     }
 }

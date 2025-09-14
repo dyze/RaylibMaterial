@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace Library;
 
@@ -8,18 +7,22 @@ public class ShaderCode(string code)
     public bool Modified = false;
     public string Code = code;
     public bool IsValid { get; set; } = true;
-    public List<CodeVariable> Variables = [];
+
+    /// <summary>
+    /// List of uniforms detected inside the code
+    /// </summary>
+    public Dictionary<string, CodeVariable> Variables = [];
 
     public void ParseVariables()
     {
         Variables = _ParseVariables();
     }
 
-    private List<CodeVariable> _ParseVariables()
+    private Dictionary<string, CodeVariable> _ParseVariables()
     {
         var currentPosition = Code;
 
-        var result = new List<CodeVariable>();
+        var result = new Dictionary<string, CodeVariable>();
 
 
         while (true)
@@ -60,27 +63,11 @@ public class ShaderCode(string code)
 
             Console.WriteLine($"{typeString} {name}");
 
-            var type = StringToType(typeString);
+            var type = TypeConvertors.StringToType(typeString);
             if (type != null)
-                result.Add(new CodeVariable(type, name));
+                result.Add(name, new CodeVariable(type));
         }
 
         return result;
-    }
-
-    private static Type? StringToType(string input)
-    {
-        Dictionary<string, Type> table = new()
-        {
-            { "float", typeof(float) },
-            { "vec2", typeof(Vector2) },
-            { "vec3", typeof(Vector3) },
-            { "vec4", typeof(Vector4) },
-            { "int", typeof(int) },
-            { "uint", typeof(uint) },
-            { "sampler2D", typeof(string) },
-        };
-
-        return table.GetValueOrDefault(input);
     }
 }
