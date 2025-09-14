@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Editor.Windows;
 using ImGuiNET;
 using Library;
 using NLog;
@@ -16,6 +17,7 @@ class App
     private const string ShaderFolderPath = "resources/shaders";
     private const string ImagesFolderPath = "resources/images";
     private const string MaterialsPath = "materials";
+
 
     private readonly Vector2 _screenSize = new(1280, 720); // initial size of window
 
@@ -60,8 +62,6 @@ class App
         WildPark = 2,
     }
 
-    private BackgroundType _backgroundType = BackgroundType.None;
-
     private readonly Dictionary<BackgroundType, BackgroundConfig> _backgrounds = new()
     {
         { BackgroundType.None, new BackgroundConfig("none", null) },
@@ -77,8 +77,12 @@ class App
 
     private Library.Material _material = new();
 
+    private ShaderCodeWindow _shaderCodeWindow = new();
+
     public void Run()
     {
+        _shaderCodeWindow.ApplyChangesPressed += ShaderCodeWindowOnApplyChangesPressed;
+
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
@@ -123,12 +127,17 @@ class App
 
             RenderToolBar();
             RenderShaderList();
-            RenderShaderCode();
-            RenderVariables();
+            _shaderCodeWindow.Render(_shaderCode);
+            if (VariablesWindow.Render(_shaderCode))
+            {
+                _material.SetModified();
+                ApplyVariables();
+            }
             RenderOutputWindow();
             RenderMaterial();
 
-            _messageWindow.Render(MessageQueue, ref _messageWindowIsVisible);
+            _messageWindow.Render(MessageQueue,
+                ref _messageWindowIsVisible);
 
             rlImGui.End();
             Raylib.EndDrawing();
@@ -136,6 +145,13 @@ class App
 
         Raylib.UnloadShader(_shader);
         rlImGui.Shutdown();
+    }
+
+    private void ShaderCodeWindowOnApplyChangesPressed(ShaderCode shaderCode)
+    {
+        var valid = LoadShader(_currentShaderName);
+
+        shaderCode.IsValid = valid;
     }
 
 
@@ -235,9 +251,22 @@ class App
         ImGui.SetNextWindowSize(new Vector2(100, 80), ImGuiCond.FirstUseEver);
         if (ImGui.Begin("Material"))
         {
-            ImGui.LabelText("Name", _material.Name);
+            string fileName = _material.FileName;
+            if (ImGui.InputText("FileName", ref fileName, 200))
+            {
+                _material.FileName = fileName;
+                _material.SetModified();
+            }
+
+            ImGui.LabelText("FilePath", _material.FullFilePath);
+            if (ImGui.InputText("Description", ref _material.Description, 200))
+                _material.SetModified();
+            if (ImGui.InputText("Author", ref _material.Author, 200))
+                _material.SetModified();
+
             ImGui.BeginDisabled();
-            ImGui.Checkbox("is modified", ref _material.IsModified);
+            var isModified = _material.IsModified;
+            ImGui.Checkbox("is modified", ref isModified);
             ImGui.EndDisabled();
             ImGui.Separator();
 
@@ -261,15 +290,16 @@ class App
                 ImGui.EndDisabled();
             }
 
-            ImGui.End();
         }
+        ImGui.End();
     }
 
     private void SaveMaterial()
     {
         Logger.Info("SaveMaterial...");
 
-        _material.IsModified = false;
+        var filePath = $"{MaterialsPath}/{_material.FileName}.mat";
+        MaterialStorage.Save(_material, filePath);
 
         Logger.Info("SaveMaterial OK");
     }
@@ -302,7 +332,6 @@ class App
                         new Vector2(32, 32)))
                 {
                     Logger.Trace($"{key} selected");
-                    _backgroundType = key;
                     Raylib.SetMaterialTexture(ref _backgroundModel, 0, MaterialMapIndex.Albedo, ref background.Texture);
 
                     // SelectBackgroundType();
@@ -324,60 +353,10 @@ class App
         if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
         {
             rlImGui.ImageRenderTexture(_viewTexture);
-            ImGui.End();
+
         }
+        ImGui.End();
     }
-
-    private void RenderShaderCode()
-    {
-        if (ImGui.Begin("Code"))
-        {
-            var flags = ImGuiTabBarFlags.None;
-            if (ImGui.BeginTabBar("MyTabBar", flags))
-            {
-                foreach (var (key, code) in _shaderCode)
-                {
-                    var name = key;
-                    if (code.Modified)
-                        name += " *";
-                    if (ImGui.BeginTabItem(name))
-                    {
-                        //ImGui.Text(code.Code);
-                        var inputFlags = ImGuiInputTextFlags.AllowTabInput;
-                        if (ImGui.InputTextMultiline("##source",
-                                ref code.Code,
-                                20000,
-                                new Vector2(-1, -1), //ImGui.GetTextLineHeight() * 16),
-                                inputFlags))
-                        {
-                            code.Modified = true;
-                        }
-
-                        if (code.Modified)
-                            if (ImGui.Button("Apply"))
-                            {
-                                var valid = LoadShader(_currentShaderName);
-
-                                code.IsValid = valid;
-                            }
-
-                        if (code.IsValid == false)
-                            ImGui.TextColored(new Vector4(1f, 0, 0, 1f),
-                                "not valid");
-
-                        ImGui.EndTabItem();
-                    }
-                }
-
-                ImGui.EndTabBar();
-            }
-
-            ImGui.Separator();
-
-            ImGui.End();
-        }
-    }
-
 
     private void RenderShaderList()
     {
@@ -404,8 +383,9 @@ class App
                 RetrieveShaders();
             }
 
-            ImGui.End();
+
         }
+        ImGui.End();
     }
 
     private void RetrieveShaders()
@@ -443,57 +423,7 @@ class App
         }
     }
 
-    private void RenderVariables()
-    {
-        if (ImGui.Begin("Variables"))
-        {
-            bool variableChanged = false;
-            foreach (var (_, code) in _shaderCode)
-            {
-                foreach (var variable in code.Variables)
-                {
-                    ImGui.LabelText(variable.Name, variable.Type.ToString());
-                    if (variable.Type == typeof(Vector4))
-                    {
-                        var currentValue = (Vector4)variable.Value;
-                        if (ImGui.InputFloat4(variable.Name, ref currentValue))
-                        {
-                            variable.Value = currentValue;
-                            variableChanged = true;
-                        }
-                    }
-                    else
-                    if (variable.Type == typeof(float))
-                    {
-                        var currentValue = (float)variable.Value;
-                        if (ImGui.InputFloat(variable.Name, ref currentValue))
-                        {
-                            variable.Value = currentValue;
-                            variableChanged = true;
-                        }
-                    }
-                    else
-                    if (variable.Type == typeof(string))
-                    {
-                        var currentValue = (string)variable.Value;
-                        if (ImGui.InputText(variable.Name, ref currentValue, 200))
-                        {
-                            variable.Value = currentValue;
-                            variableChanged = true;
-                        }
-                    }
-                }
-            }
 
-            if(variableChanged)
-            {
-                _material.IsModified = true;
-                ApplyVariables();
-            }
-
-            ImGui.End();
-        }
-    }
 
     private void ApplyVariables()
     {
@@ -516,48 +446,70 @@ class App
                     Raylib.SetShaderValue(_shader, location, currentValue, ShaderUniformDataType.Vec4);
                     Logger.Trace($"{variable.Name}={currentValue}");
                 }
-                else
-                if (variable.Type == typeof(float))
+                else if (variable.Type == typeof(float))
                 {
                     var currentValue = (float)variable.Value;
                     Raylib.SetShaderValue(_shader, location, currentValue, ShaderUniformDataType.Float);
                     Logger.Trace($"{variable.Name}={currentValue}");
                 }
-                else
-                if (variable.Type == typeof(string))
+                else if (variable.Type == typeof(string))
                 {
-                    var currentValue = (string)variable.Value;
-
-                    var imagePath = $"{ImagesFolderPath}/{currentValue}";
-                    var image = Raylib.LoadImage(imagePath);
-                    if (Raylib.IsImageValid(image) == false)
-                    {
-                        Logger.Error($"image {variable.Name} is not valid");
-                        continue;
-                    }
-
-                    var texture = Raylib.LoadTextureFromImage(image);
-                    if (Raylib.IsTextureValid(texture) == false)
-                    {
-                        Logger.Error($"texture {variable.Name} is not valid");
-                        continue;
-                    }
-
-                    if(variable.Name == "texture0")
-                        Raylib.SetMaterialTexture(ref _currentModel, 0, MaterialMapIndex.Albedo, ref texture);
-                    else
-                        Raylib.SetMaterialTexture(ref _currentModel, 0, MaterialMapIndex.Metalness, ref texture);
-
-                    //Raylib.SetShaderValue(_shader, location, texture, ShaderUniformDataType.Sampler2D);
-                    Logger.Trace($"{variable.Name}={currentValue}");
+                    SetUniformTexture(variable);
                 }
             }
         }
     }
 
+    private void SetUniformTexture(CodeVariable variable)
+    {
+        var currentValue = (string)variable.Value;
+
+        var imagePath = $"{ImagesFolderPath}/{currentValue}";
+        var image = Raylib.LoadImage(imagePath);
+        if (Raylib.IsImageValid(image) == false)
+        {
+            Logger.Error($"image {variable.Name} is not valid");
+            return;
+        }
+
+        var texture = Raylib.LoadTextureFromImage(image);
+
+        Raylib.UnloadImage(image);
+
+        if (Raylib.IsTextureValid(texture) == false)
+        {
+            Logger.Error($"texture {variable.Name} is not valid");
+            return;
+        }
+
+        Dictionary<string, MaterialMapIndex> table = new()
+        {
+            { "texture0", MaterialMapIndex.Albedo },
+            { "texture1", MaterialMapIndex.Metalness },
+            { "texture2", MaterialMapIndex.Normal },
+            { "texture3", MaterialMapIndex.Roughness },
+            { "texture4", MaterialMapIndex.Occlusion },
+            { "texture5", MaterialMapIndex.Emission },
+            { "texture6", MaterialMapIndex.Height },
+            { "texture7", MaterialMapIndex.Cubemap },
+            { "texture8", MaterialMapIndex.Irradiance },
+            { "texture9", MaterialMapIndex.Prefilter },
+            { "texture10", MaterialMapIndex.Brdf },
+        };
+
+        if (table.TryGetValue(variable.Name, out var index))
+        {
+            Raylib.SetMaterialTexture(ref _currentModel, 0, index, ref texture);
+        }
+        else
+            Logger.Error($"texture index for {variable.Name} can't be found");
+
+        Logger.Trace($"{variable.Name}={currentValue}");
+    }
+
     private void ApplyShader()
     {
-        Logger.Info($"Apply shader");
+        Logger.Info("ApplyShader");
 
         Raylib.SetMaterialShader(ref _currentModel, 0, ref _shader);
 
@@ -628,14 +580,6 @@ class App
     {
         var mesh = Raylib.GenMeshPlane(2, 2, 1, 1);
         var model = Raylib.LoadModelFromMesh(mesh);
-        return model;
-    }
-
-    private Model GenerateBackground()
-    {
-        var mesh = Raylib.GenMeshPlane(2, 2, 1, 1);
-        var model = Raylib.LoadModelFromMesh(mesh);
-        model.Transform = Raymath.MatrixTranslate(0f, 0f, 2f);
         return model;
     }
 

@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using System.Text.RegularExpressions;
-using Raylib_cs;
 
 namespace Library;
 
@@ -61,7 +60,7 @@ public class ShaderCode(string code)
 
             Console.WriteLine($"{typeString} {name}");
 
-            var type = stringToType(typeString);
+            var type = StringToType(typeString);
             if (type != null)
                 result.Add(new CodeVariable(type, name));
         }
@@ -69,7 +68,7 @@ public class ShaderCode(string code)
         return result;
     }
 
-    private static Type? stringToType(string input)
+    private static Type? StringToType(string input)
     {
         Dictionary<string, Type> table = new()
         {
