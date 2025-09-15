@@ -3,23 +3,23 @@
 namespace Library.Tests;
 
 [TestClass]
-public sealed class MaterialTest
+public sealed class MaterialMetaTest
 {
     [TestMethod]
     public void SaveLoad()
     {
-        var material = new Material();
+        var material = new MaterialMeta();
         material.Author = "Author";
         material.Description = "Description";
-        material.Tags.Add("material");
+        material.Tags.Add("materialMeta");
         material.Tags.Add("textured");
 
         material.Variables.Add("color", new CodeVariable(typeof(Vector4)));
         material.Variables.Add("texture", new CodeVariable(typeof(string)));
 
-        MaterialStorage.Save(material, "testdir/test.mat");
+        MaterialMetaStorage.Save(material, "testdir/test.mat");
 
-        var loadedMaterial = MaterialStorage.Load("testdir/test.mat");
+        var loadedMaterial = MaterialMetaStorage.Load("testdir/test.mat");
         Assert.IsNotNull(loadedMaterial != null);
 
         Assert.AreEqual(loadedMaterial.Tags.Count, material.Tags.Count);

@@ -2,9 +2,9 @@
 
 namespace Library;
 
-public class MaterialStorage
+public class MaterialMetaStorage
 {
-    public static Material Load(string filePath)
+    public static MaterialMeta Load(string filePath)
     {
         var json = File.ReadAllText(filePath);
 
@@ -13,7 +13,7 @@ public class MaterialStorage
         return configuration;
     }
 
-    public static Material ParseJson(string json)
+    public static MaterialMeta ParseJson(string json)
     {
         JsonSerializerSettings jsonDeserializerSettings = new()
         {
@@ -22,7 +22,7 @@ public class MaterialStorage
             SerializationBinder = new SerializationBinder(PayloadValidator.GetAllowedPayloadTypes()),
         };
 
-        var content = JsonConvert.DeserializeObject<Material>(json,
+        var content = JsonConvert.DeserializeObject<MaterialMeta>(json,
                           jsonDeserializerSettings) ??
                       throw new ApplicationException("json can't be deserialized");
 
@@ -32,7 +32,7 @@ public class MaterialStorage
         return content;
     }
 
-    public static string ToJson(Material projectConfiguration)
+    public static string ToJson(MaterialMeta projectConfiguration)
     {
         JsonSerializerSettings jsonSerializerSettings = new()
         {
@@ -46,10 +46,10 @@ public class MaterialStorage
             jsonSerializerSettings);
     }
 
-    public static void Save(Material material,
+    public static void Save(MaterialMeta materialMeta,
         string filePath)
     {
-        var json = ToJson(material);
+        var json = ToJson(materialMeta);
 
         var directionPath = Path.GetDirectoryName(filePath);
         if (directionPath == null)
@@ -58,7 +58,7 @@ public class MaterialStorage
 
         File.WriteAllText(filePath, json);
 
-        material.FullFilePath = Path.GetFullPath(filePath);
-        material.IsModified = false;
+        materialMeta.FullFilePath = Path.GetFullPath(filePath);
+        materialMeta.IsModified = false;
     }
 }

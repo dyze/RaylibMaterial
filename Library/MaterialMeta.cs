@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 namespace Library;
 
 [Serializable]
-public class Material
+public class MaterialMeta
 {
     [JsonIgnore] public string _fileName = "no name";
 

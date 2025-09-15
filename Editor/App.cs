@@ -2,6 +2,7 @@
 using Editor.Windows;
 using ImGuiNET;
 using Library;
+using Library.Packaging;
 using NLog;
 using Raylib_cs;
 using rlImGui_cs;
@@ -75,9 +76,9 @@ class App
 
     private Model _backgroundModel;
 
-    private Library.Material _material = new();
+    private MaterialPackage _materialPackage = new();
 
-    private ShaderCodeWindow _shaderCodeWindow = new();
+    private readonly ShaderCodeWindow _shaderCodeWindow = new();
 
     public void Run()
     {
@@ -86,7 +87,7 @@ class App
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
-        Raylib.InitWindow((int)_screenSize.X, (int)_screenSize.Y, "Raylib Material Editor");
+        Raylib.InitWindow((int)_screenSize.X, (int)_screenSize.Y, "Raylib MaterialMeta Editor");
         rlImGui.Setup();
 
         PrepareUi();
@@ -123,14 +124,15 @@ class App
 
             Raylib.ClearBackground(Color.Black);
 
+            RenderMenu();
             RenderOutput();
 
             RenderToolBar();
             RenderShaderList();
             _shaderCodeWindow.Render(_shaderCode);
-            if (VariablesWindow.Render(_material.Variables))
+            if (VariablesWindow.Render(_materialPackage.Meta.Variables))
             {
-                _material.SetModified();
+                _materialPackage.Meta.SetModified();
                 ApplyVariables();
             }
 
@@ -146,6 +148,58 @@ class App
 
         Raylib.UnloadShader(_shader);
         rlImGui.Shutdown();
+    }
+
+    private void RenderMenu()
+    {
+        if (ImGui.BeginMainMenuBar())
+        {
+            if (ImGui.BeginMenu("Package"))
+            {
+                if (ImGui.MenuItem("New"))
+                    NewMaterial();
+
+                if (ImGui.MenuItem("Save"))
+                    SaveMaterial();
+
+                //ImGui.Separator();
+
+                //if (ImGui.MenuItem("Exit"))
+                //    _engine.Exit(true);
+
+                ImGui.EndMenu();
+            }
+            if (ImGui.BeginMenu("Display"))
+            {
+                //if (ImGui.MenuItem("Fullscreen", null, _generalConfiguration.IsFullScreen))
+                //    _generalConfiguration.IsFullScreen = !_generalConfiguration.IsFullScreen;
+
+                ImGui.EndMenu();
+            }
+
+            if (ImGui.BeginMenu("View"))
+            {
+                //var workspace = _editorConfiguration.GetCurrentWorkspaceConfiguration(_engine.Loop.IsInEditMode ? WorkspaceId.EditMode : WorkspaceId.PlayMode);
+
+                //RenderCheckedMenuItem("Project editor", ref workspace.ProjectEditorIsVisible);
+                //RenderCheckedMenuItem("Selected object editor", ref workspace.SelectedObjectEditorIsVisible);
+                //RenderCheckedMenuItem("Data file explorer", ref workspace.DataFileExplorerIsVisible);
+                //RenderCheckedMenuItem("Editor configuration", ref workspace.EditorConfigurationIsVisible);
+                //RenderCheckedMenuItem("Theme editor", ref workspace.ThemeEditorIsVisible);
+
+                //ImGui.Separator();
+
+                //RenderCheckedMenuItem("Messages", ref _generalConfiguration.MessageWindowIsVisible);
+
+                ImGui.EndMenu();
+            }
+        }
+        ImGui.EndMainMenuBar();
+    }
+
+    private void NewMaterial()
+    {
+        _materialPackage = new();
     }
 
     private void ShaderCodeWindowOnApplyChangesPressed(ShaderCode shaderCode)
@@ -198,11 +252,6 @@ class App
         _currentModel.Transform = Raymath.MatrixRotateXYZ(new Vector3(_modelXAngle, _modelYAngle, 0));
         _currentModel.Transform.Translation = new Vector3(0, 0, _distance);
 
-
-        //_camera.Position = new Vector3((float)(Math.Cos(_modelXAngle) * _distance),
-        //    (float)(Math.Sin(_modelYAngle) * _distance),
-        //    _distance);
-
         return prevMousePos;
     }
 
@@ -249,58 +298,95 @@ class App
 
     private void RenderMaterial()
     {
-        ImGui.SetNextWindowSize(new Vector2(100, 80), ImGuiCond.FirstUseEver);
-        if (ImGui.Begin("Material"))
+        //ImGui.SetNextWindowSize(new Vector2(100, 80), ImGuiCond.FirstUseEver);
+        if (ImGui.Begin("MaterialMeta"))
         {
-            string fileName = _material.FileName;
-            if (ImGui.InputText("FileName", ref fileName, 200))
-            {
-                _material.FileName = fileName;
-                _material.SetModified();
-            }
+            RenderMaterialToolBar();
 
-            ImGui.LabelText("FilePath", _material.FullFilePath);
-            if (ImGui.InputText("Description", ref _material.Description, 200))
-                _material.SetModified();
-            if (ImGui.InputText("Author", ref _material.Author, 200))
-                _material.SetModified();
+            //ImGui.Separator();
 
-            ImGui.BeginDisabled();
-            var isModified = _material.IsModified;
-            ImGui.Checkbox("is modified", ref isModified);
-            ImGui.EndDisabled();
-            ImGui.Separator();
+            RenderMeta();
 
-            {
-                ImGui.BeginDisabled(_material.IsModified == false);
+            //ImGui.Separator();
 
-                var saveMaterial = false;
-
-                if (_material.IsModified)
-                    ImGui.PushStyleColor(ImGuiCol.Button, TypeConvertors.ToVector4(System.Drawing.Color.Red));
-
-                if (ImGui.Button("Save"))
-                    saveMaterial = true;
-
-                if (_material.IsModified)
-                    ImGui.PopStyleColor(1);
-
-                if (saveMaterial)
-                    SaveMaterial();
-
-                ImGui.EndDisabled();
-            }
+            RenderMaterialFiles();
         }
 
         ImGui.End();
+    }
+
+    private void RenderMaterialFiles()
+    {
+        //if (ImGui.BeginChild("Files"))
+        //{
+            ImGui.SeparatorText("Files");
+            foreach (var file in _materialPackage.Files)
+            {
+                ImGui.Text(file.Key.FileName);
+            }
+        //}
+        //ImGui.EndChild();
+    }
+
+    private void RenderMaterialToolBar()
+    {
+        //if (ImGui.BeginChild("ToolBar", new Vector2(-1,-1)))
+        //{
+            //ImGui.BeginDisabled(_materialPackage.Meta.IsModified == false);
+
+            var saveMaterial = false;
+
+            //if (_materialPackage.Meta.IsModified)
+            //    ImGui.PushStyleColor(ImGuiCol.Button, TypeConvertors.ToVector4(System.Drawing.Color.Red));
+
+            if (ImGui.Button("Save"))
+                saveMaterial = true;
+
+            //if (_materialPackage.Meta.IsModified)
+            //    ImGui.PopStyleColor(1);
+
+            if (saveMaterial)
+                SaveMaterial();
+
+
+           // ImGui.EndDisabled();
+        //}
+        //ImGui.EndChild();
+    }
+
+    private void RenderMeta()
+    {
+        //if (ImGui.BeginChild("Meta"))
+        //{
+            ImGui.SeparatorText("Meta");
+            var fileName = _materialPackage.Meta.FileName;
+            if (ImGui.InputText("FileName", ref fileName, 200))
+            {
+                _materialPackage.Meta.FileName = fileName;
+                _materialPackage.Meta.SetModified();
+            }
+
+            ImGui.LabelText("FilePath", _materialPackage.Meta.FullFilePath);
+            if (ImGui.InputText("Description", ref _materialPackage.Meta.Description, 200))
+                _materialPackage.Meta.SetModified();
+            if (ImGui.InputText("Author", ref _materialPackage.Meta.Author, 200))
+                _materialPackage.Meta.SetModified();
+
+            ImGui.BeginDisabled();
+            var isModified = _materialPackage.Meta.IsModified;
+            ImGui.Checkbox("is modified", ref isModified);
+            ImGui.EndDisabled();
+        //}
+        //ImGui.EndChild();
     }
 
     private void SaveMaterial()
     {
         Logger.Info("SaveMaterial...");
 
-        var filePath = $"{MaterialsPath}/{_material.FileName}.mat";
-        MaterialStorage.Save(_material, filePath);
+        var filePath = $"{MaterialsPath}/{_materialPackage.Meta.FileName}.mat";
+
+        _materialPackage.Save(filePath);
 
         Logger.Info("SaveMaterial OK");
     }
@@ -334,8 +420,6 @@ class App
                 {
                     Logger.Trace($"{key} selected");
                     Raylib.SetMaterialTexture(ref _backgroundModel, 0, MaterialMapIndex.Albedo, ref background.Texture);
-
-                    // SelectBackgroundType();
                 }
             }
 
@@ -343,10 +427,6 @@ class App
         }
     }
 
-    //private void SelectBackgroundType()
-    //{
-    //    backgroundModel = GenerateBackground();
-    //}
 
     private void RenderOutputWindow()
     {
@@ -429,7 +509,7 @@ class App
         Logger.Info("ApplyVariables");
 
 
-        foreach (var (name, variable) in _material.Variables)
+        foreach (var (name, variable) in _materialPackage.Meta.Variables)
         {
             var location = Raylib.GetShaderLocation(_shader, name);
             if (location < 0)
@@ -457,7 +537,7 @@ class App
         }
     }
 
-    private void SetUniformTexture(string variableName, 
+    private void SetUniformTexture(string variableName,
         CodeVariable variable)
     {
         var currentValue = (string)variable.Value;
@@ -572,14 +652,14 @@ class App
 
         Logger.Info($"{shaderVariables.Count} variables detected");
 
-        // Sync material variables
+        // Sync materialMeta variables
         foreach (var (key, variable) in shaderVariables)
         {
-            var result = _material.Variables.TryGetValue(key, out var materialVariable);
+            var result = _materialPackage.Meta.Variables.TryGetValue(key, out var materialVariable);
             if (result == false)
             {
-                Logger.Trace($"{key}: doesn't exist in material -> create it");
-                _material.Variables.Add(key, new CodeVariable(variable.Type));
+                Logger.Trace($"{key}: doesn't exist in materialMeta -> create it");
+                _materialPackage.Meta.Variables.Add(key, new CodeVariable(variable.Type));
             }
             else
             {
@@ -593,22 +673,22 @@ class App
         }
 
         List<string> toDelete = [];
-        foreach (var (key, _) in _material.Variables)
+        foreach (var (key, _) in _materialPackage.Meta.Variables)
         {
             var result = shaderVariables.TryGetValue(key, out var _);
             if (result == false)
             {
-                Logger.Trace($"{key}: doesn't exist in code -> remove from material");
+                Logger.Trace($"{key}: doesn't exist in code -> remove from materialMeta");
                 toDelete.Add(key);
             }
         }
 
         foreach (var name in toDelete)
         {
-            _material.Variables.Remove(name);
+            _materialPackage.Meta.Variables.Remove(name);
         }
 
-        Logger.Trace($"{toDelete.Count} variables removed from material");
+        Logger.Trace($"{toDelete.Count} variables removed from materialMeta");
     }
 
     private Model GenerateCubeModel()
@@ -641,4 +721,5 @@ class App
             45f,
             CameraProjection.Perspective);
     }
+
 }
