@@ -4,7 +4,7 @@ using Library;
 
 namespace Editor.Windows
 {
-    static class VariablesWindow
+    static class VariablesControl
     {
         /// <summary>
         /// Render variables
@@ -15,8 +15,10 @@ namespace Editor.Windows
         {
             var variableChanged = false;
 
-            if (ImGui.Begin("Variables"))
-            {
+            ImGui.SeparatorText("Variables");
+
+            //if (ImGui.Begin("Variables"))
+            //{
                 foreach (var (name, variable) in variables)
                 {
                    
@@ -52,9 +54,9 @@ namespace Editor.Windows
                         ImGui.LabelText(name, variable.Type.ToString());
                     }
                 }
-            }
+            //}
 
-            ImGui.End();
+            //ImGui.End();
             return variableChanged;
         }
     }

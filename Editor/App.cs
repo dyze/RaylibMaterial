@@ -76,27 +76,31 @@ class App
 
     private Model _backgroundModel;
 
-    private MaterialPackage _materialPackage = new();
+    private readonly EditorControllerData _editorControllerData = new();
+
 
     private readonly ShaderCodeWindow _shaderCodeWindow = new();
     private EditorConfiguration _editorConfiguration = new();
 
-    private DataFileExplorerData _dataFileExplorerData = new();
     private DataFileExplorer _dataFileExplorer;
+
+    private MaterialWindow _materialWindow;
 
 
     public void Run()
     {
 
-        _dataFileExplorerData.DataFolder = new FileSystemAccess();
+        _editorControllerData.DataFileExplorerData.DataFolder = new FileSystemAccess();
 
         if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
             _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = "./resources";
 
-        _dataFileExplorerData.DataFolder.Open(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
-        _dataFileExplorerData.RefreshDataRootFolder();
+        _editorControllerData.DataFileExplorerData.DataFolder.Open(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
+        _editorControllerData.DataFileExplorerData.RefreshDataRootFolder();
 
-        _dataFileExplorer = new(_editorConfiguration, _dataFileExplorerData);
+        _dataFileExplorer = new(_editorConfiguration, _editorControllerData.DataFileExplorerData);
+
+        _materialWindow = new(_editorControllerData);
 
         _shaderCodeWindow.ApplyChangesPressed += ShaderCodeWindowOnApplyChangesPressed;
 
@@ -146,14 +150,9 @@ class App
             RenderToolBar();
             RenderShaderList();
             _shaderCodeWindow.Render(_shaderCode);
-            if (VariablesWindow.Render(_materialPackage.Meta.Variables))
-            {
-                _materialPackage.Meta.SetModified();
-                ApplyVariables();
-            }
 
             RenderOutputWindow();
-            RenderMaterial();
+            _materialWindow.Render();
 
             _messageWindow.Render(MessageQueue,
                 ref _editorConfiguration.WorkspaceConfiguration.MessageWindowIsVisible);
@@ -217,7 +216,7 @@ class App
 
     private void NewMaterial()
     {
-        _materialPackage = new();
+        _editorControllerData._materialPackage = new();
     }
 
     private void ShaderCodeWindowOnApplyChangesPressed(ShaderCode shaderCode)
@@ -314,97 +313,16 @@ class App
         }
     }
 
-    private void RenderMaterial()
-    {
-        //ImGui.SetNextWindowSize(new Vector2(100, 80), ImGuiCond.FirstUseEver);
-        if (ImGui.Begin("MaterialMeta"))
-        {
-            RenderMaterialToolBar();
-
-            //ImGui.Separator();
-
-            RenderMeta();
-
-            //ImGui.Separator();
-
-            RenderMaterialFiles();
-        }
-
-        ImGui.End();
-    }
-
-    private void RenderMaterialFiles()
-    {
-        //if (ImGui.BeginChild("Files"))
-        //{
-            ImGui.SeparatorText("Files");
-            foreach (var file in _materialPackage.Files)
-            {
-                ImGui.Text(file.Key.FileName);
-            }
-        //}
-        //ImGui.EndChild();
-    }
-
-    private void RenderMaterialToolBar()
-    {
-        //if (ImGui.BeginChild("ToolBar", new Vector2(-1,-1)))
-        //{
-            //ImGui.BeginDisabled(_materialPackage.Meta.IsModified == false);
-
-            var saveMaterial = false;
-
-            //if (_materialPackage.Meta.IsModified)
-            //    ImGui.PushStyleColor(ImGuiCol.Button, TypeConvertors.ToVector4(System.Drawing.Color.Red));
-
-            if (ImGui.Button("Save"))
-                saveMaterial = true;
-
-            //if (_materialPackage.Meta.IsModified)
-            //    ImGui.PopStyleColor(1);
-
-            if (saveMaterial)
-                SaveMaterial();
 
 
-           // ImGui.EndDisabled();
-        //}
-        //ImGui.EndChild();
-    }
-
-    private void RenderMeta()
-    {
-        //if (ImGui.BeginChild("Meta"))
-        //{
-            ImGui.SeparatorText("Meta");
-            var fileName = _materialPackage.Meta.FileName;
-            if (ImGui.InputText("FileName", ref fileName, 200))
-            {
-                _materialPackage.Meta.FileName = fileName;
-                _materialPackage.Meta.SetModified();
-            }
-
-            ImGui.LabelText("FilePath", _materialPackage.Meta.FullFilePath);
-            if (ImGui.InputText("Description", ref _materialPackage.Meta.Description, 200))
-                _materialPackage.Meta.SetModified();
-            if (ImGui.InputText("Author", ref _materialPackage.Meta.Author, 200))
-                _materialPackage.Meta.SetModified();
-
-            ImGui.BeginDisabled();
-            var isModified = _materialPackage.Meta.IsModified;
-            ImGui.Checkbox("is modified", ref isModified);
-            ImGui.EndDisabled();
-        //}
-        //ImGui.EndChild();
-    }
 
     private void SaveMaterial()
     {
         Logger.Info("SaveMaterial...");
 
-        var filePath = $"{MaterialsPath}/{_materialPackage.Meta.FileName}.mat";
+        var filePath = $"{MaterialsPath}/{_editorControllerData._materialPackage.Meta.FileName}.mat";
 
-        _materialPackage.Save(filePath);
+        _editorControllerData._materialPackage.Save(filePath);
 
         Logger.Info("SaveMaterial OK");
     }
@@ -527,7 +445,7 @@ class App
         Logger.Info("ApplyVariables");
 
 
-        foreach (var (name, variable) in _materialPackage.Meta.Variables)
+        foreach (var (name, variable) in _editorControllerData._materialPackage.Meta.Variables)
         {
             var location = Raylib.GetShaderLocation(_shader, name);
             if (location < 0)
@@ -673,11 +591,11 @@ class App
         // Sync materialMeta variables
         foreach (var (key, variable) in shaderVariables)
         {
-            var result = _materialPackage.Meta.Variables.TryGetValue(key, out var materialVariable);
+            var result = _editorControllerData._materialPackage.Meta.Variables.TryGetValue(key, out var materialVariable);
             if (result == false)
             {
                 Logger.Trace($"{key}: doesn't exist in materialMeta -> create it");
-                _materialPackage.Meta.Variables.Add(key, new CodeVariable(variable.Type));
+                _editorControllerData._materialPackage.Meta.Variables.Add(key, new CodeVariable(variable.Type));
             }
             else
             {
@@ -691,7 +609,7 @@ class App
         }
 
         List<string> toDelete = [];
-        foreach (var (key, _) in _materialPackage.Meta.Variables)
+        foreach (var (key, _) in _editorControllerData._materialPackage.Meta.Variables)
         {
             var result = shaderVariables.TryGetValue(key, out var _);
             if (result == false)
@@ -703,7 +621,7 @@ class App
 
         foreach (var name in toDelete)
         {
-            _materialPackage.Meta.Variables.Remove(name);
+            _editorControllerData._materialPackage.Meta.Variables.Remove(name);
         }
 
         Logger.Trace($"{toDelete.Count} variables removed from materialMeta");

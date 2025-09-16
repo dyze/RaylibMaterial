@@ -126,25 +126,25 @@ public class DataFileExplorer
 
                 //if (isAssetFile)
                 //{
-                //    //_editorControllerData.DataFileExplorerData.DraggedFile = "";
-                //    if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
-                //    {
-                //        if (_dataFileExplorerData.DraggedFile == "")
-                //            Logger.Trace("Begin drag");
+                //_dataFileExplorerData.DraggedFile = "";
+                if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
+                {
+                    if (_dataFileExplorerData.DraggedFile == "")
+                        Logger.Trace("Begin drag");
 
-                //        _dataFileExplorerData.DraggedFile = file;
-                //        //ImGui.SetDragDropPayload("prefab", IntPtr.Zero , 0);
-                //        unsafe
-                //        {
-                //            var i = 1;
-                //            int* tesnum = &i;
-                //            ImGui.SetDragDropPayload("prefab", new IntPtr(tesnum), sizeof(int));
-                //        }
+                    _dataFileExplorerData.DraggedFile = file;
+                    //ImGui.SetDragDropPayload("prefab", IntPtr.Zero , 0);
+                    unsafe
+                    {
+                        var i = 1;
+                        int* tesnum = &i;
+                        ImGui.SetDragDropPayload(DragDropItemIdentifiers.File, new IntPtr(tesnum), sizeof(int));
+                    }
 
-                //        ImGui.Text("Add prefab");
+                    ImGui.Text($"{file}");
 
-                //        ImGui.EndDragDropSource();
-                //    }
+                    ImGui.EndDragDropSource();
+                }
                 //}
 
                 if (ImGui.BeginPopupContextItem())
