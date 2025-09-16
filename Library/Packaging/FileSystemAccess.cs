@@ -156,7 +156,7 @@ public class FileSystemAccess : IDataContainerAccess
     }
 
     /// <inheritdoc />
-    public FolderContent GetAllFoldersAndContent()
+    public FolderContent GetAllFoldersAndContent()  
     {
         if (_rootFolder == null)
             throw new NullReferenceException("_rootFolder can't be null");

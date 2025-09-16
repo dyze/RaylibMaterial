@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Editor.Configuration;
 using Editor.Windows;
 using ImGuiNET;
 using Library;
@@ -71,17 +72,32 @@ class App
     };
 
     private readonly MessageWindow _messageWindow = new();
-    private bool _messageWindowIsVisible = true;
-    public static MessageQueue? MessageQueue { get; set; } = new();
+    public static MessageQueue MessageQueue { get; set; } = new();
 
     private Model _backgroundModel;
 
     private MaterialPackage _materialPackage = new();
 
     private readonly ShaderCodeWindow _shaderCodeWindow = new();
+    private EditorConfiguration _editorConfiguration = new();
+
+    private DataFileExplorerData _dataFileExplorerData = new();
+    private DataFileExplorer _dataFileExplorer;
+
 
     public void Run()
     {
+
+        _dataFileExplorerData.DataFolder = new FileSystemAccess();
+
+        if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
+            _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = "./resources";
+
+        _dataFileExplorerData.DataFolder.Open(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
+        _dataFileExplorerData.RefreshDataRootFolder();
+
+        _dataFileExplorer = new(_editorConfiguration, _dataFileExplorerData);
+
         _shaderCodeWindow.ApplyChangesPressed += ShaderCodeWindowOnApplyChangesPressed;
 
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
@@ -140,7 +156,9 @@ class App
             RenderMaterial();
 
             _messageWindow.Render(MessageQueue,
-                ref _messageWindowIsVisible);
+                ref _editorConfiguration.WorkspaceConfiguration.MessageWindowIsVisible);
+
+            _dataFileExplorer.Render();
 
             rlImGui.End();
             Raylib.EndDrawing();
@@ -722,4 +740,40 @@ class App
             CameraProjection.Perspective);
     }
 
+    public void LoadEditorConfiguration()
+    {
+        Logger.Info("Loading editor config...");
+
+        try
+        {
+            _editorConfiguration = EditorConfigurationStorage.Load(".");
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e.Message);
+
+            _editorConfiguration = new EditorConfiguration();
+            return;
+        }
+
+        Logger.Info("editor config loaded");
+    }
+
+    public void SaveEditorConfiguration()
+    {
+        Logger.Info("Saving editor config...");
+
+        try
+        {
+            EditorConfigurationStorage.Save(_editorConfiguration,
+                ".");
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e.Message);
+            return;
+        }
+
+        Logger.Info($"editor config saved");
+    }
 }

@@ -18,9 +18,13 @@ class Program
 
         //Logger.Info("Main");
 
-        var example = new App();
+        var app = new App();
         messageQueueTarget.MessageQueue = App.MessageQueue;
 
-        example.Run();
+        app.LoadEditorConfiguration();
+        
+        app.Run();
+
+        app.SaveEditorConfiguration();
     }
 }
