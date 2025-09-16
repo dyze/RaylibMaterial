@@ -20,6 +20,8 @@ public struct FileId
         FileType = fileType;
         FileName = fileName;
     }
+
+    public override string ToString() => $"{FileType}/{FileName}";
 }
 
 public class MaterialPackage
@@ -36,7 +38,7 @@ public class MaterialPackage
         Files = [];
     }
 
-    public Dictionary<string, FileType> ExtensionToFileType = new()
+    public static Dictionary<string, FileType> ExtensionToFileType = new()
     {
         { ".png", FileType.Image },
         { ".vert", FileType.VertexShader },
@@ -65,12 +67,7 @@ public class MaterialPackage
             if(fileName == MetaFileName)
                 continue;
 
-            var extension = Path.GetExtension(fileName);
-            FileType? fileType = ExtensionToFileType.GetValueOrDefault(extension);
-            if (fileType == null)
-                fileType = FileType.Unknown;
-
-            Files.Add(new FileId(fileType.Value, fileName), 
+            AddFile(fileName,
                 inputDataAccess.ReadBinaryFile(fileName));
         }
 
@@ -117,5 +114,18 @@ public class MaterialPackage
         outputDataAccess.Close();
 
         Logger.Info($"MaterialPackage.BuildPackage OK: files added={1 + Files.Count}");
+    }
+
+    public void AddFile(string fileName,
+        byte[] fileContent)
+    {
+        var extension = Path.GetExtension(fileName);
+        FileType? fileType = ExtensionToFileType.GetValueOrDefault(extension);
+        if (fileType == null)
+            fileType = FileType.Unknown;
+
+        if (Files.TryAdd(new FileId(fileType.Value, fileName),
+                fileContent) == false)
+            Logger.Error($"{fileName} is already in the list");
     }
 }

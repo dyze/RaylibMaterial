@@ -91,7 +91,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
         //if (ImGui.BeginChild("Files"))
         //{
         ImGui.SeparatorText("Files");
-        if(editorControllerData._materialPackage.Files.Count == 0)
+        if (editorControllerData._materialPackage.Files.Count == 0)
             ImGui.TextDisabled("Empty");
         else
             foreach (var file in editorControllerData._materialPackage.Files)
@@ -101,26 +101,30 @@ class MaterialWindow(EditorControllerData editorControllerData)
         //}
         //ImGui.EndChild();
 
-        if(ImGui.IsMouseDragging(ImGuiMouseButton.Left))
-            if(editorControllerData.DataFileExplorerData.DraggedFile != "")
-                ImGui.Text("Drop your file here");
+        if (editorControllerData.DataFileExplorerData.DraggedRelativeFilePath != "")
+            ImGui.Text("Drop your file here");
 
         if (ImGui.BeginDragDropTarget())
         {
-            var acceptPayload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.File);
+            var payload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.ShaderFile);
 
             bool isDropping;
             unsafe //TODO avoid setting unsafe to entire project
             {
-                isDropping = acceptPayload.NativePtr != null;
+                isDropping = payload.NativePtr != null;
             }
 
             if (isDropping)
             {
-                var droppedFile = editorControllerData.DataFileExplorerData.DraggedFile;
-                Logger.Trace($"dropped {droppedFile}");
-                //_engine.Entities.AddEntityFromPrefab(droppedFile, entity, Vector2.Zero, 0);
-                editorControllerData.DataFileExplorerData.DraggedFile = "";
+                var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedRelativeFilePath;
+                Logger.Trace($"dropped {draggedRelativeFilePath}");
+
+                var draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
+                editorControllerData._materialPackage.AddFile(draggedFileName,
+                    editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
+
+                editorControllerData.DataFileExplorerData.DraggedRelativeFilePath = "";
+                editorControllerData.DataFileExplorerData.DraggedFileName = "";
             }
 
             ImGui.EndDragDropTarget();

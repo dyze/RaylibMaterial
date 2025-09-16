@@ -20,11 +20,9 @@ class Program
 
         var app = new App();
         messageQueueTarget.MessageQueue = App.MessageQueue;
-
-        app.LoadEditorConfiguration();
         
         app.Run();
 
-        app.SaveEditorConfiguration();
+        
     }
 }

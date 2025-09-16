@@ -2,6 +2,7 @@
 {
     static class DragDropItemIdentifiers
     {
-        public const string File = "file";
+        public const string ShaderFile = "shader";
+        public const string ImageFile = "image";
     }
 }

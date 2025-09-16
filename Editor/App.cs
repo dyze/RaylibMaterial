@@ -82,13 +82,13 @@ class App
     private readonly ShaderCodeWindow _shaderCodeWindow = new();
     private EditorConfiguration _editorConfiguration = new();
 
-    private DataFileExplorer _dataFileExplorer;
+    private readonly DataFileExplorer _dataFileExplorer;
 
-    private MaterialWindow _materialWindow;
+    private readonly MaterialWindow _materialWindow;
 
-
-    public void Run()
+    public App()
     {
+        LoadEditorConfiguration();
 
         _editorControllerData.DataFileExplorerData.DataFolder = new FileSystemAccess();
 
@@ -103,7 +103,11 @@ class App
         _materialWindow = new(_editorControllerData);
 
         _shaderCodeWindow.ApplyChangesPressed += ShaderCodeWindowOnApplyChangesPressed;
+    }
 
+
+    public void Run()
+    {
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
@@ -122,7 +126,7 @@ class App
         _backgroundModel.Transform = Raymath.MatrixMultiply(matRotate, matTranslate);
 
 
-        RetrieveShaders();
+        //RetrieveShaders();
 
         SelectModelType();
 
@@ -148,7 +152,7 @@ class App
             RenderOutput();
 
             RenderToolBar();
-            RenderShaderList();
+            //RenderShaderList();
             _shaderCodeWindow.Render(_shaderCode);
 
             RenderOutputWindow();
@@ -165,6 +169,8 @@ class App
 
         Raylib.UnloadShader(_shader);
         rlImGui.Shutdown();
+
+        SaveEditorConfiguration();
     }
 
     private void RenderMenu()
@@ -289,10 +295,10 @@ class App
                 throw new ArgumentOutOfRangeException();
         }
 
-        _defaultMaterialShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
+        //_defaultMaterialShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
 
 
-        SelectShader(_currentShaderName);
+        //SelectShader(_currentShaderName);
     }
 
 
@@ -312,9 +318,7 @@ class App
             background.Texture = Raylib.LoadTextureFromImage(background.Image);
         }
     }
-
-
-
+    
 
     private void SaveMaterial()
     {
@@ -375,69 +379,69 @@ class App
         ImGui.End();
     }
 
-    private void RenderShaderList()
-    {
-        if (ImGui.Begin("Shaders"))
-        {
-            string[] items = new string[_shaders.Count];
-            var itemCurrent = -1;
-            for (var i = 0; i < _shaders.Count; i++)
-            {
-                items[i] = _shaders.Keys.ElementAt(i);
-                if (_currentShaderName == items[i])
-                    itemCurrent = i;
-            }
+    //private void RenderShaderList()
+    //{
+    //    if (ImGui.Begin("Shaders"))
+    //    {
+    //        string[] items = new string[_shaders.Count];
+    //        var itemCurrent = -1;
+    //        for (var i = 0; i < _shaders.Count; i++)
+    //        {
+    //            items[i] = _shaders.Keys.ElementAt(i);
+    //            if (_currentShaderName == items[i])
+    //                itemCurrent = i;
+    //        }
 
 
-            if (ImGui.ListBox("Shaders", ref itemCurrent, items, items.Length))
-            {
-                _currentShaderName = items[itemCurrent];
-                SelectShader(_currentShaderName);
-            }
+    //        if (ImGui.ListBox("Shaders", ref itemCurrent, items, items.Length))
+    //        {
+    //            _currentShaderName = items[itemCurrent];
+    //            SelectShader(_currentShaderName);
+    //        }
 
-            if (ImGui.Button("refresh"))
-            {
-                RetrieveShaders();
-            }
-        }
+    //        if (ImGui.Button("refresh"))
+    //        {
+    //            RetrieveShaders();
+    //        }
+    //    }
 
-        ImGui.End();
-    }
+    //    ImGui.End();
+    //}
 
-    private void RetrieveShaders()
-    {
-        _shaders = [];
+    //private void RetrieveShaders()
+    //{
+    //    _shaders = [];
 
-        var files = Directory.EnumerateFiles(ShaderFolderPath, "*.*", SearchOption.TopDirectoryOnly);
+    //    var files = Directory.EnumerateFiles(ShaderFolderPath, "*.*", SearchOption.TopDirectoryOnly);
 
-        foreach (var file in files)
-        {
-            var fi = new FileInfo(file);
-            var name = Path.GetFileNameWithoutExtension(fi.Name);
+    //    foreach (var file in files)
+    //    {
+    //        var fi = new FileInfo(file);
+    //        var name = Path.GetFileNameWithoutExtension(fi.Name);
 
-            if (_shaders.ContainsKey(name) == false)
-            {
-                string? vertexShaderFileName = null;
-                string? fragmentShaderFileName = null;
+    //        if (_shaders.ContainsKey(name) == false)
+    //        {
+    //            string? vertexShaderFileName = null;
+    //            string? fragmentShaderFileName = null;
 
-                var vertexShaderFilePath = $"{ShaderFolderPath}\\{name}.vert";
-                var fragmentShaderFilePath = $"{ShaderFolderPath}\\{name}.frag";
+    //            var vertexShaderFilePath = $"{ShaderFolderPath}\\{name}.vert";
+    //            var fragmentShaderFilePath = $"{ShaderFolderPath}\\{name}.frag";
 
-                if (File.Exists(vertexShaderFilePath))
-                    vertexShaderFileName = $"{name}.vert";
-                if (File.Exists(fragmentShaderFilePath))
-                    fragmentShaderFileName = $"{name}.frag";
+    //            if (File.Exists(vertexShaderFilePath))
+    //                vertexShaderFileName = $"{name}.vert";
+    //            if (File.Exists(fragmentShaderFilePath))
+    //                fragmentShaderFileName = $"{name}.frag";
 
-                if (vertexShaderFileName == null &&
-                    fragmentShaderFileName == null)
-                    throw new ApplicationException("both files are null");
+    //            if (vertexShaderFileName == null &&
+    //                fragmentShaderFileName == null)
+    //                throw new ApplicationException("both files are null");
 
-                var shaderInfo = new ShaderInfo(vertexShaderFileName,
-                    fragmentShaderFileName);
-                _shaders.Add(name, shaderInfo);
-            }
-        }
-    }
+    //            var shaderInfo = new ShaderInfo(vertexShaderFileName,
+    //                fragmentShaderFileName);
+    //            _shaders.Add(name, shaderInfo);
+    //        }
+    //    }
+    //}
 
 
     private void ApplyVariables()
@@ -658,7 +662,7 @@ class App
             CameraProjection.Perspective);
     }
 
-    public void LoadEditorConfiguration()
+    private void LoadEditorConfiguration()
     {
         Logger.Info("Loading editor config...");
 
@@ -677,7 +681,7 @@ class App
         Logger.Info("editor config loaded");
     }
 
-    public void SaveEditorConfiguration()
+    private void SaveEditorConfiguration()
     {
         Logger.Info("Saving editor config...");
 
@@ -692,6 +696,6 @@ class App
             return;
         }
 
-        Logger.Info($"editor config saved");
+        Logger.Info("editor config saved");
     }
 }

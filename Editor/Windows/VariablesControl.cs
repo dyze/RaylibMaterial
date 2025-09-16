@@ -1,62 +1,114 @@
 ﻿using ImGuiNET;
 using System.Numerics;
 using Library;
+using NLog;
 
 namespace Editor.Windows
 {
-    static class VariablesControl
+    class VariablesControl(EditorControllerData editorControllerData)
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Render variables
         /// </summary>
-        /// <param name="shaderCodes"></param>
         /// <returns>true if variables changed</returns>
-        public static bool Render(Dictionary<string, CodeVariable> variables)
+        public bool Render(Dictionary<string, CodeVariable> variables)
         {
             var variableChanged = false;
 
             ImGui.SeparatorText("Variables");
 
-            //if (ImGui.Begin("Variables"))
-            //{
+            if (variables.Count == 0)
+                ImGui.TextDisabled("Empty");
+            else
                 foreach (var (name, variable) in variables)
                 {
-                   
+                    ImGui.BeginGroup();
                     if (variable.Type == typeof(Vector4))
                     {
-                        var currentValue = (Vector4)variable.Value;
-                        if (ImGui.InputFloat4(name, ref currentValue))
-                        {
-                            variable.Value = currentValue;
-                            variableChanged = true;
-                        }
+                        variableChanged = HandleVector4(variable, name, variableChanged);
                     }
                     else if (variable.Type == typeof(float))
                     {
-                        var currentValue = (float)variable.Value;
-                        if (ImGui.InputFloat(name, ref currentValue))
-                        {
-                            variable.Value = currentValue;
-                            variableChanged = true;
-                        }
+                        variableChanged = HandleFloat(variable, name, variableChanged);
                     }
                     else if (variable.Type == typeof(string))
                     {
-                        var currentValue = (string)variable.Value;
-                        if (ImGui.InputText(name, ref currentValue, 200))
-                        {
-                            variable.Value = currentValue;
-                            variableChanged = true;
-                        }
+
+                        variableChanged = HandleString(variable, name, variableChanged);
+
                     }
                     else
                     {
                         ImGui.LabelText(name, variable.Type.ToString());
                     }
-                }
-            //}
 
-            //ImGui.End();
+                    ImGui.EndGroup();
+
+                    if (ImGui.BeginDragDropTarget())
+                    {
+                        var payload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.ImageFile);
+
+                        bool isDropping;
+                        unsafe //TODO avoid setting unsafe to entire project
+                        {
+                            isDropping = payload.NativePtr != null;
+                        }
+
+                        if (isDropping)
+                        {
+                            var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedRelativeFilePath;
+                            Logger.Trace($"dropped {draggedRelativeFilePath}");
+
+                            var draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
+                            editorControllerData._materialPackage.AddFile(draggedFileName,
+                                editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
+
+                            editorControllerData.DataFileExplorerData.DraggedRelativeFilePath = "";
+                            editorControllerData.DataFileExplorerData.DraggedFileName = "";
+                        }
+
+                        ImGui.EndDragDropTarget();
+                    }
+                }
+
+            return variableChanged;
+        }
+
+        private static bool HandleFloat(CodeVariable variable, string name, bool variableChanged)
+        {
+            var currentValue = (float)variable.Value;
+            if (ImGui.InputFloat(name, ref currentValue))
+            {
+                variable.Value = currentValue;
+                variableChanged = true;
+            }
+
+            return variableChanged;
+        }
+
+        private static bool HandleVector4(CodeVariable variable, string name, bool variableChanged)
+        {
+            var currentValue = (Vector4)variable.Value;
+            if (ImGui.InputFloat4(name, ref currentValue))
+            {
+                variable.Value = currentValue;
+                variableChanged = true;
+            }
+
+            return variableChanged;
+        }
+
+        private static bool HandleString(CodeVariable variable, string name, bool variableChanged)
+        {
+            var currentValue = (string)variable.Value;
+            if (ImGui.InputText(name, ref currentValue, 200))
+            {
+                variable.Value = currentValue;
+                variableChanged = true;
+            }
+
             return variableChanged;
         }
     }

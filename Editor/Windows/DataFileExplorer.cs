@@ -4,6 +4,7 @@ using Editor.Configuration;
 using Editor.Processes;
 using ImGuiNET;
 using Library.Packaging;
+using Microsoft.VisualBasic.FileIO;
 using NLog;
 using Raylib_cs;
 
@@ -116,36 +117,46 @@ public class DataFileExplorer
             foreach (var (subName, folder) in folderContent.Folders)
                 RenderFolderContent(subName, folder);
 
-            foreach (var file in folderContent.Files)
+            foreach (var fileName in folderContent.Files)
             {
-                //var isAssetFile = Path.GetExtension(file) == ".asset";
+                var open = ImGui.TreeNodeEx(fileName,
+                ImGuiTreeNodeFlags.Leaf);
 
-                var open = ImGui.TreeNodeEx(file,
-                    ImGuiTreeNodeFlags.Leaf);
+                var extension = Path.GetExtension(fileName);
+                FileType? fileType = MaterialPackage.ExtensionToFileType.GetValueOrDefault(extension);
 
+                var dragDropItemType = "";
 
-                //if (isAssetFile)
-                //{
-                //_dataFileExplorerData.DraggedFile = "";
-                if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
+                if (fileType == FileType.VertexShader ||
+                    fileType == FileType.FragmentShader)
+                    dragDropItemType = DragDropItemIdentifiers.ShaderFile;
+                else if (fileType == FileType.Image)
+                    dragDropItemType = DragDropItemIdentifiers.ImageFile;
+                
+                if(dragDropItemType != "")
                 {
-                    if (_dataFileExplorerData.DraggedFile == "")
-                        Logger.Trace("Begin drag");
-
-                    _dataFileExplorerData.DraggedFile = file;
-                    //ImGui.SetDragDropPayload("prefab", IntPtr.Zero , 0);
-                    unsafe
+                    if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
                     {
-                        var i = 1;
-                        int* tesnum = &i;
-                        ImGui.SetDragDropPayload(DragDropItemIdentifiers.File, new IntPtr(tesnum), sizeof(int));
+                        if (_dataFileExplorerData.DraggedRelativeFilePath == "")
+                            Logger.Trace("Begin drag");
+
+                        _dataFileExplorerData.DraggedRelativeFilePath =
+                            Path.Combine(folderContent.RelativePath, fileName);
+                        _dataFileExplorerData.DraggedFileName = fileName;
+
+                        unsafe
+                        {
+                            //TODO avoid giving a fake parameter
+                            var i = 1;
+                            int* tesnum = &i;
+                            ImGui.SetDragDropPayload(dragDropItemType, new IntPtr(tesnum), sizeof(int));
+                        }
+
+                        ImGui.Text($"{fileName}");
+
+                        ImGui.EndDragDropSource();
                     }
-
-                    ImGui.Text($"{file}");
-
-                    ImGui.EndDragDropSource();
                 }
-                //}
 
                 if (ImGui.BeginPopupContextItem())
                 {
