@@ -17,9 +17,9 @@ public sealed class MaterialMetaTest
         material.Variables.Add("color", new CodeVariable(typeof(Vector4)));
         material.Variables.Add("texture", new CodeVariable(typeof(string)));
 
-        MaterialMetaStorage.Save(material, "testdir/test.mat");
+        MaterialMetaStorage.Save(material, "MaterialMetaTest/test.mat");
 
-        var loadedMaterial = MaterialMetaStorage.Load("testdir/test.mat");
+        var loadedMaterial = MaterialMetaStorage.Load("MaterialMetaTest/test.mat");
         Assert.IsNotNull(loadedMaterial != null);
 
         Assert.AreEqual(loadedMaterial.Tags.Count, material.Tags.Count);

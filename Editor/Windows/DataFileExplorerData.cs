@@ -6,7 +6,7 @@ public class DataFileExplorerData
 {
     public string SelectedFolder { get; set; } = "";
 
-    public string DraggedRelativeFilePath{ get; set; } = "";
+    public string DraggedFullFilePath{ get; set; } = "";
     public string DraggedFileName { get; set; } = "";
 
     public FileSystemAccess DataFolder { get; set; }

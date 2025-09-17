@@ -137,11 +137,11 @@ public class DataFileExplorer
                 {
                     if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
                     {
-                        if (_dataFileExplorerData.DraggedRelativeFilePath == "")
+                        if (_dataFileExplorerData.DraggedFullFilePath == "")
                             Logger.Trace("Begin drag");
 
-                        _dataFileExplorerData.DraggedRelativeFilePath =
-                            Path.Combine(folderContent.RelativePath, fileName);
+                        _dataFileExplorerData.DraggedFullFilePath =
+                            Path.Combine(folderContent.FullPath, fileName);
                         _dataFileExplorerData.DraggedFileName = fileName;
 
                         unsafe

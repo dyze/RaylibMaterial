@@ -18,8 +18,8 @@ class Program
 
         //Logger.Info("Main");
 
-        var app = new App();
-        messageQueueTarget.MessageQueue = App.MessageQueue;
+        var app = new EditorController();
+        messageQueueTarget.MessageQueue = EditorController.MessageQueue;
         
         app.Run();
 

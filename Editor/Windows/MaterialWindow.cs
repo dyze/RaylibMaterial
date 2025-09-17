@@ -1,5 +1,7 @@
 ﻿using ImGuiNET;
+using Library.Packaging;
 using NLog;
+using System.Text;
 
 namespace Editor.Windows;
 
@@ -8,6 +10,8 @@ class MaterialWindow(EditorControllerData editorControllerData)
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    private readonly VariablesControl _variablesControl = new(editorControllerData);
+
     public void Render()
     {
         //ImGui.SetNextWindowSize(new Vector2(100, 80), ImGuiCond.FirstUseEver);
@@ -15,22 +19,66 @@ class MaterialWindow(EditorControllerData editorControllerData)
         {
             RenderMaterialToolBar();
 
-            //ImGui.Separator();
-
             RenderMeta();
 
-            //ImGui.Separator();
+            RenderShaders();
 
             RenderMaterialFiles();
 
-            if (VariablesControl.Render(editorControllerData._materialPackage.Meta.Variables))
+            var material = editorControllerData.MaterialPackage.Meta;
+            if (_variablesControl.Render(material.Variables))
             {
-                editorControllerData._materialPackage.Meta.SetModified();
-                //ApplyVariables();
+                material.SetModified();
+                material.TriggerVariablesChanged();
             }
         }
 
         ImGui.End();
+    }
+
+    private void RenderShaders()
+    {
+        RenderShaderField(FileType.VertexShader);
+
+        RenderShaderField(FileType.FragmentShader);
+    }
+
+    private void RenderShaderField(FileType fileType)
+    {
+        var material = editorControllerData.MaterialPackage;
+        var file = material.GetFileOfType(fileType);
+        ImGui.LabelText(fileType.ToString(), file != null ? file.Value.Key.FileName : "");
+
+        if (ImGui.BeginDragDropTarget())
+        {
+            var payload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.ShaderFile);
+
+            bool isDropping;
+            unsafe //TODO avoid setting unsafe to entire project
+            {
+                isDropping = payload.NativePtr != null;
+            }
+
+            if (isDropping)
+            {
+                var draggedFullFilePath = editorControllerData.DataFileExplorerData.DraggedFullFilePath;
+                Logger.Trace($"dropped {draggedFullFilePath}");
+
+                var extension = Path.GetExtension(draggedFullFilePath);
+                if (MaterialPackage.ExtensionToFileType[extension] == fileType)
+                {
+                    var fileContent = File.ReadAllText(draggedFullFilePath);
+                    
+                    editorControllerData.MaterialPackage.AddFile(editorControllerData.DataFileExplorerData.DraggedFileName,
+                        Encoding.ASCII.GetBytes(fileContent));
+
+                    editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
+                    editorControllerData.DataFileExplorerData.DraggedFileName = "";
+                }
+            }
+
+            ImGui.EndDragDropTarget();
+        }
     }
 
     private void RenderMaterialToolBar()
@@ -64,21 +112,21 @@ class MaterialWindow(EditorControllerData editorControllerData)
         //if (ImGui.BeginChild("Meta"))
         //{
         ImGui.SeparatorText("Meta");
-        var fileName = editorControllerData._materialPackage.Meta.FileName;
+        var fileName = editorControllerData.MaterialPackage.Meta.FileName;
         if (ImGui.InputText("FileName", ref fileName, 200))
         {
-            editorControllerData._materialPackage.Meta.FileName = fileName;
-            editorControllerData._materialPackage.Meta.SetModified();
+            editorControllerData.MaterialPackage.Meta.FileName = fileName;
+            editorControllerData.MaterialPackage.Meta.SetModified();
         }
 
-        ImGui.LabelText("FilePath", editorControllerData._materialPackage.Meta.FullFilePath);
-        if (ImGui.InputText("Description", ref editorControllerData._materialPackage.Meta.Description, 200))
-            editorControllerData._materialPackage.Meta.SetModified();
-        if (ImGui.InputText("Author", ref editorControllerData._materialPackage.Meta.Author, 200))
-            editorControllerData._materialPackage.Meta.SetModified();
+        ImGui.LabelText("FilePath", editorControllerData.MaterialPackage.Meta.FullFilePath);
+        if (ImGui.InputText("Description", ref editorControllerData.MaterialPackage.Meta.Description, 200))
+            editorControllerData.MaterialPackage.Meta.SetModified();
+        if (ImGui.InputText("Author", ref editorControllerData.MaterialPackage.Meta.Author, 200))
+            editorControllerData.MaterialPackage.Meta.SetModified();
 
         ImGui.BeginDisabled();
-        var isModified = editorControllerData._materialPackage.Meta.IsModified;
+        var isModified = editorControllerData.MaterialPackage.Meta.IsModified;
         ImGui.Checkbox("is modified", ref isModified);
         ImGui.EndDisabled();
         //}
@@ -90,45 +138,46 @@ class MaterialWindow(EditorControllerData editorControllerData)
     {
         //if (ImGui.BeginChild("Files"))
         //{
-        ImGui.SeparatorText("Files");
-        if (editorControllerData._materialPackage.Files.Count == 0)
+        ImGui.SeparatorText("Files"); 
+        ImGuiHelpers.HelpMarker("Files that will be part of final package");
+        if (editorControllerData.MaterialPackage.FilesCount == 0)
             ImGui.TextDisabled("Empty");
         else
-            foreach (var file in editorControllerData._materialPackage.Files)
+            foreach (var file in editorControllerData.MaterialPackage.Files)
             {
                 ImGui.Text(file.Key.FileName);
             }
         //}
         //ImGui.EndChild();
 
-        if (editorControllerData.DataFileExplorerData.DraggedRelativeFilePath != "")
-            ImGui.Text("Drop your file here");
+        //if (editorControllerData.DataFileExplorerData.DraggedFullFilePath != "")
+        //    ImGui.Text("Drop your file here");
 
-        if (ImGui.BeginDragDropTarget())
-        {
-            var payload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.ShaderFile);
+        //if (ImGui.BeginDragDropTarget())
+        //{
+        //    var payload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.ShaderFile);
 
-            bool isDropping;
-            unsafe //TODO avoid setting unsafe to entire project
-            {
-                isDropping = payload.NativePtr != null;
-            }
+        //    bool isDropping;
+        //    unsafe //TODO avoid setting unsafe to entire project
+        //    {
+        //        isDropping = payload.NativePtr != null;
+        //    }
 
-            if (isDropping)
-            {
-                var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedRelativeFilePath;
-                Logger.Trace($"dropped {draggedRelativeFilePath}");
+        //    if (isDropping)
+        //    {
+        //        var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedFullFilePath;
+        //        Logger.Trace($"dropped {draggedRelativeFilePath}");
 
-                var draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
-                editorControllerData._materialPackage.AddFile(draggedFileName,
-                    editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
+        //        var draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
+        //        editorControllerData._materialPackage.AddFile(draggedFileName,
+        //            editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
 
-                editorControllerData.DataFileExplorerData.DraggedRelativeFilePath = "";
-                editorControllerData.DataFileExplorerData.DraggedFileName = "";
-            }
+        //        editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
+        //        editorControllerData.DataFileExplorerData.DraggedFileName = "";
+        //    }
 
-            ImGui.EndDragDropTarget();
-        }
+        //    ImGui.EndDragDropTarget();
+        //}
     }
 
 

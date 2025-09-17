@@ -35,9 +35,7 @@ namespace Editor.Windows
                     }
                     else if (variable.Type == typeof(string))
                     {
-
                         variableChanged = HandleString(variable, name, variableChanged);
-
                     }
                     else
                     {
@@ -46,31 +44,7 @@ namespace Editor.Windows
 
                     ImGui.EndGroup();
 
-                    if (ImGui.BeginDragDropTarget())
-                    {
-                        var payload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.ImageFile);
 
-                        bool isDropping;
-                        unsafe //TODO avoid setting unsafe to entire project
-                        {
-                            isDropping = payload.NativePtr != null;
-                        }
-
-                        if (isDropping)
-                        {
-                            var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedRelativeFilePath;
-                            Logger.Trace($"dropped {draggedRelativeFilePath}");
-
-                            var draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
-                            editorControllerData._materialPackage.AddFile(draggedFileName,
-                                editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
-
-                            editorControllerData.DataFileExplorerData.DraggedRelativeFilePath = "";
-                            editorControllerData.DataFileExplorerData.DraggedFileName = "";
-                        }
-
-                        ImGui.EndDragDropTarget();
-                    }
                 }
 
             return variableChanged;
@@ -100,13 +74,35 @@ namespace Editor.Windows
             return variableChanged;
         }
 
-        private static bool HandleString(CodeVariable variable, string name, bool variableChanged)
+        private bool HandleString(CodeVariable variable, string name, bool variableChanged)
         {
             var currentValue = (string)variable.Value;
-            if (ImGui.InputText(name, ref currentValue, 200))
+            ImGui.LabelText(name, currentValue);
+
+            if (ImGui.BeginDragDropTarget())
             {
-                variable.Value = currentValue;
-                variableChanged = true;
+                var payload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.ImageFile);
+
+                bool isDropping;
+                unsafe //TODO avoid setting unsafe to entire project
+                {
+                    isDropping = payload.NativePtr != null;
+                }
+
+                if (isDropping)
+                {
+                    var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedFullFilePath;
+                    Logger.Trace($"dropped {draggedRelativeFilePath}");
+
+                    var draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
+                    editorControllerData.MaterialPackage.AddFile(draggedFileName,
+                        editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
+
+                    editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
+                    editorControllerData.DataFileExplorerData.DraggedFileName = "";
+                }
+
+                ImGui.EndDragDropTarget();
             }
 
             return variableChanged;

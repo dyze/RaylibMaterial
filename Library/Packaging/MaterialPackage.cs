@@ -1,41 +1,39 @@
-﻿using NLog;
+﻿using Microsoft.VisualBasic.FileIO;
+using NLog;
 
 namespace Library.Packaging;
 
 public enum FileType
 {
     Unknown = 0,
-    VertexShader = 0,
+    VertexShader,
     FragmentShader,
     Image,
 }
 
-public struct FileId
-{
-    public FileType FileType;
-    public string FileName;
-
-    public FileId(FileType fileType, string fileName)
-    {
-        FileType = fileType;
-        FileName = fileName;
-    }
-
-    public override string ToString() => $"{FileType}/{FileName}";
-}
-
 public class MaterialPackage
 {
-    public const string MetaFileName = "material.meta";
     private readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    
+    public event Action? OnFilesChanged;
+
+    public const string MetaFileName = "material.meta";
 
     public MaterialMeta Meta = new();
-    public Dictionary<FileId, byte[]> Files = [];
+    private Dictionary<FileId, byte[]> _files = [];
+
+    public int FilesCount => _files.Count;
+
+    public IReadOnlyDictionary<FileId, byte[]> Files => _files;
+
+    public MaterialPackage()
+    {}
+
 
     public void Clear()
     {
         Meta = new();
-        Files = [];
+        _files = [];
     }
 
     public static Dictionary<string, FileType> ExtensionToFileType = new()
@@ -74,7 +72,7 @@ public class MaterialPackage
 
         inputDataAccess.Close();
 
-        Logger.Info($"MaterialPackage.Load OK: files read={1 + Files.Count}");
+        Logger.Info($"MaterialPackage.Load OK: files read={1 + _files.Count}");
     }
 
 
@@ -103,7 +101,7 @@ public class MaterialPackage
 
 
         // Add files
-        foreach (var file in Files)
+        foreach (var file in _files)
         {
             Logger.Info($"Adding entry {file}...");
 
@@ -113,7 +111,7 @@ public class MaterialPackage
 
         outputDataAccess.Close();
 
-        Logger.Info($"MaterialPackage.BuildPackage OK: files added={1 + Files.Count}");
+        Logger.Info($"MaterialPackage.BuildPackage OK: files added={1 + _files.Count}");
     }
 
     public void AddFile(string fileName,
@@ -124,8 +122,20 @@ public class MaterialPackage
         if (fileType == null)
             fileType = FileType.Unknown;
 
-        if (Files.TryAdd(new FileId(fileType.Value, fileName),
+        if (_files.TryAdd(new FileId(fileType.Value, fileName),
                 fileContent) == false)
+        {
             Logger.Error($"{fileName} is already in the list");
+            return;
+        }
+
+        OnFilesChanged?.Invoke();
+    }
+
+    public KeyValuePair<FileId, byte[]>? GetFileOfType(FileType fileType)
+    {
+        return Files.Where(f => f.Key.FileType == fileType)
+            .Select(e => (KeyValuePair<FileId, byte[]>?)e)
+            .FirstOrDefault();
     }
 }

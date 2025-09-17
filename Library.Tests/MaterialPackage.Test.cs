@@ -10,16 +10,16 @@ public sealed class MaterialPackageTest
     {
         var materialPackage = new MaterialPackage();
         materialPackage.Meta.Author = "author";
-        materialPackage.Files.Add(new FileId(FileType.Image, "image1.png"), [1, 2, 3]);
-        materialPackage.Files.Add(new FileId(FileType.FragmentShader, "shader1.frag"), [4, 5, 6]);
+        materialPackage.AddFile("image1.png", [1, 2, 3]);
+        materialPackage.AddFile("shader1.frag", [4, 5, 6]);
 
-        materialPackage.Save("testdir/test.mat");
+        materialPackage.Save("MaterialPackageTest/test.mat");
 
         materialPackage = null;
 
         materialPackage = new MaterialPackage();
 
-        materialPackage.Load("testdir/test.mat");
+        materialPackage.Load("MaterialPackageTest/test.mat");
 
         Assert.AreEqual("author", materialPackage.Meta.Author);
         Assert.AreEqual(2, materialPackage.Files.Count);

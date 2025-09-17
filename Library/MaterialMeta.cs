@@ -31,4 +31,8 @@ public class MaterialMeta
     [JsonIgnore] public bool IsModified { get; set; } = true;
 
     public void SetModified() => IsModified = true;
+
+    public void TriggerVariablesChanged() => OnVariablesChanged?.Invoke();
+
+    public event Action? OnVariablesChanged;
 }
