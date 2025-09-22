@@ -32,13 +32,13 @@ class EditorController
     private float _distance;
 
     private Model _currentModel;
-    private Shader? _shader;
+    private Shader? _currentShader;
 
     /// <summary>
     /// This shader is used if we are not able to load a user one
     /// We proceed like that to prevent crash when trying to use a faulty user shader
     /// </summary>
-    private Shader _defaultMaterialShader;
+    private Shader _defaultShader;
 
     private Dictionary<string, ShaderCode> _shaderCode = new();
 
@@ -104,9 +104,6 @@ class EditorController
         _materialWindow.OnSave += _materialWindow_OnSave;
 
         _shaderCodeWindow.ApplyChangesPressed += ShaderCodeWindowOnApplyChangesPressed;
-
-
-        NewMaterial();
     }
 
     private void _materialWindow_OnSave()
@@ -124,7 +121,7 @@ class EditorController
 
         LoadUiResources();
 
-        _defaultMaterialShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
+        _defaultShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
 
         _viewTexture = Raylib.LoadRenderTexture((int)_outputSize.X, (int)_outputSize.Y);
 
@@ -137,7 +134,8 @@ class EditorController
 
         SelectBackground(BackgroundType.WildPark);
 
-        SelectModelType();
+        NewMaterial();
+
 
         Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
         Raylib.SetTraceLogLevel(TraceLogLevel.None); // disable logging from now on
@@ -176,8 +174,8 @@ class EditorController
             Raylib.EndDrawing();
         }
 
-        if (_shader.HasValue)
-            Raylib.UnloadShader(_shader.Value);
+        if (_currentShader.HasValue)
+            Raylib.UnloadShader(_currentShader.Value);
         rlImGui.Shutdown();
 
         SaveEditorConfiguration();
@@ -225,13 +223,18 @@ class EditorController
 
     private void NewMaterial()
     {
+        Logger.Info("NewMaterial...");
+
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
         _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
+
+        _currentShader = _defaultShader;
+
+        SelectModelType();
+        LoadShaders();
     }
-
-
 
     private void MaterialPackageMeta_OnVariablesChanged()
     {
@@ -262,7 +265,6 @@ class EditorController
         Raylib.ClearBackground(Color.Black);
 
         Raylib.DrawModel(_backgroundModel, Vector3.Zero, 1f, Color.White);
-
         Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
 
         Raylib.EndMode3D();
@@ -341,6 +343,8 @@ class EditorController
         Logger.Info("SaveMaterial...");
 
         var filePath = $"{MaterialsPath}/{_editorControllerData.MaterialPackage.Meta.FileName}.mat";
+        filePath = Path.GetFullPath(filePath);
+        Logger.Info($"filePath={filePath}");
 
         _editorControllerData.MaterialPackage.Save(filePath);
 
@@ -405,7 +409,7 @@ class EditorController
     {
         Logger.Info("ApplyVariables...");
 
-        if (_shader.HasValue == false)
+        if (_currentShader.HasValue == false)
             return;
 
         foreach (var (name, variable) in _editorControllerData.MaterialPackage.Meta.Variables)
@@ -416,7 +420,7 @@ class EditorController
                 continue;
             }
 
-            var location = Raylib.GetShaderLocation(_shader.Value, name);
+            var location = Raylib.GetShaderLocation(_currentShader.Value, name);
             if (location < 0)
             {
                 Logger.Error($"location for {name} not found in shader");
@@ -426,19 +430,19 @@ class EditorController
             if (variable.Type == typeof(Vector4))
             {
                 var currentValue = (Vector4)variable.Value;
-                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
+                Raylib.SetShaderValue(_currentShader.Value, location, currentValue, ShaderUniformDataType.Vec4);
                 Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.Type == typeof(System.Drawing.Color))
             {
                 var currentValue = TypeConvertors.ColorToVec4((System.Drawing.Color)variable.Value);
-                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
+                Raylib.SetShaderValue(_currentShader.Value, location, currentValue, ShaderUniformDataType.Vec4);
                 Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.Type == typeof(float))
             {
                 var currentValue = (float)variable.Value;
-                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Float);
+                Raylib.SetShaderValue(_currentShader.Value, location, currentValue, ShaderUniformDataType.Float);
                 Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.Type == typeof(string))
@@ -498,10 +502,10 @@ class EditorController
     {
         Logger.Info("ApplyShader...");
 
-        if (_shader.HasValue == false)
+        if (_currentShader.HasValue == false)
             return;
 
-        Shader shader = _shader.Value;
+        Shader shader = _currentShader.Value;
         Raylib.SetMaterialShader(ref _currentModel, 0, ref shader);
 
         ApplyVariables();
@@ -515,19 +519,19 @@ class EditorController
         var vertexShaderFileName = material.GetShaderCode(FileType.VertexShader);
         var fragmentShaderFileName = material.GetShaderCode(FileType.FragmentShader);
 
-        if (_shader.HasValue)
-            Raylib.UnloadShader(_shader.Value);
+        if (_currentShader.HasValue)
+            Raylib.UnloadShader(_currentShader.Value);
 
-        _shader = Raylib.LoadShaderFromMemory(
+        _currentShader = Raylib.LoadShaderFromMemory(
             vertexShaderFileName != null ? _shaderCode[vertexShaderFileName.Value.Key.FileName].Code : null,
             fragmentShaderFileName != null ? _shaderCode[fragmentShaderFileName.Value.Key.FileName].Code : null);
 
-        bool valid = Raylib.IsShaderValid(_shader.Value);
+        bool valid = Raylib.IsShaderValid(_currentShader.Value);
 
         if (valid == false)
-            _shader = _defaultMaterialShader;
+            _currentShader = _defaultShader;
 
-        Logger.Info($"shader id={_shader.Value.Id}");
+        Logger.Info($"shader id={_currentShader.Value.Id}");
 
         ApplyShader();
 
@@ -602,7 +606,15 @@ class EditorController
             material.Meta.Variables.Remove(name);
         }
 
-        // Update file references
+        UpdateFileReferences();
+
+        Logger.Trace($"{toDelete.Count} variables removed from materialMeta");
+    }
+
+    private void UpdateFileReferences()
+    {
+        var material = _editorControllerData.MaterialPackage;
+
         foreach (var (key, _) in material.Files)
         {
             material.CreateFileReferences(key);
@@ -621,11 +633,7 @@ class EditorController
                                                 && (string)v.Value.Value == key.FileName);
                 material.IncFileReferences(key, (uint)count);
             }
-
-
         }
-
-        Logger.Trace($"{toDelete.Count} variables removed from materialMeta");
     }
 
     private Dictionary<string, CodeVariable>? GetShaderCodeVariables(MaterialPackage material,
