@@ -236,13 +236,12 @@ class EditorController
     private void MaterialPackageOnOnFilesChanged()
     {
         LoadShaderCode();
+        LoadShaders();
     }
 
     private void ShaderCodeWindowOnApplyChangesPressed(ShaderCode shaderCode)
     {
-        var valid = LoadShaders();
-
-        shaderCode.IsValid = valid;
+        shaderCode.IsValid = LoadShaders();
     }
 
     private void Render()
@@ -265,17 +264,14 @@ class EditorController
 
     private Vector2 HandleCamera(Vector2 prevMousePos)
     {
-        var mouseDelta = Raylib.GetMouseWheelMove();
-
-        var newDistance = _distance + mouseDelta * 0.01f;
-        if (newDistance <= 0)
-            newDistance = 0.01f;
-
-        _distance = newDistance;
-
         var thisPos = Raylib.GetMousePosition();
 
-        var delta = Raymath.Vector2Subtract(prevMousePos, thisPos);
+        var mouseDelta = Raylib.GetMouseWheelMove();
+
+        _distance = Math.Max(0f, 
+            _distance + mouseDelta * 0.1f);
+
+        var delta = Raymath.Vector2Subtract(prevMousePos, Raylib.GetMousePosition());
         prevMousePos = thisPos;
 
         if (Raylib.IsMouseButtonDown(MouseButton.Right))
@@ -284,8 +280,9 @@ class EditorController
             _modelXAngle += delta.Y / 100;
         }
 
-        _currentModel.Transform = Raymath.MatrixRotateXYZ(new Vector3(_modelXAngle, _modelYAngle, 0));
-        _currentModel.Transform.Translation = new Vector3(0, 0, _distance);
+        var matRotate = Raymath.MatrixRotateXYZ(new Vector3(_modelXAngle, _modelYAngle, 0));
+        var matTranslate = Raymath.MatrixTranslate(0, 0, _distance);
+        _currentModel.Transform = Raymath.MatrixMultiply(matRotate, matTranslate);
 
         return prevMousePos;
     }
@@ -383,7 +380,7 @@ class EditorController
     private void RenderOutputWindow()
     {
         ImGui.SetNextWindowSize(_outputSize 
-            + new Vector2(0, ImGui.GetFrameHeight()));
+            + new Vector2(0, ImGui.GetFrameHeightWithSpacing()));
         if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
         {
             rlImGui.ImageRenderTexture(_viewTexture);
