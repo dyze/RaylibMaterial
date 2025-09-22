@@ -53,6 +53,9 @@ namespace Editor.Windows
 
         private static bool HandleFloat(CodeVariable variable, string name, bool variableChanged)
         {
+            if (variable.Value == null)
+                throw new NullReferenceException("variable.Value is null");
+
             var currentValue = (float)variable.Value;
             if (ImGui.InputFloat(name, ref currentValue))
             {
@@ -65,6 +68,9 @@ namespace Editor.Windows
 
         private static bool HandleVector4(CodeVariable variable, string name, bool variableChanged)
         {
+            if (variable.Value == null)
+                throw new NullReferenceException("variable.Value is null");
+
             var currentValue = (Vector4)variable.Value;
             if (ImGui.InputFloat4(name, ref currentValue))
             {
@@ -77,6 +83,9 @@ namespace Editor.Windows
 
         private bool HandleString(CodeVariable variable, string name, bool variableChanged)
         {
+            if (variable.Value == null)
+                throw new NullReferenceException("variable.Value is null");
+
             var currentValue = (string)variable.Value;
             ImGui.LabelText(name, currentValue);
 

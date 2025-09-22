@@ -22,19 +22,23 @@ public class CodeVariable
         }
     }
 
-    [Required] [JsonProperty("Value")] public object Value { get; set; }
+    [Required][JsonProperty("Value")] public object? Value { get; set; }
 
 
     public CodeVariable(Type type)
     {
+        _type = type;   // just to avoid warning
         Type = type;
     }
 
-    public static object GetDefault(Type type)
+    public static object? GetDefault(Type type)
     {
         if (type.IsValueType)
         {
-            return Activator.CreateInstance(type);
+            var value = Activator.CreateInstance(type);
+            if (value == null)
+                throw new NullReferenceException("value can't be null");
+            return value;
         }
 
         return null;

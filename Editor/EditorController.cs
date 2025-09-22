@@ -38,7 +38,7 @@ class EditorController
     /// We proceed like that to prevent crash when trying to use a faulty user shader
     /// </summary>
     private Shader _defaultMaterialShader;
-    
+
     private Dictionary<string, ShaderCode> _shaderCode = new();
 
     private RenderTexture2D _viewTexture;
@@ -92,7 +92,6 @@ class EditorController
     {
         LoadEditorConfiguration();
 
-        _editorControllerData.DataFileExplorerData.DataFolder = new FileSystemAccess();
 
         if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
             _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = "./resources";
@@ -103,13 +102,18 @@ class EditorController
         _dataFileExplorer = new(_editorConfiguration, _editorControllerData.DataFileExplorerData);
 
         _materialWindow = new(_editorControllerData);
+        _materialWindow.OnSave += _materialWindow_OnSave;
 
         _shaderCodeWindow.ApplyChangesPressed += ShaderCodeWindowOnApplyChangesPressed;
 
-        
+
         NewMaterial();
     }
 
+    private void _materialWindow_OnSave()
+    {
+        SaveMaterial();
+    }
 
     public void Run()
     {
@@ -369,7 +373,7 @@ class EditorController
             ImGui.End();
         }
     }
-    
+
     private void RenderOutputWindow()
     {
         ImGui.SetNextWindowSize(_outputSize);
@@ -388,6 +392,12 @@ class EditorController
 
         foreach (var (name, variable) in _editorControllerData.MaterialPackage.Meta.Variables)
         {
+            if (variable.Value is null)
+            {
+                Logger.Trace($"{name} variable is null");
+                continue;
+            }
+
             var location = Raylib.GetShaderLocation(_shader, name);
             if (location < 0)
             {
@@ -409,17 +419,15 @@ class EditorController
             }
             else if (variable.Type == typeof(string))
             {
-                SetUniformTexture(name, variable);
+                SetUniformTexture(name, (string)variable.Value);
             }
         }
     }
 
     private void SetUniformTexture(string variableName,
-        CodeVariable variable)
+        string value)
     {
-        var currentValue = (string)variable.Value;
-
-        var imagePath = $"{ImagesFolderPath}/{currentValue}";
+        var imagePath = $"{ImagesFolderPath}/{value}";
         var image = Raylib.LoadImage(imagePath);
         if (Raylib.IsImageValid(image) == false)
         {
@@ -459,7 +467,7 @@ class EditorController
         else
             Logger.Error($"texture index for {variableName} can't be found");
 
-        Logger.Trace($"{variableName}={currentValue}");
+        Logger.Trace($"{variableName}={value}");
     }
 
     private void ApplyShader()
@@ -525,6 +533,9 @@ class EditorController
             }
             else
             {
+                if (materialVariable == null)
+                    throw new NullReferenceException("material variable is null");
+
                 // exist check type
                 if (materialVariable.Type != variable.Type)
                 {
@@ -553,7 +564,7 @@ class EditorController
         Logger.Trace($"{toDelete.Count} variables removed from materialMeta");
     }
 
-    private Dictionary<string, CodeVariable>? GetShaderCodeForType(MaterialPackage material, 
+    private Dictionary<string, CodeVariable>? GetShaderCodeForType(MaterialPackage material,
         FileType shaderType)
     {
         var file = material.GetFileOfType(shaderType);

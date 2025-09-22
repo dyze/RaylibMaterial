@@ -31,9 +31,10 @@ public class SerializationBinder : ISerializationBinder
         if (assembly == null)
             throw new TypeAccessException($"Assembly {assemblyName} not found");
 
-        var type = _knownTypes?.SingleOrDefault(t => t.Name == typeName
+        var type = _knownTypes?.SingleOrDefault(t => t.FullName != null && 
+                                                ( t.Name == typeName
                                                  || t.FullName == typeName
-                                                 || RemoveAssemblyDetails(t.FullName) == typeName);
+                                                 || RemoveAssemblyDetails(t.FullName) == typeName));
         if (type != null)
             return type;
 

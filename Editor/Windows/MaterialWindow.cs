@@ -11,6 +11,8 @@ class MaterialWindow(EditorControllerData editorControllerData)
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    public event Action? OnSave;
+
     private readonly VariablesControl _variablesControl = new(editorControllerData);
 
     public void Render()
@@ -99,8 +101,8 @@ class MaterialWindow(EditorControllerData editorControllerData)
         //if (_materialPackage.Meta.IsModified)
         //    ImGui.PopStyleColor(1);
 
-        //if (saveMaterial)
-        //    SaveMaterial();
+        if (saveMaterial)
+            OnSave?.Invoke();
 
 
         // ImGui.EndDisabled();

@@ -70,6 +70,9 @@ public class PackageAccess : IDisposable, IDataContainerAccess
         if (_mode != AccessMode.Create)
             throw new AccessViolationException("invalid mode set");
 
+        if (_zipArchive == null)
+            throw new NullReferenceException("_zipArchive is null");
+
         _zipArchive.CreateEntryFromFile(sourceFilePath, destinationFilePath);
     }
 
@@ -79,6 +82,9 @@ public class PackageAccess : IDisposable, IDataContainerAccess
     {
         if (_mode != AccessMode.Create)
             throw new AccessViolationException("invalid mode set");
+
+        if (_zipArchive == null)
+            throw new NullReferenceException("_zipArchive is null");
 
         var entry = _zipArchive.CreateEntry(filePath);
         using (var entryStream = entry.Open())
@@ -93,6 +99,9 @@ public class PackageAccess : IDisposable, IDataContainerAccess
         if (_mode != AccessMode.Create)
             throw new AccessViolationException("invalid mode set");
 
+        if (_zipArchive == null)
+            throw new NullReferenceException("_zipArchive is null");
+
         var entry = _zipArchive.CreateEntry(filePath);
         using (var entryStream = entry.Open())
         {
@@ -106,6 +115,9 @@ public class PackageAccess : IDisposable, IDataContainerAccess
     {
         if (_mode != AccessMode.Read)
             throw new AccessViolationException("invalid mode set");
+
+        if (_zipArchive == null)
+            throw new NullReferenceException("_zipArchive is null");
 
         var entry = _zipArchive.GetEntry(filePath);
         if (entry == null)
@@ -140,7 +152,13 @@ public class PackageAccess : IDisposable, IDataContainerAccess
         if (_mode != AccessMode.Read)
             throw new AccessViolationException("invalid mode set");
 
+        if (_zipArchive == null)
+            throw new NullReferenceException("_zipArchive is null");
+
         var entry = _zipArchive.GetEntry(filePath);
+
+        if (entry == null)
+            throw new NullReferenceException("entry is null");
 
         using var entryStream = entry.Open();
         using var streamReader = new StreamReader(entryStream);
@@ -154,6 +172,9 @@ public class PackageAccess : IDisposable, IDataContainerAccess
     {
         if (_mode != AccessMode.Read)
             throw new AccessViolationException("invalid mode set");
+
+        if (_zipArchive == null)
+            throw new NullReferenceException("_zipArchive is null");
 
         var files = new string[_zipArchive.Entries.Count];
 
@@ -200,6 +221,9 @@ public class PackageAccess : IDisposable, IDataContainerAccess
     {
         if (_mode != AccessMode.Read)
             throw new AccessViolationException("invalid mode set");
+
+        if (_zipArchive == null)
+            throw new NullReferenceException("_zipArchive is null");
 
         return _zipArchive.GetEntry(filePath) != null;
     }

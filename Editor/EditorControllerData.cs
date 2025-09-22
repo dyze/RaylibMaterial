@@ -7,7 +7,7 @@ public class EditorControllerData
 {
     public DataFileExplorerData DataFileExplorerData { get; set; } = new();
 
-    public MaterialPackage MaterialPackage;
+    public MaterialPackage MaterialPackage = new();
 
 
     public EditorControllerData()

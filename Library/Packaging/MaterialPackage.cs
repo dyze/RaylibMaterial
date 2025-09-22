@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic.FileIO;
+using Newtonsoft.Json.Linq;
 using NLog;
 
 namespace Library.Packaging;
@@ -80,7 +81,11 @@ public class MaterialPackage
     {
         Logger.Info($"MaterialPackage.Save {outputPackageFilePath}");
 
-        Directory.CreateDirectory(Path.GetDirectoryName(outputPackageFilePath));
+        var directoryPath = Path.GetDirectoryName(outputPackageFilePath);
+        if (directoryPath == null)
+            throw new NullReferenceException($"directory path can't be extracted from {outputPackageFilePath}");
+
+        Directory.CreateDirectory(directoryPath);
 
         var outputDataAccess = new PackageAccess();
 

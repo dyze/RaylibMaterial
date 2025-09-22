@@ -6,7 +6,6 @@ class BackgroundConfig
 {
     public string Name { get; set; }
     public string? ImageFileName;
-    public Image Image;
     public Texture2D Texture;
 
     public BackgroundConfig(string name,
