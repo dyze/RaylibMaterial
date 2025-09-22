@@ -13,18 +13,21 @@ public enum FileType
 public class MaterialPackage
 {
     private readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    
+
     public event Action? OnFilesChanged;
     public event Action? OnShaderChanged;
-    
+
     public const string MetaFileName = "material.meta";
 
     public MaterialMeta Meta = new();
     private Dictionary<FileId, byte[]> _files = [];
+    private Dictionary<FileId, uint> _fileReferences = [];
 
     public int FilesCount => _files.Count;
 
     public IReadOnlyDictionary<FileId, byte[]> Files => _files;
+
+    public IReadOnlyDictionary<FileId, uint> FileReferences => _fileReferences;
 
     /// <summary>
     /// Names of main shaders to apply
@@ -32,13 +35,19 @@ public class MaterialPackage
     private Dictionary<FileType, string> ShaderNames = [];
 
     public MaterialPackage()
-    {}
+    { }
 
 
     public void Clear()
     {
         Meta = new();
         _files = [];
+        _fileReferences = [];
+    }
+
+    public void ClearFileReferences()
+    {
+        _fileReferences = [];
     }
 
     public static Dictionary<string, FileType> ExtensionToFileType = new()
@@ -67,7 +76,7 @@ public class MaterialPackage
         // Reading files
         foreach (var fileName in inputDataAccess.GetAllFiles())
         {
-            if(fileName == MetaFileName)
+            if (fileName == MetaFileName)
                 continue;
 
             AddFile(fileName,
@@ -101,7 +110,7 @@ public class MaterialPackage
             Logger.Info($"Creating backup {backupFilePath}...");
             File.Copy(outputPackageFilePath, backupFilePath, true);
         }
-        
+
         // Add meta file
         var metaJson = MaterialMetaStorage.ToJson(Meta);
         Logger.Info($"Adding entry {MetaFileName}...");
@@ -170,5 +179,17 @@ public class MaterialPackage
         return Files.Where(f => f.Key.FileName == shaderName)
             .Select(e => (KeyValuePair<FileId, byte[]>?)e)
             .FirstOrDefault();
+    }
+
+    public void CreateFileReferences(FileId key)
+    {
+        if (_fileReferences.ContainsKey(key) == false)
+            _fileReferences.Add(key, 0);
+    }
+
+    public void IncFileReferences(FileId key,
+        uint count=1)
+    {
+        _fileReferences[key] += count;
     }
 }

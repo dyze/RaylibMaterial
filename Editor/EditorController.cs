@@ -228,19 +228,19 @@ class EditorController
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
-        _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MetaOnOnVariablesChanged;
+        _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
     }
 
 
 
-    private void MetaOnOnVariablesChanged()
+    private void MaterialPackageMeta_OnVariablesChanged()
     {
+        LoadShaderCode();
         ApplyVariables();
     }
 
     private void MaterialPackage_OnFilesChanged()
     {
-        //ApplyShader();
     }
 
     private void MaterialPackage_OnShaderChanged()
@@ -515,7 +515,7 @@ class EditorController
         var vertexShaderFileName = material.GetShaderCode(FileType.VertexShader);
         var fragmentShaderFileName = material.GetShaderCode(FileType.FragmentShader);
 
-        if(_shader.HasValue)
+        if (_shader.HasValue)
             Raylib.UnloadShader(_shader.Value);
 
         _shader = Raylib.LoadShaderFromMemory(
@@ -552,10 +552,14 @@ class EditorController
 
         Logger.Info($"{allShaderVariables.Count} variables detected");
 
+
+        material.ClearFileReferences();
+
+
         // Sync materialMeta variables
         foreach (var (key, variable) in allShaderVariables)
         {
-            var result = _editorControllerData.MaterialPackage.Meta.Variables.TryGetValue(key, out var materialVariable);
+            var result = material.Meta.Variables.TryGetValue(key, out var materialVariable);
             if (result == false)
             {
                 Logger.Trace($"{key}: doesn't exist in materialMeta -> create it");
@@ -566,14 +570,14 @@ class EditorController
                     // Set pink as default color
                     newVariable.Value = System.Drawing.Color.FromArgb(255, 255, 0, 255);
 
-                _editorControllerData.MaterialPackage.Meta.Variables.Add(key, newVariable);
+                material.Meta.Variables.Add(key, newVariable);
             }
             else
             {
                 if (materialVariable == null)
                     throw new NullReferenceException("material variable is null");
 
-                // exist check type
+                // already exist => check type change
                 if (materialVariable.Type != variable.Type)
                 {
                     Logger.Trace($"{key}: type changed");
@@ -583,7 +587,7 @@ class EditorController
         }
 
         List<string> toDelete = [];
-        foreach (var (key, _) in _editorControllerData.MaterialPackage.Meta.Variables)
+        foreach (var (key, _) in material.Meta.Variables)
         {
             var result = allShaderVariables.TryGetValue(key, out var _);
             if (result == false)
@@ -595,7 +599,30 @@ class EditorController
 
         foreach (var name in toDelete)
         {
-            _editorControllerData.MaterialPackage.Meta.Variables.Remove(name);
+            material.Meta.Variables.Remove(name);
+        }
+
+        // Update file references
+        foreach (var (key, _) in material.Files)
+        {
+            material.CreateFileReferences(key);
+
+            if (key.FileType == FileType.VertexShader ||
+                key.FileType == FileType.FragmentShader)
+            {
+                if (material.GetShaderName(key.FileType) == key.FileName)
+                    material.IncFileReferences(key);
+            }
+            else if (key.FileType == FileType.Image)
+            {
+                var count = material.Meta.Variables.Count(v =>
+                                                v.Value.Type == typeof(string)
+                                                && (string?)v.Value.Value != null
+                                                && (string)v.Value.Value == key.FileName);
+                material.IncFileReferences(key, (uint)count);
+            }
+
+
         }
 
         Logger.Trace($"{toDelete.Count} variables removed from materialMeta");

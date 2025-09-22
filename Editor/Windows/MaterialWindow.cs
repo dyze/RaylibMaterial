@@ -1,8 +1,10 @@
 ﻿using Editor.Helpers;
 using ImGuiNET;
+using Library.Helpers;
 using Library.Packaging;
 using NLog;
 using Raylib_cs;
+using System.ComponentModel;
 using System.Text;
 
 namespace Editor.Windows;
@@ -21,13 +23,13 @@ class MaterialWindow(EditorControllerData editorControllerData)
         //ImGui.SetNextWindowSize(new Vector2(100, 80), ImGuiCond.FirstUseEver);
         if (ImGui.Begin("MaterialMeta"))
         {
-            RenderMaterialToolBar();
+            RenderToolBar();
 
             RenderMeta();
 
             RenderShaders();
 
-            RenderMaterialFiles();
+            RenderFiles();
 
             var material = editorControllerData.MaterialPackage.Meta;
             if (_variablesControl.Render(material.Variables))
@@ -50,8 +52,8 @@ class MaterialWindow(EditorControllerData editorControllerData)
     private void RenderShaderField(FileType fileType)
     {
         var material = editorControllerData.MaterialPackage;
-        var file = material.GetFileMatchingType(fileType);
-        ImGui.LabelText(fileType.ToString(), file != null ? file.Value.Key.FileName : "");
+        var file = material.GetShaderName(fileType);
+        ImGui.LabelText(fileType.ToString(), file != null ? file : "");
 
         if (ImGui.BeginDragDropTarget())
         {
@@ -88,7 +90,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
         }
     }
 
-    private void RenderMaterialToolBar()
+    private void RenderToolBar()
     {
         //if (ImGui.BeginChild("ToolBar", new Vector2(-1,-1)))
         //{
@@ -141,7 +143,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
     }
 
 
-    private void RenderMaterialFiles()
+    private void RenderFiles()
     {
         //if (ImGui.BeginChild("Files"))
         //{
@@ -152,7 +154,14 @@ class MaterialWindow(EditorControllerData editorControllerData)
         else
             foreach (var file in editorControllerData.MaterialPackage.Files)
             {
+                var fileReferences = editorControllerData.MaterialPackage.FileReferences[file.Key];
                 ImGui.Text(file.Key.FileName);
+
+                if (fileReferences == 0)
+                {
+                    ImGui.SameLine();
+                    ImGui.TextColored(TypeConvertors.ColorToVec4(System.Drawing.Color.Orange), "unused!");
+                }
             }
         //}
         //ImGui.EndChild();
