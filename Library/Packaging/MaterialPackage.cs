@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualBasic.FileIO;
-using Newtonsoft.Json.Linq;
-using NLog;
+﻿using NLog;
 
 namespace Library.Packaging;
 
@@ -17,7 +15,8 @@ public class MaterialPackage
     private readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
     public event Action? OnFilesChanged;
-
+    public event Action? OnShaderChanged;
+    
     public const string MetaFileName = "material.meta";
 
     public MaterialMeta Meta = new();
@@ -26,6 +25,11 @@ public class MaterialPackage
     public int FilesCount => _files.Count;
 
     public IReadOnlyDictionary<FileId, byte[]> Files => _files;
+
+    /// <summary>
+    /// Names of main shaders to apply
+    /// </summary>
+    private Dictionary<FileType, string> ShaderNames = [];
 
     public MaterialPackage()
     {}
@@ -140,6 +144,30 @@ public class MaterialPackage
     public KeyValuePair<FileId, byte[]>? GetFileMatchingType(FileType fileType)
     {
         return Files.Where(f => f.Key.FileType == fileType)
+            .Select(e => (KeyValuePair<FileId, byte[]>?)e)
+            .FirstOrDefault();
+    }
+
+    public void SetShaderName(FileType shaderType, string shaderName)
+    {
+        ShaderNames[shaderType] = shaderName;
+
+        OnShaderChanged?.Invoke();
+    }
+
+    public string? GetShaderName(FileType shaderType)
+    {
+        ShaderNames.TryGetValue(shaderType, out var shaderName);
+        return shaderName;
+    }
+
+    public KeyValuePair<FileId, byte[]>? GetShaderCode(FileType shaderType)
+    {
+        ShaderNames.TryGetValue(shaderType, out var shaderName);
+        if (shaderName == null)
+            return null;
+
+        return Files.Where(f => f.Key.FileName == shaderName)
             .Select(e => (KeyValuePair<FileId, byte[]>?)e)
             .FirstOrDefault();
     }

@@ -36,7 +36,7 @@ public class DataFileExplorer
         { "explore folder", (_, folder) => Process.Start("explorer.exe", folder.FullPath) },
     };
 
-    public DataFileExplorer(EditorConfiguration editorConfiguration, 
+    public DataFileExplorer(EditorConfiguration editorConfiguration,
         DataFileExplorerData dataFileExplorerData)
     {
         _editorConfiguration = editorConfiguration;
@@ -59,7 +59,7 @@ public class DataFileExplorer
         ImGui.SetNextWindowPos(position, ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSize(size, ImGuiCond.FirstUseEver);
 
-        if (ImGui.Begin("Data file explorer", 
+        if (ImGui.Begin("Data file explorer",
                 ref _editorConfiguration.WorkspaceConfiguration.DataFileExplorerIsVisible))
         {
             RenderMainActions();
@@ -133,16 +133,17 @@ public class DataFileExplorer
                     dragDropItemType = DragDropItemIdentifiers.ShaderFile;
                 else if (fileType == FileType.Image)
                     dragDropItemType = DragDropItemIdentifiers.ImageFile;
-                
-                if(dragDropItemType != "")
+
+                if (dragDropItemType != "")
                 {
                     if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
                     {
                         if (_dataFileExplorerData.DraggedFullFilePath == "")
                             Logger.Trace("Begin drag");
 
-                        _dataFileExplorerData.DraggedFullFilePath =
-                            Path.Combine(folderContent.FullPath, fileName);
+                        _dataFileExplorerData.DraggedRelativeFilePath = Path.Combine(folderContent.RelativePath, fileName);
+
+                        _dataFileExplorerData.DraggedFullFilePath = Path.Combine(folderContent.FullPath, fileName);
                         _dataFileExplorerData.DraggedFileName = fileName;
 
                         unsafe

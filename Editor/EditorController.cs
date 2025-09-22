@@ -226,16 +226,24 @@ class EditorController
     private void NewMaterial()
     {
         _editorControllerData.MaterialPackage = new();
-        _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackageOnOnFilesChanged;
+        _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
+        _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
         _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MetaOnOnVariablesChanged;
     }
+
+
 
     private void MetaOnOnVariablesChanged()
     {
         ApplyVariables();
     }
 
-    private void MaterialPackageOnOnFilesChanged()
+    private void MaterialPackage_OnFilesChanged()
+    {
+        //ApplyShader();
+    }
+
+    private void MaterialPackage_OnShaderChanged()
     {
         LoadShaderCode();
         LoadShaders();
@@ -504,8 +512,8 @@ class EditorController
         Logger.Info("LoadShaders...");
 
         var material = _editorControllerData.MaterialPackage;
-        var vertexShaderFileName = material.GetFileMatchingType(FileType.VertexShader);
-        var fragmentShaderFileName = material.GetFileMatchingType(FileType.FragmentShader);
+        var vertexShaderFileName = material.GetShaderCode(FileType.VertexShader);
+        var fragmentShaderFileName = material.GetShaderCode(FileType.FragmentShader);
 
         if(_shader.HasValue)
             Raylib.UnloadShader(_shader.Value);
@@ -596,7 +604,7 @@ class EditorController
     private Dictionary<string, CodeVariable>? GetShaderCodeVariables(MaterialPackage material,
         FileType shaderType)
     {
-        var file = material.GetFileMatchingType(shaderType);
+        var file = material.GetShaderCode(shaderType);
         if (file != null)
         {
             var fileName = file.Value.Key.FileName;

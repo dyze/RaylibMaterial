@@ -2,6 +2,7 @@
 using ImGuiNET;
 using Library.Packaging;
 using NLog;
+using Raylib_cs;
 using System.Text;
 
 namespace Editor.Windows;
@@ -71,12 +72,15 @@ class MaterialWindow(EditorControllerData editorControllerData)
                 if (MaterialPackage.ExtensionToFileType[extension] == fileType)
                 {
                     var fileContent = File.ReadAllText(draggedFullFilePath);
-                    
-                    editorControllerData.MaterialPackage.AddFile(editorControllerData.DataFileExplorerData.DraggedFileName,
+
+                    string draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
+                    editorControllerData.MaterialPackage.AddFile(draggedFileName,
                         Encoding.ASCII.GetBytes(fileContent));
 
+                    editorControllerData.MaterialPackage.SetShaderName(fileType, draggedFileName);
+
                     editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
-                    editorControllerData.DataFileExplorerData.DraggedFileName = "";
+                    draggedFileName = "";
                 }
             }
 

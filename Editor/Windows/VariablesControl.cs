@@ -128,12 +128,15 @@ namespace Editor.Windows
 
                 if (isDropping)
                 {
-                    var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedFullFilePath;
+                    var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedRelativeFilePath;
                     Logger.Trace($"dropped {draggedRelativeFilePath}");
 
                     var draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
                     editorControllerData.MaterialPackage.AddFile(draggedFileName,
                         editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
+
+                    variable.Value = draggedFileName;
+                    variableChanged = true;
 
                     editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
                     editorControllerData.DataFileExplorerData.DraggedFileName = "";
