@@ -137,7 +137,7 @@ public class MaterialPackage
         OnFilesChanged?.Invoke();
     }
 
-    public KeyValuePair<FileId, byte[]>? GetFileOfType(FileType fileType)
+    public KeyValuePair<FileId, byte[]>? GetFileMatchingType(FileType fileType)
     {
         return Files.Where(f => f.Key.FileType == fileType)
             .Select(e => (KeyValuePair<FileId, byte[]>?)e)

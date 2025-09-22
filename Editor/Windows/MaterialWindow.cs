@@ -49,7 +49,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
     private void RenderShaderField(FileType fileType)
     {
         var material = editorControllerData.MaterialPackage;
-        var file = material.GetFileOfType(fileType);
+        var file = material.GetFileMatchingType(fileType);
         ImGui.LabelText(fileType.ToString(), file != null ? file.Value.Key.FileName : "");
 
         if (ImGui.BeginDragDropTarget())

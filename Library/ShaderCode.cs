@@ -1,4 +1,6 @@
 ﻿using Library.Helpers;
+using System.Drawing;
+using System.Numerics;
 using System.Text.RegularExpressions;
 
 namespace Library;
@@ -66,7 +68,12 @@ public class ShaderCode(string code)
 
             var type = TypeConvertors.StringToType(typeString);
             if (type != null)
+            {
+                // Special case for colors. It will change the way to edit the value (color picker)
+                if (type == typeof(Vector4) && name.ToLower().Contains("color"))
+                    type = typeof(Color);
                 result.Add(name, new CodeVariable(type));
+            }
         }
 
         return result;

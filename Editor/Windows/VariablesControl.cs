@@ -1,14 +1,33 @@
-﻿using ImGuiNET;
-using System.Numerics;
+﻿using Editor.Helpers;
+using ImGuiNET;
 using Library;
+using Library.Helpers;
 using NLog;
-using Editor.Helpers;
+using System.Drawing;
+using System.Numerics;
+using System.Xml.Linq;
 
 namespace Editor.Windows
 {
-    class VariablesControl(EditorControllerData editorControllerData)
+    class VariablesControl
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly EditorControllerData editorControllerData;
+        private Dictionary<Type, Func<CodeVariable, string, bool, bool>> _handlers;
+
+        public VariablesControl(EditorControllerData editorControllerData)
+        {
+            _handlers = new()
+        {
+            { typeof(Vector4), HandleVector4 },
+            { typeof(float), HandleFloat },
+            { typeof(string), HandleString },
+            { typeof(System.Drawing.Color), HandleColor },
+        };
+            this.editorControllerData = editorControllerData;
+        }
+
+
 
         /// <summary>
         /// Render variables
@@ -26,17 +45,10 @@ namespace Editor.Windows
                 foreach (var (name, variable) in variables)
                 {
                     ImGui.BeginGroup();
-                    if (variable.Type == typeof(Vector4))
+
+                    if(_handlers.TryGetValue(variable.Type, out var handler))
                     {
-                        variableChanged = HandleVector4(variable, name, variableChanged);
-                    }
-                    else if (variable.Type == typeof(float))
-                    {
-                        variableChanged = HandleFloat(variable, name, variableChanged);
-                    }
-                    else if (variable.Type == typeof(string))
-                    {
-                        variableChanged = HandleString(variable, name, variableChanged);
+                        variableChanged = handler(variable, name, variableChanged);
                     }
                     else
                     {
@@ -75,6 +87,21 @@ namespace Editor.Windows
             if (ImGui.InputFloat4(name, ref currentValue))
             {
                 variable.Value = currentValue;
+                variableChanged = true;
+            }
+
+            return variableChanged;
+        }
+
+        private bool HandleColor(CodeVariable variable, string name, bool variableChanged)
+        {
+            if (variable.Value == null)
+                throw new NullReferenceException("variable.Value is null");
+
+            var currentValue = TypeConvertors.ColorToVec4((Color)variable.Value);
+            if (ImGui.ColorEdit4(name, ref currentValue))
+            {
+                variable.Value = TypeConvertors.Vec4ToColor(currentValue);
                 variableChanged = true;
             }
 

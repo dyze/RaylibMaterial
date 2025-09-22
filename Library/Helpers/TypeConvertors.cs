@@ -1,18 +1,17 @@
-﻿using System.Drawing;
+﻿
 using System.Numerics;
-using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
 namespace Library.Helpers;
 
 public static class TypeConvertors
 {
-    public static Color ToRayLibColor(System.Drawing.Color src)
+    public static Raylib_cs.Color ToRayLibColor(System.Drawing.Color src)
     {
-        return new Color(src.R, src.G, src.B, src.A);
+        return new Raylib_cs.Color(src.R, src.G, src.B, src.A);
     }
 
-    public static Vector4 ToVector4(System.Drawing.Color src)
+    public static Vector4 ColorToVec4(System.Drawing.Color src)
     {
         return new Vector4(src.R/255f, 
             src.G / 255f, 
@@ -20,7 +19,7 @@ public static class TypeConvertors
             src.A / 255f);
     }
 
-    public static System.Drawing.Color FromVector4(Vector4 src)
+    public static System.Drawing.Color Vec4ToColor(Vector4 src)
     {
         return System.Drawing.Color.FromArgb((int)(src.W*255), 
             (int)(src.X * 255f), 
@@ -28,14 +27,14 @@ public static class TypeConvertors
             (int)(src.Z * 255f));
     }
 
-    public static Rectangle ToRayLibRectangle(RectangleF src)
+    public static Rectangle ToRayLibRectangle(System.Drawing.RectangleF src)
     {
         return new Rectangle(src.X, src.Y, src.Width, src.Height);
     }
 
-    public static RectangleF FromRayLibRectangle(Rectangle src)
+    public static System.Drawing.RectangleF FromRayLibRectangle(Rectangle src)
     {
-        return new RectangleF(src.X, src.Y, src.Width, src.Height);
+        return new System.Drawing.RectangleF(src.X, src.Y, src.Width, src.Height);
     }
 
     public static Type? StringToType(string input)
@@ -53,4 +52,6 @@ public static class TypeConvertors
 
         return table.GetValueOrDefault(input);
     }
+
+
 }

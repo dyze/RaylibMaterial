@@ -39,7 +39,7 @@ internal class AnyProcessWithConfirmation : EditorProcess
             if (ErrorMessage.Length > 0)
             {
                 ImGui.Separator();
-                ImGui.PushStyleColor(ImGuiCol.Text, TypeConvertors.ToVector4(Color.Orange));
+                ImGui.PushStyleColor(ImGuiCol.Text, TypeConvertors.ColorToVec4(Color.Orange));
                 ImGui.TextWrapped(ErrorMessage);
                 ImGui.PopStyleColor();
                 ImGui.Separator();
