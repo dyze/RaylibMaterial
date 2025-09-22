@@ -61,14 +61,12 @@ class EditorController
 
     enum BackgroundType
     {
-        None = 0,
-        Cloud = 1,
-        WildPark = 2,
+        Cloud = 0,
+        WildPark = 1,
     }
 
     private readonly Dictionary<BackgroundType, BackgroundConfig> _backgrounds = new()
     {
-        { BackgroundType.None, new BackgroundConfig("none", null) },
         { BackgroundType.Cloud, new BackgroundConfig("clouds", "clouds.jpg") },
         { BackgroundType.WildPark, new BackgroundConfig("wild park", "wildpark.png") },
     };
@@ -132,9 +130,11 @@ class EditorController
         var mesh = Raylib.GenMeshPlane(12, 8, 1, 1);
         _backgroundModel = Raylib.LoadModelFromMesh(mesh);
 
-        var matRotate = Raymath.MatrixRotateXYZ(new Vector3((float)(-Math.PI / 2), 0, 0));
+        var matRotate = Raymath.MatrixRotateXYZ(new Vector3((float)(-Math.PI / 2), (float)(Math.PI), 0));
         var matTranslate = Raymath.MatrixTranslate(0, 0, 3f);
         _backgroundModel.Transform = Raymath.MatrixMultiply(matRotate, matTranslate);
+
+        SelectBackground(BackgroundType.WildPark);
 
         SelectModelType();
 
@@ -365,8 +365,7 @@ class EditorController
                         background.Texture,
                         new Vector2(32, 32)))
                 {
-                    Logger.Trace($"{key} selected");
-                    Raylib.SetMaterialTexture(ref _backgroundModel, 0, MaterialMapIndex.Albedo, ref background.Texture);
+                    SelectBackground(key);
                 }
             }
 
@@ -374,9 +373,17 @@ class EditorController
         }
     }
 
+    private void SelectBackground(BackgroundType key)
+    {
+        Logger.Trace($"{key} selected");
+        var background = _backgrounds[key];
+        Raylib.SetMaterialTexture(ref _backgroundModel, 0, MaterialMapIndex.Albedo, ref background.Texture);
+    }
+
     private void RenderOutputWindow()
     {
-        ImGui.SetNextWindowSize(_outputSize);
+        ImGui.SetNextWindowSize(_outputSize 
+            + new Vector2(0, ImGui.GetFrameHeight()));
         if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
         {
             rlImGui.ImageRenderTexture(_viewTexture);
