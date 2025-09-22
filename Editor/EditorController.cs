@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Editor.Configuration;
+using Editor.Helpers;
 using Editor.Windows;
 using ImGuiNET;
 using Library;
@@ -20,9 +21,9 @@ class EditorController
     private const string ImagesFolderPath = "resources/images";
     private const string MaterialsPath = "materials";
 
-    private readonly Vector2 _screenSize = new(1280, 720); // initial size of window
+    private readonly Vector2 _screenSize = new(1600, 900); // initial size of window
 
-    private readonly Vector2 _outputSize = new(1280 / 2, 720 / 2);
+    private readonly Vector2 _outputSize = new(1600 / 2, 900 / 2);
 
     private Camera3D _camera;
     private float _modelXAngle = (float)(Math.PI / 4);
@@ -36,7 +37,7 @@ class EditorController
     /// This shader is used if we are not able to load a user one
     /// We proceed like that to prevent crash when trying to use a faulty user shader
     /// </summary>
-    private readonly Shader _defaultMaterialShader;
+    private Shader _defaultMaterialShader;
     
     private Dictionary<string, ShaderCode> _shaderCode = new();
 
@@ -105,8 +106,7 @@ class EditorController
 
         _shaderCodeWindow.ApplyChangesPressed += ShaderCodeWindowOnApplyChangesPressed;
 
-        _defaultMaterialShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
-
+        
         NewMaterial();
     }
 
@@ -120,6 +120,8 @@ class EditorController
         rlImGui.Setup();
 
         LoadUiResources();
+
+        _defaultMaterialShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
 
         _viewTexture = Raylib.LoadRenderTexture((int)_outputSize.X, (int)_outputSize.Y);
 
@@ -151,7 +153,7 @@ class EditorController
             Raylib.ClearBackground(Color.Black);
 
             RenderMenu();
-            RenderOutput();
+            Render();
 
             RenderToolBar();
 
@@ -239,7 +241,7 @@ class EditorController
         shaderCode.IsValid = valid;
     }
 
-    private void RenderOutput()
+    private void Render()
     {
         Raylib.BeginTextureMode(_viewTexture);
 

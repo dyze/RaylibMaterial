@@ -1,4 +1,4 @@
-﻿namespace Editor
+﻿namespace Editor.Helpers
 {
     static class DragDropItemIdentifiers
     {
