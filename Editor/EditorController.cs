@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using Editor.Configuration;
+﻿using Editor.Configuration;
 using Editor.Helpers;
 using Editor.Windows;
 using ImGuiNET;
@@ -9,6 +8,8 @@ using Library.Packaging;
 using NLog;
 using Raylib_cs;
 using rlImGui_cs;
+using System.Numerics;
+using System.Xml.Linq;
 using Color = Raylib_cs.Color;
 
 namespace Editor;
@@ -134,7 +135,7 @@ class EditorController
 
         SelectBackground(BackgroundType.WildPark);
 
-        NewMaterial();
+        OnNewMaterial();
 
 
         Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
@@ -188,7 +189,10 @@ class EditorController
             if (ImGui.BeginMenu("Package"))
             {
                 if (ImGui.MenuItem("New"))
-                    NewMaterial();
+                    OnNewMaterial();
+
+                if (ImGui.MenuItem("Open"))
+                    OnOpenMaterial();
 
                 if (ImGui.MenuItem("Save"))
                     SaveMaterial();
@@ -221,9 +225,9 @@ class EditorController
         ImGui.EndMainMenuBar();
     }
 
-    private void NewMaterial()
+    private void OnNewMaterial()
     {
-        Logger.Info("NewMaterial...");
+        Logger.Info("OnNewMaterial...");
 
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
@@ -233,6 +237,28 @@ class EditorController
         _currentShader = _defaultShader;
 
         SelectModelType();
+        LoadShaders();
+    }
+
+
+    private void OnOpenMaterial()
+    {
+        Logger.Info("OnOpenMaterial...");
+
+        _editorControllerData.MaterialPackage = new();
+        _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
+        _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
+        _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
+
+        //TODO get name using file explorer or file drag
+        var filePath = $"{MaterialsPath}/no name.mat";
+        filePath = Path.GetFullPath(filePath);
+        Logger.Info($"filePath={filePath}");
+
+        _editorControllerData.MaterialPackage.Load(filePath);
+
+        SelectModelType();
+        LoadShaderCode();
         LoadShaders();
     }
 
@@ -414,11 +440,11 @@ class EditorController
 
         foreach (var (name, variable) in _editorControllerData.MaterialPackage.Meta.Variables)
         {
-            if (variable.Value is null)
-            {
-                Logger.Trace($"{name} variable is null");
-                continue;
-            }
+            //if (variable.Value is null)
+            //{
+            //    Logger.Trace($"{name} variable is null");
+            //    continue;
+            //}
 
             var location = Raylib.GetShaderLocation(_currentShader.Value, name);
             if (location < 0)
@@ -427,27 +453,27 @@ class EditorController
                 continue;
             }
 
-            if (variable.Type == typeof(Vector4))
+            if (variable.GetType() == typeof(CodeVariableVector4))
             {
-                var currentValue = (Vector4)variable.Value;
+                var currentValue = (variable as CodeVariableVector4).Value;
                 Raylib.SetShaderValue(_currentShader.Value, location, currentValue, ShaderUniformDataType.Vec4);
                 Logger.Trace($"{name}={currentValue}");
             }
-            else if (variable.Type == typeof(System.Drawing.Color))
+            else if (variable.GetType() == typeof(CodeVariableColor))
             {
-                var currentValue = TypeConvertors.ColorToVec4((System.Drawing.Color)variable.Value);
+                var currentValue = TypeConvertors.ColorToVec4((variable as CodeVariableColor).Value);
                 Raylib.SetShaderValue(_currentShader.Value, location, currentValue, ShaderUniformDataType.Vec4);
                 Logger.Trace($"{name}={currentValue}");
             }
-            else if (variable.Type == typeof(float))
+            else if (variable.GetType() == typeof(CodeVariableFloat))
             {
-                var currentValue = (float)variable.Value;
+                var currentValue = (variable as CodeVariableFloat).Value;
                 Raylib.SetShaderValue(_currentShader.Value, location, currentValue, ShaderUniformDataType.Float);
                 Logger.Trace($"{name}={currentValue}");
             }
-            else if (variable.Type == typeof(string))
+            else if (variable.GetType() == typeof(CodeVariableTexture))
             {
-                SetUniformTexture(name, (string)variable.Value);
+                SetUniformTexture(name, (variable as CodeVariableTexture).Value);
             }
         }
     }
@@ -519,7 +545,8 @@ class EditorController
         var vertexShaderFileName = material.GetShaderCode(FileType.VertexShader);
         var fragmentShaderFileName = material.GetShaderCode(FileType.FragmentShader);
 
-        if (_currentShader.HasValue)
+        if (_currentShader.HasValue 
+            && _currentShader.Value.Id != _defaultShader.Id)
             Raylib.UnloadShader(_currentShader.Value);
 
         _currentShader = Raylib.LoadShaderFromMemory(
@@ -567,12 +594,13 @@ class EditorController
             if (result == false)
             {
                 Logger.Trace($"{key}: doesn't exist in materialMeta -> create it");
-                var newVariable = new CodeVariable(variable.Type);
+
+                var newVariable = CodeVariableFactory.Build(variable.GetType());
 
                 //TODO avoid trick
-                if (variable.Type == typeof(System.Drawing.Color))
+                if (variable.GetType() == typeof(CodeVariableColor))
                     // Set pink as default color
-                    newVariable.Value = System.Drawing.Color.FromArgb(255, 255, 0, 255);
+                    (newVariable as CodeVariableColor).Value = System.Drawing.Color.FromArgb(255, 255, 0, 255);
 
                 material.Meta.Variables.Add(key, newVariable);
             }
@@ -582,10 +610,10 @@ class EditorController
                     throw new NullReferenceException("material variable is null");
 
                 // already exist => check type change
-                if (materialVariable.Type != variable.Type)
+                if (materialVariable.GetType() != variable.GetType())
                 {
                     Logger.Trace($"{key}: type changed");
-                    materialVariable.Type = variable.Type;
+                    materialVariable = CodeVariableFactory.Build(variable.GetType());
                 }
             }
         }
@@ -628,9 +656,8 @@ class EditorController
             else if (key.FileType == FileType.Image)
             {
                 var count = material.Meta.Variables.Count(v =>
-                                                v.Value.Type == typeof(string)
-                                                && (string?)v.Value.Value != null
-                                                && (string)v.Value.Value == key.FileName);
+                                                v.Value.GetType() == typeof(CodeVariableTexture)
+                                                && (v.Value as CodeVariableTexture).Value == key.FileName);
                 material.IncFileReferences(key, (uint)count);
             }
         }

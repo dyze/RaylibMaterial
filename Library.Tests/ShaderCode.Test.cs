@@ -41,7 +41,7 @@ public sealed class ShaderCodeTest
 
         Assert.AreEqual(variables.Count, 2);
 
-        Assert.AreEqual(variables["texture0"].Type, typeof(string));
-        Assert.AreEqual(variables["colDiffuse"].Type, typeof(Vector4));
+        Assert.AreEqual(variables["texture0"].GetType(), typeof(CodeVariableTexture));
+        Assert.AreEqual(variables["colDiffuse"].GetType(), typeof(Vector4));
     }
 }

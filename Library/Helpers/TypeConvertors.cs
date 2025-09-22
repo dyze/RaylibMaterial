@@ -41,13 +41,13 @@ public static class TypeConvertors
     {
         Dictionary<string, Type> table = new()
         {
-            { "float", typeof(float) },
-            { "vec2", typeof(Vector2) },
-            { "vec3", typeof(Vector3) },
-            { "vec4", typeof(Vector4) },
-            { "int", typeof(int) },
-            { "uint", typeof(uint) },
-            { "sampler2D", typeof(string) },
+            { "float", typeof(CodeVariableFloat) },
+            //{ "vec2", typeof(Vector2) },
+            //{ "vec3", typeof(Vector3) },
+            { "vec4", typeof(CodeVariableVector4) },
+            //{ "int", typeof(int) },
+            //{ "uint", typeof(uint) },
+            { "sampler2D", typeof(CodeVariableTexture) },
         };
 
         return table.GetValueOrDefault(input);

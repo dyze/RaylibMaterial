@@ -1,4 +1,5 @@
-﻿using NLog;
+﻿using Newtonsoft.Json;
+using NLog;
 
 namespace Library.Packaging;
 
@@ -29,10 +30,6 @@ public class MaterialPackage
 
     public IReadOnlyDictionary<FileId, uint> FileReferences => _fileReferences;
 
-    /// <summary>
-    /// Names of main shaders to apply
-    /// </summary>
-    private Dictionary<FileType, string> ShaderNames = [];
 
     public MaterialPackage()
     { }
@@ -129,8 +126,38 @@ public class MaterialPackage
 
         outputDataAccess.Close();
 
-        Logger.Info($"MaterialPackage.BuildPackage OK: files added={1 + _files.Count}");
+        Logger.Info($"MaterialPackage.Save OK: files added={1 + _files.Count}");
     }
+
+    //public void Open(string filePath)
+    //{
+    //    Logger.Info($"MaterialPackage.Open {filePath}");
+
+    //    var inputDataAccess = new PackageAccess();
+
+    //    inputDataAccess.Open(filePath, AccessMode.Read);
+
+    //    // read meta file
+    //    Logger.Info($"Reading entry {MetaFileName}...");
+
+    //    var metaJson = inputDataAccess.ReadTextFile(MetaFileName);
+
+    //    Meta = MaterialMetaStorage.ParseJson(metaJson);
+
+    //    foreach (var fileName in inputDataAccess.GetAllFiles())
+    //    {
+    //        if (fileName == MetaFileName)
+    //            continue;
+
+    //        Logger.Info($"Reading entry {fileName}...");
+
+    //        var fileContent = inputDataAccess.ReadBinaryFile(fileName);
+    //        AddFile(fileName, fileContent);
+    //    }
+
+    //    inputDataAccess.Close();
+    //    inputDataAccess = null;
+    //}
 
     public void AddFile(string fileName,
         byte[] fileContent)
@@ -159,20 +186,17 @@ public class MaterialPackage
 
     public void SetShaderName(FileType shaderType, string shaderName)
     {
-        ShaderNames[shaderType] = shaderName;
+        Meta.SetShaderName(shaderType, shaderName);
 
         OnShaderChanged?.Invoke();
     }
 
-    public string? GetShaderName(FileType shaderType)
-    {
-        ShaderNames.TryGetValue(shaderType, out var shaderName);
-        return shaderName;
-    }
+    public string? GetShaderName(FileType shaderType) => Meta.GetShaderName(shaderType);
+
 
     public KeyValuePair<FileId, byte[]>? GetShaderCode(FileType shaderType)
     {
-        ShaderNames.TryGetValue(shaderType, out var shaderName);
+        var shaderName = Meta.GetShaderName(shaderType);
         if (shaderName == null)
             return null;
 
@@ -192,4 +216,6 @@ public class MaterialPackage
     {
         _fileReferences[key] += count;
     }
+
+
 }

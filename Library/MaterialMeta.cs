@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Library.Packaging;
 using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 
 namespace Library;
 
@@ -35,4 +36,22 @@ public class MaterialMeta
     public void TriggerVariablesChanged() => OnVariablesChanged?.Invoke();
 
     public event Action? OnVariablesChanged;
+
+
+    /// <summary>
+    /// Names of main shaders to apply
+    /// </summary>
+    [JsonProperty("ShaderNames")]
+    private Dictionary<FileType, string> ShaderNames = [];
+
+    public void SetShaderName(FileType shaderType, string shaderName)
+    {
+        ShaderNames[shaderType] = shaderName;
+    }
+
+    public string? GetShaderName(FileType shaderType)
+    {
+        ShaderNames.TryGetValue(shaderType, out var shaderName);
+        return shaderName;
+    }
 }
