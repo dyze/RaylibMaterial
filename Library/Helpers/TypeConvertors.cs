@@ -3,7 +3,7 @@ using System.Numerics;
 using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
-namespace Library;
+namespace Library.Helpers;
 
 public static class TypeConvertors
 {

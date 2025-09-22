@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
-using Library;
+using Library.Helpers;
 using Raylib_cs;
 using Color = System.Drawing.Color;
 

@@ -1,4 +1,4 @@
-﻿namespace Library;
+﻿namespace Library.Helpers;
 
 public static class FilePathTools
 {

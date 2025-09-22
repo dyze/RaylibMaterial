@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using Newtonsoft.Json.Serialization;
 
-namespace Library;
+namespace Library.Helpers;
 
 public class SerializationBinder : ISerializationBinder
 {

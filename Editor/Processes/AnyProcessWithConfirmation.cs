@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using System.Numerics;
 using ImGuiNET;
-using Library;
+using Library.Helpers;
 
 
 namespace Editor.Processes;

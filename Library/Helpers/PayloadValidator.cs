@@ -2,7 +2,7 @@
 using System.Reflection;
 using Newtonsoft.Json;
 
-namespace Library;
+namespace Library.Helpers;
 
 public class PayloadValidator
 {
@@ -37,11 +37,11 @@ public class PayloadValidator
             {
                 // List fields with JsonPropertyAttribute
                 var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(f => Attribute.IsDefined(f, typeof(JsonPropertyAttribute)));
-                var childrenTypes = fields.Select<FieldInfo, Type>(field => field.FieldType).ToHashSet();
+                var childrenTypes = fields.Select(field => field.FieldType).ToHashSet();
 
                 // Add properties with JsonPropertyAttribute
                 var properties = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(f => Attribute.IsDefined(f, typeof(JsonPropertyAttribute)));
-                childrenTypes.UnionWith(properties.Select<PropertyInfo, Type>(field => field.PropertyType));
+                childrenTypes.UnionWith(properties.Select(field => field.PropertyType));
 
                 var fieldWithAttributeFound = false;
 
