@@ -1,6 +1,7 @@
 ﻿using Editor.Configuration;
 using Editor.Helpers;
 using Editor.Windows;
+using Examples.Shared;
 using ImGuiNET;
 using Library;
 using Library.CodeVariable;
@@ -10,7 +11,6 @@ using NLog;
 using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
-using System.Xml.Linq;
 using Color = Raylib_cs.Color;
 
 namespace Editor;
@@ -21,7 +21,6 @@ class EditorController
 
     private const string ResourceUiPath = "resources/ui";
     private const string ShaderFolderPath = "resources/shaders";
-    private const string ImagesFolderPath = "resources/images";
     private const string MaterialsPath = "materials";
 
     private readonly Vector2 _screenSize = new(1600, 900); // initial size of window
@@ -89,6 +88,8 @@ class EditorController
 
     private readonly MaterialWindow _materialWindow;
 
+    private List<Light> lights = new();
+
     public EditorController()
     {
         LoadEditorConfiguration();
@@ -134,6 +135,7 @@ class EditorController
         var matTranslate = Raymath.MatrixTranslate(0, 0, 3f);
         _backgroundModel.Transform = Raymath.MatrixMultiply(matRotate, matTranslate);
 
+
         SelectBackground(BackgroundType.WildPark);
 
         OnNewMaterial();
@@ -150,7 +152,9 @@ class EditorController
 
         while (!Raylib.WindowShouldClose())
         {
-            prevMousePos = HandleCamera(prevMousePos);
+            prevMousePos = HandleMouseMovement(prevMousePos);
+
+            UpdateLights();
 
             Raylib.BeginDrawing();
             rlImGui.Begin();
@@ -182,6 +186,8 @@ class EditorController
 
         SaveEditorConfiguration();
     }
+
+
 
     private void RenderMenu()
     {
@@ -241,7 +247,6 @@ class EditorController
         LoadShaders();
     }
 
-
     private void OnOpenMaterial()
     {
         Logger.Info("OnOpenMaterial...");
@@ -294,6 +299,8 @@ class EditorController
         Raylib.DrawModel(_backgroundModel, Vector3.Zero, 1f, Color.White);
         Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
 
+        RenderLights();
+
         Raylib.EndMode3D();
 
         Raylib.DrawFPS(10, 10);
@@ -301,7 +308,7 @@ class EditorController
         Raylib.EndTextureMode();
     }
 
-    private Vector2 HandleCamera(Vector2 prevMousePos)
+    private Vector2 HandleMouseMovement(Vector2 prevMousePos)
     {
         var thisPos = Raylib.GetMousePosition();
 
@@ -343,7 +350,7 @@ class EditorController
                 throw new ArgumentOutOfRangeException();
         }
 
-        ApplyShader();
+        ApplyShaderToModel();
     }
 
     private void LoadUiResources()
@@ -357,8 +364,6 @@ class EditorController
 
         foreach (var (_, background) in _backgrounds)
         {
-            if (background.ImageFileName == null)
-                continue;
             var image = Raylib.LoadImage($"{ResourceUiPath}/{background.ImageFileName}");
             background.Texture = Raylib.LoadTextureFromImage(image);
             Raylib.UnloadImage(image);
@@ -374,6 +379,9 @@ class EditorController
         Logger.Info($"filePath={filePath}");
 
         _editorControllerData.MaterialPackage.Save(filePath);
+
+        string argument = "/select, \"" + filePath + "\"";
+        System.Diagnostics.Process.Start("explorer.exe", argument);
 
         Logger.Info("SaveMaterial OK");
     }
@@ -441,16 +449,10 @@ class EditorController
 
         foreach (var (name, variable) in _editorControllerData.MaterialPackage.Meta.Variables)
         {
-            //if (variable.Value is null)
-            //{
-            //    Logger.Trace($"{name} variable is null");
-            //    continue;
-            //}
-
             var location = Raylib.GetShaderLocation(_currentShader.Value, name);
             if (location < 0)
             {
-                Logger.Error($"location for {name} not found in shader");
+                Logger.Error($"location for {name} not found in shader. maybe because unused in code");
                 continue;
             }
 
@@ -480,28 +482,28 @@ class EditorController
     }
 
     private void SetUniformTexture(string variableName,
-        string value)
+        string fileName)
     {
         Logger.Info("SetUniformTexture...");
 
-        if(value == "")
+        if(fileName == "")
         {
             Logger.Trace("No filename set");
             return;
         }
 
-        var extension = Path.GetExtension(value);
+        var extension = Path.GetExtension(fileName);
         if (extension == null)
-            throw new NullReferenceException($"No file extension found in {value}");
+            throw new NullReferenceException($"No file extension found in {fileName}");
 
-        var file = _editorControllerData.MaterialPackage.GetFile(FileType.Image, value);
+        var file = _editorControllerData.MaterialPackage.GetFile(FileType.Image, fileName);
         if (file == null)
-            throw new NullReferenceException($"No file {value} found");
+            throw new NullReferenceException($"No file {fileName} found");
 
         var image = Raylib.LoadImageFromMemory(extension, file);       // ignore period
         if (Raylib.IsImageValid(image) == false)
         {
-            Logger.Error($"image {value} is not valid");
+            Logger.Error($"image {fileName} is not valid");
             return;
         }
 
@@ -537,10 +539,10 @@ class EditorController
         else
             Logger.Error($"texture index for {variableName} can't be found");
 
-        Logger.Trace($"{variableName}={value}");
+        Logger.Trace($"{variableName}={fileName}");
     }
 
-    private void ApplyShader()
+    private void ApplyShaderToModel()
     {
         Logger.Info("ApplyShader...");
 
@@ -576,7 +578,9 @@ class EditorController
 
         Logger.Info($"shader id={_currentShader.Value.Id}");
 
-        ApplyShader();
+        ApplyShaderToModel();
+
+        CreateLights();
 
         return valid;
     }
@@ -712,7 +716,7 @@ class EditorController
 
     private Model GenerateSphereModel()
     {
-        var mesh = Raylib.GenMeshSphere(2, 10, 10);
+        var mesh = Raylib.GenMeshSphere(2, 20, 20);
         var model = Raylib.LoadModelFromMesh(mesh);
         return model;
     }
@@ -762,5 +766,60 @@ class EditorController
         }
 
         Logger.Info("editor config saved");
+    }
+
+    private void CreateLights()
+    {
+        lights.Clear();
+
+        lights.Add(Rlights.CreateLight(
+            0,
+            LightType.Point,
+            new Vector3(-2, 1, -2),
+            Vector3.Zero,
+            Color.Yellow,
+            _currentShader.Value
+        ));
+        lights.Add(Rlights.CreateLight(
+            1,
+            LightType.Point,
+            new Vector3(2, 1, 2),
+            Vector3.Zero,
+            Color.Red,
+            _currentShader.Value
+        ));
+        lights.Add(Rlights.CreateLight(
+            2,
+            LightType.Point,
+            new Vector3(-2, 1, 2),
+            Vector3.Zero,
+            Color.Green,
+            _currentShader.Value
+        ));
+        lights.Add(Rlights.CreateLight(
+            3,
+            LightType.Point,
+            new Vector3(2, 1, -2),
+            Vector3.Zero,
+            Color.Blue,
+            _currentShader.Value
+        ));
+    }
+
+    public void RenderLights()
+    {
+        foreach (var light in lights)
+        {
+            Raylib.DrawSphereEx(light.Position, 0.2f, 8, 8, light.Color);
+        }
+    }
+
+    private void UpdateLights()
+    {
+        foreach (var light in lights)
+        {
+            Rlights.UpdateLightValues(_currentShader.Value, light);
+        }
+        
     }
 }
