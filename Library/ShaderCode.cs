@@ -1,4 +1,5 @@
-﻿using Library.Helpers;
+﻿using Library.CodeVariable;
+using Library.Helpers;
 using System.Drawing;
 using System.Numerics;
 using System.Text.RegularExpressions;
@@ -14,18 +15,18 @@ public class ShaderCode(string code)
     /// <summary>
     /// List of uniforms detected inside the code
     /// </summary>
-    public Dictionary<string, CodeVariable> Variables = [];
+    public Dictionary<string, CodeVariableBase> Variables = [];
 
     public void ParseVariables()
     {
         Variables = _ParseVariables();
     }
 
-    private Dictionary<string, CodeVariable> _ParseVariables()
+    private Dictionary<string, CodeVariableBase> _ParseVariables()
     {
         var currentPosition = Code;
 
-        var result = new Dictionary<string, CodeVariable>();
+        var result = new Dictionary<string, CodeVariableBase>();
 
 
         while (true)

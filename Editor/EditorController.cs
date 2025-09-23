@@ -3,6 +3,7 @@ using Editor.Helpers;
 using Editor.Windows;
 using ImGuiNET;
 using Library;
+using Library.CodeVariable;
 using Library.Helpers;
 using Library.Packaging;
 using NLog;
@@ -569,7 +570,7 @@ class EditorController
     {
         _shaderCode = new Dictionary<string, ShaderCode>();
 
-        Dictionary<string, CodeVariable> allShaderVariables = [];
+        Dictionary<string, CodeVariableBase> allShaderVariables = [];
 
         var material = _editorControllerData.MaterialPackage;
         var shaderVariables = GetShaderCodeVariables(material, FileType.VertexShader);
@@ -663,7 +664,7 @@ class EditorController
         }
     }
 
-    private Dictionary<string, CodeVariable>? GetShaderCodeVariables(MaterialPackage material,
+    private Dictionary<string, CodeVariableBase>? GetShaderCodeVariables(MaterialPackage material,
         FileType shaderType)
     {
         var file = material.GetShaderCode(shaderType);

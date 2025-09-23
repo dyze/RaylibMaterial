@@ -1,12 +1,12 @@
 ﻿using System.Drawing;
 using System.Numerics;
 
-namespace Library;
+namespace Library.CodeVariable;
 
 
 public static class CodeVariableFactory
 {
-    public static CodeVariable Build(Type type)
+    public static CodeVariableBase Build(Type type)
     {
 
         if (type == typeof(CodeVariableFloat))

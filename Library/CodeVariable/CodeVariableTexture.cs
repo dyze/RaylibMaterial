@@ -2,10 +2,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 
-namespace Library;
+namespace Library.CodeVariable;
 
 [Serializable]
-public class CodeVariableTexture : CodeVariable
+public class CodeVariableTexture : CodeVariableBase
 {
     [Required][JsonProperty("Value")] public string Value { get; set; } = "";
 

@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using Library.CodeVariable;
+using System.Numerics;
 
 namespace Library.Tests;
 

@@ -2,10 +2,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 
-namespace Library;
+namespace Library.CodeVariable;
 
 [Serializable]
-public class CodeVariableFloat : CodeVariable
+public class CodeVariableFloat : CodeVariableBase
 {
     [Required][JsonProperty("Value")] public float Value { get; set; }
 

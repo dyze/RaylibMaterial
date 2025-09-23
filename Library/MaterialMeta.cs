@@ -1,4 +1,5 @@
-﻿using Library.Packaging;
+﻿using Library.CodeVariable;
+using Library.Packaging;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
@@ -27,7 +28,7 @@ public class MaterialMeta
     [Required] [JsonProperty("Author")] public string Author = "?";
     [Required] [JsonProperty("Tags")] public List<string> Tags = [];
 
-    [Required][JsonProperty("Variables")] public Dictionary<string, CodeVariable> Variables = [];
+    [Required][JsonProperty("Variables")] public Dictionary<string, CodeVariableBase> Variables = [];
 
     [JsonIgnore] public bool IsModified { get; set; } = true;
 

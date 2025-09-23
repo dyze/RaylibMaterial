@@ -1,11 +1,8 @@
 ﻿using Editor.Helpers;
 using ImGuiNET;
-using Library;
+using Library.CodeVariable;
 using Library.Helpers;
 using NLog;
-using System.Drawing;
-using System.Numerics;
-using System.Xml.Linq;
 
 namespace Editor.Windows
 {
@@ -13,19 +10,19 @@ namespace Editor.Windows
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly EditorControllerData editorControllerData;
-        private Dictionary<Type, Func<CodeVariable, string, bool, bool>> _handlers;
+        private Dictionary<Type, Func<CodeVariableBase, string, bool, bool>> _handlers;
 
         public VariablesControl(EditorControllerData editorControllerData)
         {
             _handlers = new()
-        {
-            { typeof(CodeVariableVector4), HandleVector4 },
-            { typeof(CodeVariableFloat), HandleFloat },
-            { typeof(CodeVariableTexture), HandleTexture },
-            { typeof(CodeVariableColor), HandleColor },
-        };
-            this.editorControllerData = editorControllerData;
-        }
+            {
+                { typeof(CodeVariableVector4), HandleVector4 },
+                { typeof(CodeVariableFloat), HandleFloat },
+                { typeof(CodeVariableTexture), HandleTexture },
+                { typeof(CodeVariableColor), HandleColor },
+            };
+                this.editorControllerData = editorControllerData;
+            }
 
 
 
@@ -33,7 +30,7 @@ namespace Editor.Windows
         /// Render variables
         /// </summary>
         /// <returns>true if variables changed</returns>
-        public bool Render(Dictionary<string, CodeVariable> variables)
+        public bool Render(Dictionary<string, CodeVariableBase> variables)
         {
             var variableChanged = false;
 
@@ -46,7 +43,7 @@ namespace Editor.Windows
                 {
                     ImGui.BeginGroup();
 
-                    if(_handlers.TryGetValue(variable.GetType(), out var handler))
+                    if (_handlers.TryGetValue(variable.GetType(), out var handler))
                     {
                         variableChanged = handler(variable, name, variableChanged);
                     }
@@ -56,18 +53,13 @@ namespace Editor.Windows
                     }
 
                     ImGui.EndGroup();
-
-
                 }
 
             return variableChanged;
         }
 
-        private static bool HandleFloat(CodeVariable variable, string name, bool variableChanged)
+        private static bool HandleFloat(CodeVariableBase variable, string name, bool variableChanged)
         {
-            //if (variable.Value == null)
-            //    throw new NullReferenceException("variable.Value is null");
-
             var currentValue = (variable as CodeVariableFloat).Value;
             if (ImGui.InputFloat(name, ref currentValue))
             {
@@ -78,11 +70,8 @@ namespace Editor.Windows
             return variableChanged;
         }
 
-        private static bool HandleVector4(CodeVariable variable, string name, bool variableChanged)
+        private static bool HandleVector4(CodeVariableBase variable, string name, bool variableChanged)
         {
-            //if (variable.Value == null)
-            //    throw new NullReferenceException("variable.Value is null");
-
             var currentValue = (variable as CodeVariableVector4).Value;
             if (ImGui.InputFloat4(name, ref currentValue))
             {
@@ -93,11 +82,8 @@ namespace Editor.Windows
             return variableChanged;
         }
 
-        private bool HandleColor(CodeVariable variable, string name, bool variableChanged)
+        private bool HandleColor(CodeVariableBase variable, string name, bool variableChanged)
         {
-            //if (variable.Value == null)
-            //    throw new NullReferenceException("variable.Value is null");
-
             var currentValue = TypeConvertors.ColorToVec4((variable as CodeVariableColor).Value);
             if (ImGui.ColorEdit4(name, ref currentValue))
             {
@@ -108,11 +94,8 @@ namespace Editor.Windows
             return variableChanged;
         }
 
-        private bool HandleTexture(CodeVariable variable, string name, bool variableChanged)
+        private bool HandleTexture(CodeVariableBase variable, string name, bool variableChanged)
         {
-            //if (variable.Value == null)
-            //    throw new NullReferenceException("variable.Value is null");
-
             var currentValue = (variable as CodeVariableTexture).Value;
             ImGui.LabelText(name, currentValue);
 

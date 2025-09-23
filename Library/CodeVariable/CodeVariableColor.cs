@@ -2,10 +2,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 
-namespace Library;
+namespace Library.CodeVariable;
 
 [Serializable]
-public class CodeVariableColor : CodeVariable
+public class CodeVariableColor : CodeVariableBase
 {
     [Required][JsonProperty("Value")] public Color Value { get; set; }
 
