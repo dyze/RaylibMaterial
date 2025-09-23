@@ -145,8 +145,6 @@ class MaterialWindow(EditorControllerData editorControllerData)
 
     private void RenderFiles()
     {
-        //if (ImGui.BeginChild("Files"))
-        //{
         ImGui.SeparatorText("Files"); 
         ImGuiHelpers.HelpMarker("Files that will be part of final package");
         if (editorControllerData.MaterialPackage.FilesCount == 0)
@@ -161,10 +159,15 @@ class MaterialWindow(EditorControllerData editorControllerData)
                 {
                     ImGui.SameLine();
                     ImGui.TextColored(TypeConvertors.ColorToVec4(System.Drawing.Color.Orange), "unused!");
+                    ImGui.SameLine();
+                    ImGui.PushID(file.ToString());
+                    if (ImGui.Button("delete"))
+                    {
+                        editorControllerData.MaterialPackage.DeleteFile(file);
+                    }
+                    ImGui.PopID();
                 }
             }
-        //}
-        //ImGui.EndChild();
 
         //if (editorControllerData.DataFileExplorerData.DraggedFullFilePath != "")
         //    ImGui.Text("Drop your file here");

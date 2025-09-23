@@ -190,5 +190,15 @@ public class MaterialPackage
         _fileReferences[key] += count;
     }
 
+    public void DeleteFile(KeyValuePair<FileId, byte[]> file)
+    {
+        var fileReferences = FileReferences[file.Key];
+        if (fileReferences > 0)
+            throw new ApplicationException($"{file.Key} can't be removed because it is still in use");
 
+        _files.Remove(file.Key);
+        _fileReferences.Remove(file.Key);
+
+        Logger.Info($"{file.Key} has been removed from package.");
+    }
 }
