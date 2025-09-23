@@ -10,6 +10,7 @@ using Library.Packaging;
 using NLog;
 using Raylib_cs;
 using rlImGui_cs;
+using System.Collections;
 using System.Numerics;
 using Color = Raylib_cs.Color;
 
@@ -560,16 +561,16 @@ class EditorController
         Logger.Info("LoadShaders...");
 
         var material = _editorControllerData.MaterialPackage;
-        var vertexShaderFileName = material.GetShaderCode(FileType.VertexShader);
-        var fragmentShaderFileName = material.GetShaderCode(FileType.FragmentShader);
+        var vertexShader = material.GetShaderCode(FileType.VertexShader);
+        var fragmentShader = material.GetShaderCode(FileType.FragmentShader);
 
         if (_currentShader.HasValue 
             && _currentShader.Value.Id != _defaultShader.Id)
             Raylib.UnloadShader(_currentShader.Value);
 
         _currentShader = Raylib.LoadShaderFromMemory(
-            vertexShaderFileName != null ? _shaderCode[vertexShaderFileName.Value.Key.FileName].Code : null,
-            fragmentShaderFileName != null ? _shaderCode[fragmentShaderFileName.Value.Key.FileName].Code : null);
+            vertexShader != null ? System.Text.Encoding.UTF8.GetString(vertexShader.Value.Value) : null,
+            fragmentShader != null ? System.Text.Encoding.UTF8.GetString(fragmentShader.Value.Value) : null);
 
         bool valid = Raylib.IsShaderValid(_currentShader.Value);
 
@@ -690,8 +691,7 @@ class EditorController
         if (file != null)
         {
             var fileName = file.Value.Key.FileName;
-            var code = new ShaderCode(
-                File.ReadAllText($"{ShaderFolderPath}\\{fileName}"));
+            var code = new ShaderCode(System.Text.Encoding.UTF8.GetString(file.Value.Value));
             code.ParseVariables();
             _shaderCode.Add(fileName, code);
             return code.Variables;
@@ -820,6 +820,5 @@ class EditorController
         {
             Rlights.UpdateLightValues(_currentShader.Value, light);
         }
-        
     }
 }

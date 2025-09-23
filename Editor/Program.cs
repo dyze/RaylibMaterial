@@ -3,7 +3,6 @@
 namespace Editor;
 
 
-
 class Program
 {
     public static void Main()
@@ -16,13 +15,9 @@ class Program
             builder.ForLogger().Targets.Add(messageQueueTarget);
         });
 
-        //Logger.Info("Main");
-
         var app = new EditorController();
         messageQueueTarget.MessageQueue = EditorController.MessageQueue;
         
         app.Run();
-
-        
     }
 }

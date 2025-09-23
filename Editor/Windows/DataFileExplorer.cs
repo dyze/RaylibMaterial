@@ -5,7 +5,6 @@ using Editor.Helpers;
 using Editor.Processes;
 using ImGuiNET;
 using Library.Packaging;
-using Microsoft.VisualBasic.FileIO;
 using NLog;
 using Raylib_cs;
 
