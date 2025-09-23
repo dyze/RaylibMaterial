@@ -129,35 +129,6 @@ public class MaterialPackage
         Logger.Info($"MaterialPackage.Save OK: files added={1 + _files.Count}");
     }
 
-    //public void Open(string filePath)
-    //{
-    //    Logger.Info($"MaterialPackage.Open {filePath}");
-
-    //    var inputDataAccess = new PackageAccess();
-
-    //    inputDataAccess.Open(filePath, AccessMode.Read);
-
-    //    // read meta file
-    //    Logger.Info($"Reading entry {MetaFileName}...");
-
-    //    var metaJson = inputDataAccess.ReadTextFile(MetaFileName);
-
-    //    Meta = MaterialMetaStorage.ParseJson(metaJson);
-
-    //    foreach (var fileName in inputDataAccess.GetAllFiles())
-    //    {
-    //        if (fileName == MetaFileName)
-    //            continue;
-
-    //        Logger.Info($"Reading entry {fileName}...");
-
-    //        var fileContent = inputDataAccess.ReadBinaryFile(fileName);
-    //        AddFile(fileName, fileContent);
-    //    }
-
-    //    inputDataAccess.Close();
-    //    inputDataAccess = null;
-    //}
 
     public void AddFile(string fileName,
         byte[] fileContent)
@@ -176,6 +147,8 @@ public class MaterialPackage
 
         OnFilesChanged?.Invoke();
     }
+
+    public byte[] GetFile(FileType fileType, string fileName) => Files.GetValueOrDefault(new FileId(fileType, fileName));
 
     public KeyValuePair<FileId, byte[]>? GetFileMatchingType(FileType fileType)
     {

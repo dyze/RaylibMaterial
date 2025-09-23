@@ -482,11 +482,26 @@ class EditorController
     private void SetUniformTexture(string variableName,
         string value)
     {
-        var imagePath = $"{ImagesFolderPath}/{value}";
-        var image = Raylib.LoadImage(imagePath);
+        Logger.Info("SetUniformTexture...");
+
+        if(value == "")
+        {
+            Logger.Trace("No filename set");
+            return;
+        }
+
+        var extension = Path.GetExtension(value);
+        if (extension == null)
+            throw new NullReferenceException($"No file extension found in {value}");
+
+        var file = _editorControllerData.MaterialPackage.GetFile(FileType.Image, value);
+        if (file == null)
+            throw new NullReferenceException($"No file {value} found");
+
+        var image = Raylib.LoadImageFromMemory(extension, file);       // ignore period
         if (Raylib.IsImageValid(image) == false)
         {
-            Logger.Error($"image {variableName} is not valid");
+            Logger.Error($"image {value} is not valid");
             return;
         }
 
