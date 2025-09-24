@@ -103,6 +103,8 @@ public class MaterialPackage : IDisposable
 
         inputDataAccess.Close();
 
+        Meta.ClearModified();
+
         Logger.Info($"MaterialPackage.Load OK: files read={1 + _files.Count}");
     }
 
@@ -144,6 +146,8 @@ public class MaterialPackage : IDisposable
 
 
         outputDataAccess.Close();
+
+        Meta.ClearModified();
 
         Logger.Info($"MaterialPackage.Save OK: files added={1 + _files.Count}");
     }

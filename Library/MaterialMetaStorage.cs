@@ -59,7 +59,6 @@ public class MaterialMetaStorage
 
         File.WriteAllText(filePath, json);
 
-        materialMeta.FullFilePath = Path.GetFullPath(filePath);
         materialMeta.IsModified = false;
     }
 }

@@ -91,14 +91,12 @@ class EditorController
 
     private readonly List<Light> _lights = new();
 
-    private bool _fileDialogOpen;
-    private ImFileDialogInfo _fileDialogInfo;
-    private string _outputFilePath = MaterialsPath;
+    private ImFileDialogInfo? _fileDialogInfo;
+    private string _outputFilePath;
 
     public EditorController()
     {
         LoadEditorConfiguration();
-
 
         if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
             _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = "./resources";
@@ -112,11 +110,13 @@ class EditorController
         _materialWindow.OnSave += _materialWindow_OnSave;
 
         _shaderCodeWindow.BuildPressed += ShaderCodeWindow_OnBuildPressed;
+
+        _outputFilePath = Path.GetFullPath(MaterialsPath + "\\noname" + MaterialFileExtension);
     }
 
     private void _materialWindow_OnSave()
     {
-        SaveMaterial();
+        OnSave();
     }
 
     public void Run()
@@ -214,14 +214,17 @@ class EditorController
         {
             if (ImGui.BeginMenu("Package"))
             {
-                if (ImGui.MenuItem("New"))
+                if (ImGui.MenuItem("New", "Ctrl+N"))
                     OnNewMaterial();
 
-                if (ImGui.MenuItem("Open"))
-                    OnStartOpenMaterial();
+                if (ImGui.MenuItem("Load", "Ctrl+L"))
+                    OnLoadMaterialStart();
 
-                if (ImGui.MenuItem("Save"))
-                    SaveMaterial();
+                if (ImGui.MenuItem("Save", "Ctrl+S"))
+                    OnSave();
+
+                if (ImGui.MenuItem("Save as"))
+                    OnSaveAsStart();
 
                 //ImGui.Separator();
 
@@ -255,6 +258,8 @@ class EditorController
     {
         Logger.Info("OnNewMaterial...");
 
+        _editorControllerData.MaterialFilePath = null;
+
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
@@ -266,21 +271,21 @@ class EditorController
         LoadShaders();
     }
 
-    private void OnStartOpenMaterial()
+    private void OnLoadMaterialStart()
     {
-        Logger.Info("OnStartOpenMaterial...");
+        Logger.Info("OnLoadMaterialStart...");
 
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
         _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
 
-        _fileDialogOpen = true;
+
         _fileDialogInfo = new()
         {
             Title = "Please select a material",
             Type = ImGuiFileDialogType.OpenFile,
-            DirectoryPath = new DirectoryInfo(_outputFilePath),
+            DirectoryPath = new DirectoryInfo(Path.GetDirectoryName(_outputFilePath)),
             FileName = "",
             Extensions =
             [
@@ -288,13 +293,16 @@ class EditorController
                 new Tuple<string, string>("*"+MaterialBackupFileExtension, "Material backups")
             ]
         };
+
+        Logger.Info("OnLoadMaterialStart OK");
     }
 
-    private void OnEndOpenMaterial()
+    private void OnLoadMaterialEnd()
     {
         Logger.Info($"filePath={_fileDialogInfo.ResultPath}");
 
         _editorControllerData.MaterialPackage.Load(_fileDialogInfo.ResultPath);
+        _editorControllerData.MaterialFilePath = _fileDialogInfo.ResultPath;
 
         SelectModelType();
         LoadShaderCode();
@@ -403,20 +411,55 @@ class EditorController
         }
     }
 
-    private void SaveMaterial()
+    private void OnSave()
     {
-        Logger.Info("SaveMaterial...");
+        Logger.Info("OnSave...");
 
-        var filePath = $"{MaterialsPath}/{_editorControllerData.MaterialPackage.Meta.FileName}{MaterialFileExtension}";
-        filePath = Path.GetFullPath(filePath);
-        Logger.Info($"filePath={filePath}");
+        if (_editorControllerData.MaterialFilePath == null)
+        {
+            OnSaveAsStart();
+            return;
+        }
 
-        _editorControllerData.MaterialPackage.Save(filePath);
+        _editorControllerData.MaterialPackage.Save(_editorControllerData.MaterialFilePath);
 
-        var argument = "/select, \"" + filePath + "\"";
+        var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
         System.Diagnostics.Process.Start("explorer.exe", argument);
 
-        Logger.Info("SaveMaterial OK");
+        Logger.Info("OnSave OK");
+    }
+
+    private void OnSaveAsStart()
+    {
+        Logger.Info("OnSaveAsStart...");
+
+        _fileDialogInfo = new()
+        {
+            Title = "Please select a material",
+            Type = ImGuiFileDialogType.SaveFile,
+            DirectoryPath = new DirectoryInfo(Path.GetDirectoryName(_outputFilePath)),
+            FileName = Path.GetFileName(_outputFilePath),
+            Extensions =
+            [
+                new Tuple<string, string>("*"+MaterialFileExtension, "Materials")
+            ]
+        };
+
+        Logger.Info("OnSaveAsStart OK");
+    }
+
+    private void OnSaveEnd()
+    {
+        Logger.Info("OnSaveEnd...");
+
+        _editorControllerData.MaterialFilePath = _outputFilePath;
+
+        _editorControllerData.MaterialPackage.Save(_editorControllerData.MaterialFilePath);
+
+        var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
+        System.Diagnostics.Process.Start("explorer.exe", argument);
+
+        Logger.Info("OnSaveEnd OK");
     }
 
     private void RenderToolBar()
@@ -456,12 +499,22 @@ class EditorController
 
     private void RenderFileDialog()
     {
-        if (ImGuiFileDialog.FileDialog(ref _fileDialogOpen, _fileDialogInfo))
+        var open = _fileDialogInfo != null;
+        if (ImGuiFileDialog.FileDialog(ref open, _fileDialogInfo))
         {
-            _outputFilePath = _fileDialogInfo.DirectoryPath.FullName;
-            OnEndOpenMaterial();
+            _outputFilePath = _fileDialogInfo.ResultPath;
+
+            if(_fileDialogInfo.Type == ImGuiFileDialogType.OpenFile)
+                OnLoadMaterialEnd();
+            else
+                OnSaveEnd();
         }
+
+        if(open == false)
+            _fileDialogInfo = null;
     }
+
+
 
     private void SelectBackground(BackgroundType key)
     {

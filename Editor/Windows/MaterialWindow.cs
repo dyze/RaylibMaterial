@@ -107,14 +107,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
     private void RenderMeta()
     {
         ImGui.SeparatorText("Meta");
-        var fileName = editorControllerData.MaterialPackage.Meta.FileName;
-        if (ImGui.InputText("FileName", ref fileName, 200))
-        {
-            editorControllerData.MaterialPackage.Meta.FileName = fileName;
-            editorControllerData.MaterialPackage.Meta.SetModified();
-        }
 
-        ImGui.LabelText("FilePath", editorControllerData.MaterialPackage.Meta.FullFilePath);
         if (ImGui.InputText("Description", ref editorControllerData.MaterialPackage.Meta.Description, 200))
             editorControllerData.MaterialPackage.Meta.SetModified();
         if (ImGui.InputText("Author", ref editorControllerData.MaterialPackage.Meta.Author, 200))

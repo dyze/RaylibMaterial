@@ -184,7 +184,7 @@ namespace Editor.Helpers
             }
         }
 
-        public static bool FileDialog(ref bool open, 
+        public static bool FileDialog(ref bool open,
             ImFileDialogInfo dialogInfo)
         {
             if (!open)
@@ -286,11 +286,14 @@ namespace Editor.Helpers
                 {
                     contentRegionWidth = ImGui.GetContentRegionAvail().X;
 
-                    if (ImGui.Selectable("..", dialogInfo.CurrentIndex == index, ImGuiSelectableFlags.AllowDoubleClick, new Vector2(contentRegionWidth, 0)))
+                    if (ImGui.Selectable("..",
+                            dialogInfo.CurrentIndex == index,
+                            ImGuiSelectableFlags.AllowDoubleClick,
+                            new Vector2(contentRegionWidth, 0)))
                     {
                         dialogInfo.CurrentIndex = index;
 
-                        if (ImGui.IsMouseDoubleClicked(0))
+                        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                         {
                             dialogInfo.DirectoryPath = dialogInfo.DirectoryPath.Parent;
                             dialogInfo.RefreshInfo = true;
@@ -355,6 +358,11 @@ namespace Editor.Helpers
                     {
                         dialogInfo.CurrentIndex = index;
                         dialogInfo.FileName = fileName;
+
+                        if (ImGui.IsMouseDoubleClicked(0))
+                        {
+                            complete = OnOkPressed(ref open, dialogInfo, complete);
+                        }
                     }
 
                     ImGui.NextColumn();
@@ -437,23 +445,7 @@ namespace Editor.Helpers
                 {
                     if (ImGui.Button("Open"))
                     {
-                        dialogInfo.ResultPath = Path.Combine(dialogInfo.DirectoryPath.FullName, dialogInfo.FileName);
-
-                        if (File.Exists(dialogInfo.ResultPath))
-                        {
-                            _fileNameSortOrder = ImGuiFileDialogSortOrder.None;
-                            _sizeSortOrder = ImGuiFileDialogSortOrder.None;
-                            _typeSortOrder = ImGuiFileDialogSortOrder.None;
-                            _dateSortOrder = ImGuiFileDialogSortOrder.None;
-
-                            dialogInfo.RefreshInfo = false;
-                            dialogInfo.CurrentIndex = 0;
-                            dialogInfo.CurrentFiles.Clear();
-                            dialogInfo.CurrentDirectories.Clear();
-
-                            complete = true;
-                            open = false;
-                        }
+                        complete = OnOkPressed(ref open, dialogInfo, complete);
                     }
                 }
                 else if (dialogInfo.Type == ImGuiFileDialogType.SaveFile)
@@ -462,7 +454,7 @@ namespace Editor.Helpers
                     {
                         dialogInfo.ResultPath = Path.Combine(dialogInfo.DirectoryPath.FullName, dialogInfo.FileName);
 
-                        if (File.Exists(dialogInfo.ResultPath))
+                        if (Directory.Exists(dialogInfo.DirectoryPath.FullName))
                         {
                             _fileNameSortOrder = ImGuiFileDialogSortOrder.None;
                             _sizeSortOrder = ImGuiFileDialogSortOrder.None;
@@ -483,6 +475,29 @@ namespace Editor.Helpers
 
             ImGui.End();
             ImGui.PopID();
+
+            return complete;
+        }
+
+        private static bool OnOkPressed(ref bool open, ImFileDialogInfo dialogInfo, bool complete)
+        {
+            dialogInfo.ResultPath = Path.Combine(dialogInfo.DirectoryPath.FullName, dialogInfo.FileName);
+
+            if (File.Exists(dialogInfo.ResultPath))
+            {
+                _fileNameSortOrder = ImGuiFileDialogSortOrder.None;
+                _sizeSortOrder = ImGuiFileDialogSortOrder.None;
+                _typeSortOrder = ImGuiFileDialogSortOrder.None;
+                _dateSortOrder = ImGuiFileDialogSortOrder.None;
+
+                dialogInfo.RefreshInfo = false;
+                dialogInfo.CurrentIndex = 0;
+                dialogInfo.CurrentFiles.Clear();
+                dialogInfo.CurrentDirectories.Clear();
+
+                complete = true;
+                open = false;
+            }
 
             return complete;
         }
