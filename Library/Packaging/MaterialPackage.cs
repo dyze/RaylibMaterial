@@ -210,16 +210,21 @@ public class MaterialPackage : IDisposable
         _fileReferences[key] += count;
     }
 
-    public void DeleteFile(KeyValuePair<FileId, byte[]> file)
+    public void DeleteFile(FileId fileId)
     {
-        var fileReferences = FileReferences[file.Key];
+        var fileReferences = FileReferences[fileId];
         if (fileReferences > 0)
-            throw new ApplicationException($"{file.Key} can't be removed because it is still in use");
+            throw new ApplicationException($"{fileId} can't be removed because it is still in use");
 
-        _files.Remove(file.Key);
-        _fileReferences.Remove(file.Key);
+        _files.Remove(fileId);
+        _fileReferences.Remove(fileId);
 
-        Logger.Info($"{file.Key} has been removed from package.");
+        Logger.Info($"{fileId} has been removed from package.");
+    }
+
+    public void UpdateFile(FileId fileId, byte[] data)
+    {
+        _files[fileId] = data;
     }
 
     /// <summary>
@@ -240,7 +245,7 @@ public class MaterialPackage : IDisposable
             fragmentShader != null ? System.Text.Encoding.UTF8.GetString(fragmentShader.Value.Value) : null);
 
         if (_shader == null)
-            throw new InvalidDataException("Shader can't be instanciated");
+            throw new InvalidDataException("Shader can't be instantiated");
 
         var valid = Raylib.IsShaderValid(_shader.Value);
 
@@ -290,7 +295,7 @@ public class MaterialPackage : IDisposable
             }
             else if (variable.GetType() == typeof(CodeVariableColor))
             {
-                var currentValue = TypeConvertors.ColorToVec4((variable as CodeVariableColor).Value);
+                var currentValue = TypeConvertors.ColorToVector4((variable as CodeVariableColor).Value);
                 Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
                 Logger.Trace($"{name}={currentValue}");
             }
@@ -367,4 +372,6 @@ public class MaterialPackage : IDisposable
 
         Logger.Trace($"{variableName}={fileName}");
     }
+
+
 }

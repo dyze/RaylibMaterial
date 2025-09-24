@@ -84,7 +84,7 @@ namespace Editor.Windows
 
         private bool HandleColor(CodeVariableBase variable, string name, bool variableChanged)
         {
-            var currentValue = TypeConvertors.ColorToVec4((variable as CodeVariableColor).Value);
+            var currentValue = TypeConvertors.ColorToVector4((variable as CodeVariableColor).Value);
             if (ImGui.ColorEdit4(name, ref currentValue))
             {
                 (variable as CodeVariableColor).Value = TypeConvertors.Vec4ToColor(currentValue);

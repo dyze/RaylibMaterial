@@ -92,7 +92,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
 
         if (material.Meta.IsModified)
             ImGui.PushStyleColor(ImGuiCol.Button, 
-                TypeConvertors.ColorToVec4(System.Drawing.Color.Red));
+                TypeConvertors.ColorToVector4(System.Drawing.Color.Red));
 
         if (ImGui.Button("Save"))
             saveMaterial = true;
@@ -142,12 +142,12 @@ class MaterialWindow(EditorControllerData editorControllerData)
                 if (fileReferences == 0)
                 {
                     ImGui.SameLine();
-                    ImGui.TextColored(TypeConvertors.ColorToVec4(System.Drawing.Color.Orange), "unused!");
+                    ImGui.TextColored(TypeConvertors.ColorToVector4(System.Drawing.Color.Orange), "unused!");
                     ImGui.SameLine();
                     ImGui.PushID(file.ToString());
                     if (ImGui.Button("delete"))
                     {
-                        editorControllerData.MaterialPackage.DeleteFile(file);
+                        editorControllerData.MaterialPackage.DeleteFile(file.Key);
                     }
                     ImGui.PopID();
                 }

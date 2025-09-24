@@ -1,6 +1,9 @@
-﻿using ImGuiNET;
+﻿using System.Drawing;
+using ImGuiNET;
 using System.Numerics;
 using Library;
+using Library.Helpers;
+using Library.Packaging;
 
 namespace Editor.Windows
 {
@@ -16,7 +19,7 @@ namespace Editor.Windows
         /// </summary>
         /// <param name="shaderCodes"></param>
         /// <returns>code changed or not</returns>
-        public bool Render(Dictionary<string, ShaderCode> shaderCodes)
+        public bool Render(Dictionary<FileId, ShaderCode> shaderCodes)
         {
             var codeChanged = false;
 
@@ -36,19 +39,18 @@ namespace Editor.Windows
                 ImGui.EndDisabled();
 
 
-                if (isValid == false)
-                {
-                    ImGui.SameLine();
-                    ImGui.TextColored(new Vector4(1f, 0, 0, 1f),
-                        "not valid");
-                }
+                ImGui.SameLine();
+                if(isValid)
+                    ImGui.TextColored(TypeConvertors.ColorToVector4(Color.LimeGreen), "valid");
+                else
+                    ImGui.TextColored(TypeConvertors.ColorToVector4(Color.Red), "not valid");
 
                 var flags = ImGuiTabBarFlags.None;
 
                 if (ImGui.BeginTabBar("MyTabBar", flags))
                 {
-                    foreach (var (key, code) in shaderCodes)
-                        codeChanged |= RenderTab(key, code);
+                    foreach (var (fileId, code) in shaderCodes)
+                        codeChanged |= RenderTab(fileId, code);
 
                     ImGui.EndTabBar();
                 }
@@ -65,11 +67,11 @@ namespace Editor.Windows
         /// <param name="key"></param>
         /// <param name="code"></param>
         /// <returns>code changed or not</returns>
-        private bool RenderTab(string key, ShaderCode code)
+        private bool RenderTab(FileId fileId, ShaderCode code)
         {
             var codeChanged = false;
 
-            var name = key;
+            var name = fileId.FileName;
             if (code.NeedsRebuild)
                 name += " *";
             if (ImGui.BeginTabItem(name))

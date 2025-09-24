@@ -12,7 +12,7 @@ public static class TypeConvertors
         return new Raylib_cs.Color(src.R, src.G, src.B, src.A);
     }
 
-    public static Vector4 ColorToVec4(System.Drawing.Color src)
+    public static Vector4 ColorToVector4(System.Drawing.Color src)
     {
         return new Vector4(src.R/255f, 
             src.G / 255f, 

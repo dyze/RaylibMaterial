@@ -40,7 +40,7 @@ class EditorController
     /// </summary>
     private Shader _defaultShader;
 
-    private Dictionary<string, ShaderCode> _shaderCode = new();
+    private Dictionary<FileId, ShaderCode> _shaderCode = new();
 
     private RenderTexture2D _viewTexture;
 
@@ -167,7 +167,15 @@ class EditorController
 
             var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
             if(codeIsModified)
+            {
+                foreach (var (key, value) in _shaderCode)
+                {
+                    var array = System.Text.Encoding.UTF8.GetBytes(value.Code);
+                    _editorControllerData.MaterialPackage.UpdateFile(key, array);
+                }
+
                 _editorControllerData.MaterialPackage.Meta.SetModified();
+            }
 
             RenderOutputWindow();
             _materialWindow.Render();
@@ -492,7 +500,7 @@ class EditorController
     private void LoadShaderCode()
     {
         // Load shader codes
-        _shaderCode = new Dictionary<string, ShaderCode>();
+        _shaderCode = new Dictionary<FileId, ShaderCode>();
 
         var material = _editorControllerData.MaterialPackage;
 
@@ -598,15 +606,14 @@ class EditorController
         }
     }
 
-    private Tuple<string, ShaderCode>? GetShaderCode(MaterialPackage material,
+    private Tuple<FileId, ShaderCode>? GetShaderCode(MaterialPackage material,
         FileType shaderType)
     {
         var file = material.GetShaderCode(shaderType);
         if (file != null)
         {
-            var fileName = file.Value.Key.FileName;
             var code = new ShaderCode(System.Text.Encoding.UTF8.GetString(file.Value.Value));
-            return new Tuple<string, ShaderCode>(fileName, code);
+            return new Tuple<FileId, ShaderCode>(file.Value.Key, code);
         }
 
         return null;
