@@ -1,5 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using Library.CodeVariable;
+using Library.Helpers;
 using NLog;
+using Raylib_cs;
 
 namespace Library.Packaging;
 
@@ -11,11 +13,18 @@ public enum FileType
     Image,
 }
 
-public class MaterialPackage
+public class MaterialPackage : IDisposable
 {
     private readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// Triggered when a file is added or removed
+    /// </summary>
     public event Action? OnFilesChanged;
+
+    /// <summary>
+    /// Triggered when Shader is changed
+    /// </summary>
     public event Action? OnShaderChanged;
 
     public const string MetaFileName = "material.meta";
@@ -24,8 +33,14 @@ public class MaterialPackage
     private Dictionary<FileId, byte[]> _files = [];
     private Dictionary<FileId, uint> _fileReferences = [];
 
+    /// <summary>
+    /// Number of files in package
+    /// </summary>
     public int FilesCount => _files.Count;
 
+    /// <summary>
+    /// Files embedded in package
+    /// </summary>
     public IReadOnlyDictionary<FileId, byte[]> Files => _files;
 
     public IReadOnlyDictionary<FileId, uint> FileReferences => _fileReferences;
@@ -53,6 +68,11 @@ public class MaterialPackage
         { ".vert", FileType.VertexShader },
         { ".frag", FileType.FragmentShader }
     };
+
+    /// <summary>
+    /// Raylib Shader
+    /// </summary>
+    private Shader? _shader;
 
     public void Load(string packageFilePath)
     {
@@ -200,5 +220,151 @@ public class MaterialPackage
         _fileReferences.Remove(file.Key);
 
         Logger.Info($"{file.Key} has been removed from package.");
+    }
+
+    /// <summary>
+    /// Loads the main shader defined inside the package
+    /// </summary>
+    /// <returns>A raylib Shader object</returns>
+    /// <exception cref="InvalidDataException">If the Shader is not valid</exception>
+    public Shader LoadShader()
+    {
+        var vertexShader = GetShaderCode(FileType.VertexShader);
+        var fragmentShader = GetShaderCode(FileType.FragmentShader);
+
+        if (_shader.HasValue)
+            return _shader.Value;
+
+        _shader = Raylib.LoadShaderFromMemory(
+            vertexShader != null ? System.Text.Encoding.UTF8.GetString(vertexShader.Value.Value) : null,
+            fragmentShader != null ? System.Text.Encoding.UTF8.GetString(fragmentShader.Value.Value) : null);
+
+        if (_shader == null)
+            throw new InvalidDataException("Shader can't be instanciated");
+
+        var valid = Raylib.IsShaderValid(_shader.Value);
+
+        if (valid == false)
+        {
+            Raylib.UnloadShader(_shader.Value);
+            _shader = null;
+            throw new InvalidDataException("Shader is not valid");
+        }
+
+        return _shader.Value;
+    }
+
+    public void UnloadShader()
+    {
+        if (_shader.HasValue)
+            Raylib.UnloadShader(_shader.Value);
+        _shader = null;
+    }
+
+    public void Dispose()
+    {
+        UnloadShader();
+    }
+
+    public void ApplyVariablesToModel(Model model)
+    {
+        Logger.Info("ApplyVariablesToModel...");
+
+        if (_shader.HasValue == false)
+            return;
+
+        foreach (var (name, variable) in Meta.Variables)
+        {
+            var location = Raylib.GetShaderLocation(_shader.Value, name);
+            if (location < 0)
+            {
+                Logger.Error($"location for {name} not found in shader. maybe because unused in code");
+                continue;
+            }
+
+            if (variable.GetType() == typeof(CodeVariableVector4))
+            {
+                var currentValue = (variable as CodeVariableVector4).Value;
+                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
+                Logger.Trace($"{name}={currentValue}");
+            }
+            else if (variable.GetType() == typeof(CodeVariableColor))
+            {
+                var currentValue = TypeConvertors.ColorToVec4((variable as CodeVariableColor).Value);
+                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
+                Logger.Trace($"{name}={currentValue}");
+            }
+            else if (variable.GetType() == typeof(CodeVariableFloat))
+            {
+                var currentValue = (variable as CodeVariableFloat).Value;
+                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Float);
+                Logger.Trace($"{name}={currentValue}");
+            }
+            else if (variable.GetType() == typeof(CodeVariableTexture))
+            {
+                SetUniformTexture(name, (variable as CodeVariableTexture).Value, model);
+            }
+        }
+    }
+
+    private void SetUniformTexture(string variableName,
+        string fileName, Model model)
+    {
+        Logger.Info("SetUniformTexture...");
+
+        if (fileName == "")
+        {
+            Logger.Trace("No filename set");
+            return;
+        }
+
+        var extension = Path.GetExtension(fileName);
+        if (extension == null)
+            throw new NullReferenceException($"No file extension found in {fileName}");
+
+        var file = GetFile(FileType.Image, fileName);
+        if (file == null)
+            throw new NullReferenceException($"No file {fileName} found");
+
+        var image = Raylib.LoadImageFromMemory(extension, file);       // ignore period
+        if (Raylib.IsImageValid(image) == false)
+        {
+            Logger.Error($"image {fileName} is not valid");
+            return;
+        }
+
+        var texture = Raylib.LoadTextureFromImage(image);
+
+        Raylib.UnloadImage(image);
+
+        if (Raylib.IsTextureValid(texture) == false)
+        {
+            Logger.Error($"texture {variableName} is not valid");
+            return;
+        }
+
+        Dictionary<string, MaterialMapIndex> table = new()
+        {
+            { "texture0", MaterialMapIndex.Albedo },
+            { "texture1", MaterialMapIndex.Metalness },
+            { "texture2", MaterialMapIndex.Normal },
+            { "texture3", MaterialMapIndex.Roughness },
+            { "texture4", MaterialMapIndex.Occlusion },
+            { "texture5", MaterialMapIndex.Emission },
+            { "texture6", MaterialMapIndex.Height },
+            { "texture7", MaterialMapIndex.Cubemap },
+            { "texture8", MaterialMapIndex.Irradiance },
+            { "texture9", MaterialMapIndex.Prefilter },
+            { "texture10", MaterialMapIndex.Brdf },
+        };
+
+        if (table.TryGetValue(variableName, out var index))
+        {
+            Raylib.SetMaterialTexture(ref model, 0, index, ref texture);
+        }
+        else
+            Logger.Error($"texture index for {variableName} can't be found");
+
+        Logger.Trace($"{variableName}={fileName}");
     }
 }

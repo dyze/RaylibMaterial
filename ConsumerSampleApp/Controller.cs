@@ -1,7 +1,6 @@
 ﻿using Examples.Shared;
 using ImGuiNET;
 using Library.Packaging;
-using NLog;
 using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
@@ -12,21 +11,14 @@ internal class Controller
 {
     private readonly Vector2 _screenSize = new(1600, 900);
     private Model _currentModel;
-    private List<Light> lights = new();
+    private readonly List<Light> _lights = [];
     private Camera3D _camera;
-    private FileInfo[] _files;
-    private MaterialPackage _materialPackage;
-    private Shader? _currentShader;
-    /// <summary>
-    /// This shader is used if we are not able to load a user one
-    /// We proceed like that to prevent crash when trying to use a faulty user shader
-    /// </summary>
-    private Shader _defaultShader;
-    private const string MaterialsPath = "materials";
+    private FileInfo[] _files = [];
+    private MaterialPackage? _materialPackage;
 
-    public Controller()
-    {
-    }
+
+    private Shader? _currentShader;
+    private const string MaterialsPath = "materials";
 
     internal void Run()
     {
@@ -51,24 +43,25 @@ internal class Controller
 
         EnumerateMaterials();
 
-        _defaultShader = Raylib.LoadShader($"{MaterialsPath}\\base.vert", $"{MaterialsPath}\\base.frag");
-
         while (!Raylib.WindowShouldClose())
         {
-            UpdateLights();
+            if (_currentShader.HasValue)
+                UpdateLights();
 
             Raylib.BeginDrawing();
             rlImGui.Begin();
 
             Raylib.ClearBackground(Color.Black);
 
-            RenderModel();
+            RenderModels();
+
             RenderUi();
 
             rlImGui.End();
             Raylib.EndDrawing();
         }
 
+        _materialPackage?.Dispose();
         rlImGui.Shutdown();
     }
 
@@ -81,12 +74,11 @@ internal class Controller
 
     private void RenderUi()
     {
-        ImGui.SetNextWindowSize(new Vector2(400, 80));
+        ImGui.SetNextWindowSize(new Vector2(200, 400));
         if (ImGui.Begin("Materials"))
         {
             foreach (var file in _files)
             {
-                ImGui.SameLine();
                 if (ImGui.Button(file.Name))
                 {
                     OnMaterialSelected(file.FullName);
@@ -102,45 +94,69 @@ internal class Controller
         _materialPackage = new MaterialPackage();
         _materialPackage.Load(filePath);
 
-
-
-        var vertexShader = _materialPackage.GetShaderCode(FileType.VertexShader);
-        var fragmentShader = _materialPackage.GetShaderCode(FileType.FragmentShader);
-
-        if (_currentShader.HasValue
-            && _currentShader.Value.Id != _defaultShader.Id)
-            Raylib.UnloadShader(_currentShader.Value);
-
-
-        _currentShader = Raylib.LoadShaderFromMemory(
-            vertexShader != null ? System.Text.Encoding.UTF8.GetString(vertexShader.Value.Value) : null,
-            fragmentShader != null ? System.Text.Encoding.UTF8.GetString(fragmentShader.Value.Value) : null);
-
-        bool valid = Raylib.IsShaderValid(_currentShader.Value);
-
-        if (valid == false)
-            _currentShader = _defaultShader;
-
-        Shader shader = _currentShader.Value;
+        var shader = _materialPackage.LoadShader();
+        _currentShader = shader;
         Raylib.SetMaterialShader(ref _currentModel, 0, ref shader);
 
-        //CreateLights();
+        _materialPackage.ApplyVariablesToModel(_currentModel);
+
+        CreateLights();
     }
 
-    private void RenderModel()
+    private void RenderModels()
     {
         Raylib.BeginMode3D(_camera);
 
         Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
-
         RenderLights();
 
         Raylib.EndMode3D();
     }
 
+    private void CreateLights()
+    {
+        if (_currentShader.HasValue == false)
+            throw new NullReferenceException("_currentShader is null");
+
+        _lights.Clear();
+
+        _lights.Add(Rlights.CreateLight(
+            0,
+            LightType.Point,
+            new Vector3(-2, 1, -2),
+            Vector3.Zero,
+            Color.Yellow,
+            _currentShader.Value
+        ));
+        _lights.Add(Rlights.CreateLight(
+            1,
+            LightType.Point,
+            new Vector3(2, 1, 2),
+            Vector3.Zero,
+            Color.Red,
+            _currentShader.Value
+        ));
+        _lights.Add(Rlights.CreateLight(
+            2,
+            LightType.Point,
+            new Vector3(-2, 1, 2),
+            Vector3.Zero,
+            Color.Green,
+            _currentShader.Value
+        ));
+        _lights.Add(Rlights.CreateLight(
+            3,
+            LightType.Point,
+            new Vector3(2, 1, -2),
+            Vector3.Zero,
+            Color.Blue,
+            _currentShader.Value
+        ));
+    }
+
     public void RenderLights()
     {
-        foreach (var light in lights)
+        foreach (var light in _lights)
         {
             Raylib.DrawSphereEx(light.Position, 0.2f, 8, 8, light.Color);
         }
@@ -148,9 +164,12 @@ internal class Controller
 
     private void UpdateLights()
     {
-        foreach (var light in lights)
+        if (_currentShader.HasValue == false)
+            throw new NullReferenceException("_currentShader is null");
+
+        foreach (var light in _lights)
         {
-            //Rlights.UpdateLightValues(_currentShader.Value, light);
+            Rlights.UpdateLightValues(_currentShader.Value, light);
         }
     }
 }
