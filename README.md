@@ -25,3 +25,5 @@ The first step is to create a shader editor. wip
 * [rlImgui-cs](https://github.com/raylib-extras/rlImGui-cs): Glue to render ImGui using Raylib
 * [NLog](https://github.com/NLog/NLog): NLog is a free logging platform for .NET
 
+Other ones:
+* [ImGuiFileDialog](https://github.com/japajoe/ImGuiFileDialog): File dialog for ImGui.NET by japajoe
