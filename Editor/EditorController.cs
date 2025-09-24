@@ -278,11 +278,11 @@ class EditorController
         _fileDialogOpen = true;
         _fileDialogInfo = new()
         {
-            title = "Please select a material",
-            type = ImGuiFileDialogType.OpenFile,
-            directoryPath = new DirectoryInfo(_outputFilePath),
-            fileName = "",
-            extensions =
+            Title = "Please select a material",
+            Type = ImGuiFileDialogType.OpenFile,
+            DirectoryPath = new DirectoryInfo(_outputFilePath),
+            FileName = "",
+            Extensions =
             [
                 new Tuple<string, string>("*"+MaterialFileExtension, "Materials"),
                 new Tuple<string, string>("*"+MaterialBackupFileExtension, "Material backups")
@@ -292,9 +292,9 @@ class EditorController
 
     private void OnEndOpenMaterial()
     {
-        Logger.Info($"filePath={_fileDialogInfo.resultPath}");
+        Logger.Info($"filePath={_fileDialogInfo.ResultPath}");
 
-        _editorControllerData.MaterialPackage.Load(_fileDialogInfo.resultPath);
+        _editorControllerData.MaterialPackage.Load(_fileDialogInfo.ResultPath);
 
         SelectModelType();
         LoadShaderCode();
@@ -458,7 +458,7 @@ class EditorController
     {
         if (ImGuiFileDialog.FileDialog(ref _fileDialogOpen, _fileDialogInfo))
         {
-            _outputFilePath = _fileDialogInfo.directoryPath.FullName;
+            _outputFilePath = _fileDialogInfo.DirectoryPath.FullName;
             OnEndOpenMaterial();
         }
     }
