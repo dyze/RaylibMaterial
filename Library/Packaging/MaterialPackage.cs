@@ -117,16 +117,15 @@ public class MaterialPackage : IDisposable
 
         Directory.CreateDirectory(directoryPath);
 
-        var outputDataAccess = new PackageAccess();
-
-        outputDataAccess.Open(outputPackageFilePath, AccessMode.Create);
-
-        if (outputDataAccess.Exists())
+        if (File.Exists(outputPackageFilePath))
         {
             var backupFilePath = $"{outputPackageFilePath}.bck";
             Logger.Info($"Creating backup {backupFilePath}...");
             File.Copy(outputPackageFilePath, backupFilePath, true);
         }
+
+        var outputDataAccess = new PackageAccess();
+        outputDataAccess.Open(outputPackageFilePath, AccessMode.Create);
 
         // Add meta file
         var metaJson = MaterialMetaStorage.ToJson(Meta);
