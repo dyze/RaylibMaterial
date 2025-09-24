@@ -21,6 +21,8 @@ class EditorController
     private const string ResourceUiPath = "resources/ui";
     private const string ShaderFolderPath = "resources/shaders";
     private const string MaterialsPath = "materials";
+    private const string MaterialFileExtension = ".mat";
+    private const string MaterialBackupFileExtension = ".mat.bck";
 
     private readonly Vector2 _screenSize = new(1600, 900); // initial size of window
 
@@ -87,7 +89,11 @@ class EditorController
 
     private readonly MaterialWindow _materialWindow;
 
-    private List<Light> lights = new();
+    private readonly List<Light> _lights = new();
+
+    private bool _fileDialogOpen;
+    private ImFileDialogInfo _fileDialogInfo;
+    private string _outputFilePath = MaterialsPath;
 
     public EditorController()
     {
@@ -161,12 +167,13 @@ class EditorController
             Raylib.ClearBackground(Color.Black);
 
             RenderMenu();
-            Render();
+            RenderModels();
 
             RenderToolBar();
+            RenderFileDialog();
 
             var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
-            if(codeIsModified)
+            if (codeIsModified)
             {
                 foreach (var (key, value) in _shaderCode)
                 {
@@ -211,7 +218,7 @@ class EditorController
                     OnNewMaterial();
 
                 if (ImGui.MenuItem("Open"))
-                    OnOpenMaterial();
+                    OnStartOpenMaterial();
 
                 if (ImGui.MenuItem("Save"))
                     SaveMaterial();
@@ -259,21 +266,35 @@ class EditorController
         LoadShaders();
     }
 
-    private void OnOpenMaterial()
+    private void OnStartOpenMaterial()
     {
-        Logger.Info("OnOpenMaterial...");
+        Logger.Info("OnStartOpenMaterial...");
 
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
         _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
 
-        //TODO get name using file explorer or file drag
-        var filePath = $"{MaterialsPath}/no name.mat";
-        filePath = Path.GetFullPath(filePath);
-        Logger.Info($"filePath={filePath}");
+        _fileDialogOpen = true;
+        _fileDialogInfo = new()
+        {
+            title = "Please select a material",
+            type = ImGuiFileDialogType.OpenFile,
+            directoryPath = new DirectoryInfo(_outputFilePath),
+            fileName = "",
+            extensions =
+            [
+                new Tuple<string, string>("*"+MaterialFileExtension, "Materials"),
+                new Tuple<string, string>("*"+MaterialBackupFileExtension, "Material backups")
+            ]
+        };
+    }
 
-        _editorControllerData.MaterialPackage.Load(filePath);
+    private void OnEndOpenMaterial()
+    {
+        Logger.Info($"filePath={_fileDialogInfo.resultPath}");
+
+        _editorControllerData.MaterialPackage.Load(_fileDialogInfo.resultPath);
 
         SelectModelType();
         LoadShaderCode();
@@ -301,7 +322,7 @@ class EditorController
         LoadShaders();
     }
 
-    private void Render()
+    private void RenderModels()
     {
         Raylib.BeginTextureMode(_viewTexture);
 
@@ -386,7 +407,7 @@ class EditorController
     {
         Logger.Info("SaveMaterial...");
 
-        var filePath = $"{MaterialsPath}/{_editorControllerData.MaterialPackage.Meta.FileName}.mat";
+        var filePath = $"{MaterialsPath}/{_editorControllerData.MaterialPackage.Meta.FileName}{MaterialFileExtension}";
         filePath = Path.GetFullPath(filePath);
         Logger.Info($"filePath={filePath}");
 
@@ -430,6 +451,15 @@ class EditorController
             }
 
             ImGui.End();
+        }
+    }
+
+    private void RenderFileDialog()
+    {
+        if (ImGuiFileDialog.FileDialog(ref _fileDialogOpen, _fileDialogInfo))
+        {
+            _outputFilePath = _fileDialogInfo.directoryPath.FullName;
+            OnEndOpenMaterial();
         }
     }
 
@@ -692,9 +722,9 @@ class EditorController
         if (_currentShader.HasValue == false)
             throw new NullReferenceException("_currentShader is null");
 
-        lights.Clear();
+        _lights.Clear();
 
-        lights.Add(Rlights.CreateLight(
+        _lights.Add(Rlights.CreateLight(
             0,
             LightType.Point,
             new Vector3(-2, 1, -2),
@@ -702,7 +732,7 @@ class EditorController
             Color.Yellow,
             _currentShader.Value
         ));
-        lights.Add(Rlights.CreateLight(
+        _lights.Add(Rlights.CreateLight(
             1,
             LightType.Point,
             new Vector3(2, 1, 2),
@@ -710,7 +740,7 @@ class EditorController
             Color.Red,
             _currentShader.Value
         ));
-        lights.Add(Rlights.CreateLight(
+        _lights.Add(Rlights.CreateLight(
             2,
             LightType.Point,
             new Vector3(-2, 1, 2),
@@ -718,7 +748,7 @@ class EditorController
             Color.Green,
             _currentShader.Value
         ));
-        lights.Add(Rlights.CreateLight(
+        _lights.Add(Rlights.CreateLight(
             3,
             LightType.Point,
             new Vector3(2, 1, -2),
@@ -730,7 +760,7 @@ class EditorController
 
     public void RenderLights()
     {
-        foreach (var light in lights)
+        foreach (var light in _lights)
         {
             Raylib.DrawSphereEx(light.Position, 0.2f, 8, 8, light.Color);
         }
@@ -738,7 +768,7 @@ class EditorController
 
     private void UpdateLights()
     {
-        foreach (var light in lights)
+        foreach (var light in _lights)
         {
             Rlights.UpdateLightValues(_currentShader.Value, light);
         }
