@@ -5,7 +5,6 @@ using Examples.Shared;
 using ImGuiNET;
 using Library;
 using Library.CodeVariable;
-using Library.Helpers;
 using Library.Packaging;
 using NLog;
 using Raylib_cs;
@@ -106,7 +105,7 @@ class EditorController
         _materialWindow = new(_editorControllerData);
         _materialWindow.OnSave += _materialWindow_OnSave;
 
-        _shaderCodeWindow.ApplyChangesPressed += ShaderCodeWindowOnApplyChangesPressed;
+        _shaderCodeWindow.BuildPressed += ShaderCodeWindow_OnBuildPressed;
     }
 
     private void _materialWindow_OnSave()
@@ -166,7 +165,9 @@ class EditorController
 
             RenderToolBar();
 
-            _shaderCodeWindow.Render(_shaderCode);
+            var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
+            if(codeIsModified)
+                _editorControllerData.MaterialPackage.Meta.SetModified();
 
             RenderOutputWindow();
             _materialWindow.Render();
@@ -287,9 +288,9 @@ class EditorController
         LoadShaders();
     }
 
-    private void ShaderCodeWindowOnApplyChangesPressed(ShaderCode shaderCode)
+    private void ShaderCodeWindow_OnBuildPressed()
     {
-        shaderCode.IsValid = LoadShaders();
+        LoadShaders();
     }
 
     private void Render()
@@ -456,7 +457,7 @@ class EditorController
         _editorControllerData.MaterialPackage.ApplyVariablesToModel(_currentModel);
     }
 
-    private bool LoadShaders()
+    private void LoadShaders()
     {
         Logger.Info("LoadShaders...");
 
@@ -477,28 +478,42 @@ class EditorController
             Logger.Error(e.Message);
             _currentShader = _defaultShader;
         }
-        
+
+        foreach (var (_, value) in _shaderCode)
+        {
+            value.IsValid = shaderIsValid;
+        }
+
         ApplyShaderToModel();
 
         CreateLights();
-
-        return shaderIsValid;
     }
 
     private void LoadShaderCode()
     {
+        // Load shader codes
         _shaderCode = new Dictionary<string, ShaderCode>();
 
+        var material = _editorControllerData.MaterialPackage;
+
+        foreach (var fileType in new[] { FileType.VertexShader, FileType.FragmentShader })
+        {
+            var result = GetShaderCode(material, fileType);
+            if (result != null)
+                _shaderCode.Add(result.Item1, result.Item2);
+        }
+
+        // Determine variables used
         Dictionary<string, CodeVariableBase> allShaderVariables = [];
 
-        var material = _editorControllerData.MaterialPackage;
-        var shaderVariables = GetShaderCodeVariables(material, FileType.VertexShader);
-        if (shaderVariables != null)
-            allShaderVariables = allShaderVariables.Concat(shaderVariables).ToDictionary();
+        foreach (var (key, value) in _shaderCode)
+        {
+            value.ParseVariables();
 
-        shaderVariables = GetShaderCodeVariables(material, FileType.FragmentShader);
-        if (shaderVariables != null)
+            var shaderVariables = value.Variables;
+
             allShaderVariables = allShaderVariables.Concat(shaderVariables).ToDictionary();
+        }
 
 
         Logger.Info($"{allShaderVariables.Count} variables detected");
@@ -583,7 +598,7 @@ class EditorController
         }
     }
 
-    private Dictionary<string, CodeVariableBase>? GetShaderCodeVariables(MaterialPackage material,
+    private Tuple<string, ShaderCode>? GetShaderCode(MaterialPackage material,
         FileType shaderType)
     {
         var file = material.GetShaderCode(shaderType);
@@ -591,9 +606,7 @@ class EditorController
         {
             var fileName = file.Value.Key.FileName;
             var code = new ShaderCode(System.Text.Encoding.UTF8.GetString(file.Value.Value));
-            code.ParseVariables();
-            _shaderCode.Add(fileName, code);
-            return code.Variables;
+            return new Tuple<string, ShaderCode>(fileName, code);
         }
 
         return null;

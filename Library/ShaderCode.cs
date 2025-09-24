@@ -1,16 +1,14 @@
 ﻿using Library.CodeVariable;
 using Library.Helpers;
-using System.Drawing;
-using System.Numerics;
 using System.Text.RegularExpressions;
 
 namespace Library;
 
 public class ShaderCode(string code)
 {
-    public bool Modified = false;
+    public bool NeedsRebuild = false;
     public string Code = code;
-    public bool IsValid { get; set; } = true;
+    public bool IsValid { get; set; } = false;
 
     /// <summary>
     /// List of uniforms detected inside the code
