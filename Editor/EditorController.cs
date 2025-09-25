@@ -94,6 +94,10 @@ class EditorController
     private ImFileDialogInfo? _fileDialogInfo;
     private string _outputFilePath;
 
+    private ImGuiMessageDialog.Configuration? _messageDialogConfiguration;
+    private bool _processingRequestToClose;
+    private bool _requestToCloseAccepted;
+
     public EditorController()
     {
         LoadEditorConfiguration();
@@ -124,7 +128,8 @@ class EditorController
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
-        Raylib.InitWindow((int)_screenSize.X, (int)_screenSize.Y, "Raylib MaterialMeta Editor");
+        Raylib.InitWindow((int)_screenSize.X, (int)_screenSize.Y, "Raylib Material Editor");
+        Raylib.SetExitKey(KeyboardKey.Null);
         rlImGui.Setup();
 
         LoadUiResources();
@@ -143,7 +148,7 @@ class EditorController
 
         SelectBackground(BackgroundType.WildPark);
 
-        OnNewMaterial();
+        NewMaterial();
 
 
         Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
@@ -155,8 +160,16 @@ class EditorController
 
         Logger.Info("all is set");
 
-        while (!Raylib.WindowShouldClose())
+        while (true)
         {
+            if (_requestToCloseAccepted)
+                break;
+            if (Raylib.WindowShouldClose())
+            {
+                if (RequestCloseAccepted())
+                    break;
+            }
+
             prevMousePos = HandleMouseMovement(prevMousePos);
 
             UpdateLights();
@@ -171,6 +184,8 @@ class EditorController
 
             RenderToolBar();
             RenderFileDialog();
+            RenderMessageDialog();
+
 
             var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
             if (codeIsModified)
@@ -205,8 +220,6 @@ class EditorController
 
         SaveEditorConfiguration();
     }
-
-
 
     private void RenderMenu()
     {
@@ -258,6 +271,55 @@ class EditorController
     {
         Logger.Info("OnNewMaterial...");
 
+        if (_editorControllerData.MaterialPackage.Meta.IsModified)
+        {
+            _messageDialogConfiguration = new("Current material has not been saved",
+                "Are you sure you want to continue?",
+                [
+                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                        _ => NewMaterial(),
+                        System.Drawing.Color.Red),
+                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
+                        )
+                ]);
+        }
+    }
+
+    private bool RequestCloseAccepted()
+    {
+        Logger.Info("RequestCloseAccepted...");
+
+        if (_requestToCloseAccepted)
+            return true;
+
+        if (_processingRequestToClose)
+            return false;
+
+       
+
+        if (_editorControllerData.MaterialPackage.Meta.IsModified)
+        {
+            _processingRequestToClose = true;
+            _requestToCloseAccepted = false;
+
+            _messageDialogConfiguration = new("Current material has not been saved",
+                "Are you sure you want to continue?",
+                [
+                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                        _ => _requestToCloseAccepted = true,
+                        System.Drawing.Color.Red),
+                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind",
+                        _ => _processingRequestToClose = false
+                    )
+                ]);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void NewMaterial()
+    {
         _editorControllerData.MaterialFilePath = null;
 
         _editorControllerData.MaterialPackage = new();
@@ -504,14 +566,31 @@ class EditorController
         {
             _outputFilePath = _fileDialogInfo.ResultPath;
 
-            if(_fileDialogInfo.Type == ImGuiFileDialogType.OpenFile)
+            if (_fileDialogInfo.Type == ImGuiFileDialogType.OpenFile)
                 OnLoadMaterialEnd();
             else
                 OnSaveEnd();
         }
 
-        if(open == false)
+        if (open == false)
             _fileDialogInfo = null;
+    }
+
+    private void RenderMessageDialog()
+    {
+
+        var buttonPressed = ImGuiMessageDialog.Run(_messageDialogConfiguration);
+
+        if (buttonPressed != null)
+            _messageDialogConfiguration = null;
+
+        if (buttonPressed != null)
+        {
+            Logger.Trace($"{buttonPressed.Id} has been pressed");
+
+            buttonPressed.OnPressed?.Invoke(buttonPressed);
+        }
+
     }
 
 

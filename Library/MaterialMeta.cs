@@ -15,7 +15,7 @@ public class MaterialMeta
 
     [Required][JsonProperty("Variables")] public Dictionary<string, CodeVariableBase> Variables = [];
 
-    [JsonIgnore] public bool IsModified { get; set; } = true;
+    [JsonIgnore] public bool IsModified { get; set; } = false;
 
     public void SetModified() => IsModified = true;
 
