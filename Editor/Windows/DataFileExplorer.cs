@@ -32,7 +32,7 @@ public class DataFileExplorer
 
     private readonly Dictionary<string, Action<DataFileExplorer, FolderContent>> _folderActions = new()
     {
-        { "explore folder", (_, folder) => Process.Start("explorer.exe", folder.FullPath) },
+        { "explore folder", (_, folder) => Process.Start("explorer.exe", Path.GetFullPath(folder.FullPath)) },
     };
 
     public DataFileExplorer(EditorConfiguration editorConfiguration,

@@ -510,7 +510,8 @@ class EditorController
 
         RenderLights();
 
-        Raylib.DrawGrid(10, 1.0f);
+        if(Raylib.IsKeyPressed(KeyboardKey.Tab))
+            Raylib.DrawGrid(10, 1.0f);
 
         Raylib.EndMode3D();
 
@@ -546,23 +547,28 @@ class EditorController
 
     private void SelectModelType(string modelFilePath = "")
     {
-        switch (_modelType)
+        if (modelFilePath != "")
         {
-            case ModelType.Cube:
-                _currentModel = GenerateCubeModel();
-                break;
-            case ModelType.Plane:
-                _currentModel = GeneratePlaneModel();
-                break;
-            case ModelType.Sphere:
-                _currentModel = GenerateSphereModel();
-                break;
-            case ModelType.Model:
-                _currentModel = LoadModel(modelFilePath);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            _currentModel = LoadModel(modelFilePath);
         }
+        else
+            switch (_modelType)
+            {
+                case ModelType.Cube:
+                    _currentModel = GenerateCubeModel();
+                    break;
+                case ModelType.Plane:
+                    _currentModel = GeneratePlaneModel();
+                    break;
+                case ModelType.Sphere:
+                    _currentModel = GenerateSphereModel();
+                    break;
+                case ModelType.Model:
+                    _currentModel = LoadModel();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
 
         Logger.Trace($"MeshCount={_currentModel.MeshCount}, MaterialCount={_currentModel.MaterialCount}");
 
@@ -761,7 +767,11 @@ class EditorController
             return;
 
         var shader = _currentShader.Value;
-        Raylib.SetMaterialShader(ref _currentModel, 0, ref shader);
+
+        for (int i = 0; i < _currentModel.MaterialCount; i++)
+        {
+            Raylib.SetMaterialShader(ref _currentModel, i, ref shader);
+        }
 
         _editorControllerData.MaterialPackage.ApplyVariablesToModel(_currentModel);
     }
@@ -917,7 +927,7 @@ class EditorController
         return model;
     }
 
-    private Model LoadModel(string modelFilePath)
+    private Model LoadModel(string modelFilePath= "")
     {
         string filePath;
 
@@ -939,7 +949,7 @@ class EditorController
     private void PrepareCamera()
     {
         // Define our custom camera to look into our 3d world
-        _camera = new Camera3D(new Vector3(0f, 5f, -5),
+        _camera = new Camera3D(new Vector3(0f, 0, -5),
             new Vector3(0.0f, 0.0f, 0.0f),
             new Vector3(0.0f, 1.0f, 0.0f),
             45f,
