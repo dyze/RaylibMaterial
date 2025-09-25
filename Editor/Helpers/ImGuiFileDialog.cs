@@ -6,9 +6,8 @@
 */
 
 using System.Numerics;
-using ImGuiNET;
 
-namespace Editor.Helpers
+namespace ImGuiNET
 {
     public enum ImGuiFileDialogType
     {
@@ -185,7 +184,7 @@ namespace Editor.Helpers
         }
 
         public static bool FileDialog(ref bool open,
-            ImFileDialogInfo dialogInfo)
+            ImFileDialogInfo? dialogInfo)
         {
             if (!open)
                 return false;
@@ -363,7 +362,7 @@ namespace Editor.Helpers
 
                         if (ImGui.IsMouseDoubleClicked(0))
                         {
-                            complete = OnOkPressed(ref open, dialogInfo, complete);
+                            complete = OnOpenPressed(ref open, dialogInfo, complete);
                         }
                     }
 
@@ -447,7 +446,7 @@ namespace Editor.Helpers
                 {
                     if (ImGui.Button("Open"))
                     {
-                        complete = OnOkPressed(ref open, dialogInfo, complete);
+                        complete = OnOpenPressed(ref open, dialogInfo, complete);
                     }
                 }
                 else if (dialogInfo.Type == ImGuiFileDialogType.SaveFile)
@@ -483,7 +482,7 @@ namespace Editor.Helpers
             return complete;
         }
 
-        private static bool OnOkPressed(ref bool open, ImFileDialogInfo dialogInfo, bool complete)
+        private static bool OnOpenPressed(ref bool open, ImFileDialogInfo dialogInfo, bool complete)
         {
             dialogInfo.ResultPath = Path.Combine(dialogInfo.DirectoryPath.FullName, dialogInfo.FileName);
 
