@@ -97,6 +97,11 @@ class EditorController
     private ImGuiMessageDialog.Configuration? _messageDialogConfiguration;
     private bool _processingRequestToClose;
     private bool _requestToCloseAccepted;
+    private bool _requestToClose;
+
+    private const string DefaultMaterialName = "noname";
+
+    private string WindowCaption => $"Raylib Material Editor - {_outputFilePath}";
 
     public EditorController()
     {
@@ -115,7 +120,7 @@ class EditorController
 
         _shaderCodeWindow.BuildPressed += ShaderCodeWindow_OnBuildPressed;
 
-        _outputFilePath = Path.GetFullPath(MaterialsPath + "\\noname" + MaterialFileExtension);
+        _outputFilePath = Path.GetFullPath($"{MaterialsPath}\\{DefaultMaterialName}{MaterialFileExtension}");
     }
 
     private void _materialWindow_OnSave()
@@ -128,7 +133,7 @@ class EditorController
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
-        Raylib.InitWindow((int)_screenSize.X, (int)_screenSize.Y, "Raylib Material Editor");
+        Raylib.InitWindow((int)_screenSize.X, (int)_screenSize.Y, WindowCaption);
         Raylib.SetExitKey(KeyboardKey.Null);
         rlImGui.Setup();
 
@@ -164,11 +169,13 @@ class EditorController
         {
             if (_requestToCloseAccepted)
                 break;
-            if (Raylib.WindowShouldClose())
+            if (Raylib.WindowShouldClose() || _requestToClose)
             {
+                _requestToClose = false;
                 if (RequestCloseAccepted())
                     break;
             }
+
 
             prevMousePos = HandleMouseMovement(prevMousePos);
 
@@ -231,7 +238,24 @@ class EditorController
                     OnNewMaterial();
 
                 if (ImGui.MenuItem("Load", "Ctrl+L"))
-                    OnLoadMaterialStart();
+                    OnLoadMaterial(null);
+
+                if (ImGui.BeginMenu("Load recent files"))
+                {
+                    if (_editorConfiguration.RecentFiles.Count == 0)
+                        ImGui.MenuItem("empty", null, false, false);
+                    else
+                        foreach (var filePath in _editorConfiguration.RecentFiles)
+                        {
+                            if (ImGui.MenuItem(filePath))
+                            {
+                                OnLoadMaterial(filePath);
+                                break;
+                            }
+                        }
+
+                    ImGui.EndMenu();
+                }
 
                 if (ImGui.MenuItem("Save", "Ctrl+S"))
                     OnSave();
@@ -239,10 +263,10 @@ class EditorController
                 if (ImGui.MenuItem("Save as"))
                     OnSaveAsStart();
 
-                //ImGui.Separator();
+                ImGui.Separator();
 
-                //if (ImGui.MenuItem("Exit"))
-                //    _engine.Exit(true);
+                if (ImGui.MenuItem("Exit"))
+                    _requestToClose = true;
 
                 ImGui.EndMenu();
             }
@@ -277,7 +301,7 @@ class EditorController
         if (_processingRequestToClose)
             return false;
 
-       
+
 
         if (_editorControllerData.MaterialPackage.Meta.IsModified)
         {
@@ -316,6 +340,8 @@ class EditorController
                     )
                 ]);
         }
+        else
+            NewMaterial();
     }
 
     private void NewMaterial()
@@ -329,13 +355,17 @@ class EditorController
 
         _currentShader = _defaultShader;
 
+        var directoryPath = Path.GetDirectoryName(_outputFilePath);
+        _outputFilePath = $"{directoryPath}\\{DefaultMaterialName}{MaterialFileExtension}";
+        Raylib.SetWindowTitle(WindowCaption);
+
         SelectModelType();
         LoadShaders();
     }
 
-    private void OnLoadMaterialStart()
+    private void OnLoadMaterial(string filePath)
     {
-        Logger.Info("OnNewMaterial...");
+        Logger.Info("OnLoadMaterial...");
 
         if (_editorControllerData.MaterialPackage.Meta.IsModified)
         {
@@ -343,23 +373,30 @@ class EditorController
                 "Are you sure you want to continue?",
                 [
                     new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
-                        _ => LoadMaterialStart(),
+                        _ =>
+                        {
+                            if (filePath == null)
+                                LoadMaterialAskForFile();
+                            else
+                                LoadMaterial(filePath);
+                        },
                         System.Drawing.Color.Red),
                     new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
                     )
                 ]);
         }
+        else
+        {
+            if (filePath == null)
+                LoadMaterialAskForFile();
+            else
+                LoadMaterial(filePath);
+        }
     }
 
-    private void LoadMaterialStart()
+    private void LoadMaterialAskForFile()
     {
         Logger.Info("LoadMaterialStart...");
-
-        _editorControllerData.MaterialPackage = new();
-        _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
-        _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
-        _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
-
 
         _fileDialogInfo = new()
         {
@@ -374,15 +411,26 @@ class EditorController
             ]
         };
 
-        Logger.Info("OnLoadMaterialStart OK");
+        Logger.Info("LoadMaterialStart OK");
     }
 
-    private void OnLoadMaterialEnd()
+    private void LoadMaterial(string filePath)
     {
-        Logger.Info($"filePath={_fileDialogInfo.ResultPath}");
+        Logger.Info("LoadMaterial...");
+        Logger.Info($"filePath={filePath}");
 
-        _editorControllerData.MaterialPackage.Load(_fileDialogInfo.ResultPath);
-        _editorControllerData.MaterialFilePath = _fileDialogInfo.ResultPath;
+        _editorControllerData.MaterialPackage = new();
+        _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
+        _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
+        _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
+
+        _editorControllerData.MaterialPackage.Load(filePath);
+        _editorControllerData.MaterialFilePath = filePath;
+
+        _outputFilePath = filePath;
+        Raylib.SetWindowTitle(WindowCaption);
+
+        _editorConfiguration.AddRecentFile(filePath);
 
         SelectModelType();
         LoadShaderCode();
@@ -502,6 +550,7 @@ class EditorController
         }
 
         _editorControllerData.MaterialPackage.Save(_editorControllerData.MaterialFilePath);
+        _editorConfiguration.AddRecentFile(_editorControllerData.MaterialFilePath);
 
         var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
         System.Diagnostics.Process.Start("explorer.exe", argument);
@@ -528,18 +577,22 @@ class EditorController
         Logger.Info("OnSaveAsStart OK");
     }
 
-    private void OnSaveEnd()
+    private void SaveAs(string filePath)
     {
-        Logger.Info("OnSaveEnd...");
+        Logger.Info("SaveAs...");
 
-        _editorControllerData.MaterialFilePath = _outputFilePath;
+        _editorControllerData.MaterialFilePath = filePath;
 
         _editorControllerData.MaterialPackage.Save(_editorControllerData.MaterialFilePath);
+        _editorConfiguration.AddRecentFile(_editorControllerData.MaterialFilePath);
+
+        _outputFilePath = filePath;
+        Raylib.SetWindowTitle(WindowCaption);
 
         var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
         System.Diagnostics.Process.Start("explorer.exe", argument);
 
-        Logger.Info("OnSaveEnd OK");
+        Logger.Info("SaveAs OK");
     }
 
     private void RenderToolBar()
@@ -582,12 +635,27 @@ class EditorController
         var open = _fileDialogInfo != null;
         if (ImGuiFileDialog.FileDialog(ref open, _fileDialogInfo))
         {
-            _outputFilePath = _fileDialogInfo.ResultPath;
-
             if (_fileDialogInfo.Type == ImGuiFileDialogType.OpenFile)
-                OnLoadMaterialEnd();
+                LoadMaterial(_fileDialogInfo.ResultPath);
             else
-                OnSaveEnd();
+            {
+                if (File.Exists(_fileDialogInfo.ResultPath))
+                {
+                    var filePath = _fileDialogInfo.ResultPath;
+
+                    _messageDialogConfiguration = new("A material with same name already exists",
+                        "Are you sure you want to continue?",
+                        [
+                            new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                                _ => SaveAs(filePath),
+                                System.Drawing.Color.Red),
+                            new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
+                            )
+                        ]);
+                }
+                else
+                    SaveAs(_fileDialogInfo.ResultPath);
+            }
         }
 
         if (open == false)
