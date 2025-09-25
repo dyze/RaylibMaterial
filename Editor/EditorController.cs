@@ -267,24 +267,6 @@ class EditorController
         ImGui.EndMainMenuBar();
     }
 
-    private void OnNewMaterial()
-    {
-        Logger.Info("OnNewMaterial...");
-
-        if (_editorControllerData.MaterialPackage.Meta.IsModified)
-        {
-            _messageDialogConfiguration = new("Current material has not been saved",
-                "Are you sure you want to continue?",
-                [
-                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
-                        _ => NewMaterial(),
-                        System.Drawing.Color.Red),
-                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
-                        )
-                ]);
-        }
-    }
-
     private bool RequestCloseAccepted()
     {
         Logger.Info("RequestCloseAccepted...");
@@ -318,6 +300,24 @@ class EditorController
         return true;
     }
 
+    private void OnNewMaterial()
+    {
+        Logger.Info("OnNewMaterial...");
+
+        if (_editorControllerData.MaterialPackage.Meta.IsModified)
+        {
+            _messageDialogConfiguration = new("Current material has not been saved",
+                "Are you sure you want to continue?",
+                [
+                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                        _ => NewMaterial(),
+                        System.Drawing.Color.Red),
+                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
+                    )
+                ]);
+        }
+    }
+
     private void NewMaterial()
     {
         _editorControllerData.MaterialFilePath = null;
@@ -335,7 +335,25 @@ class EditorController
 
     private void OnLoadMaterialStart()
     {
-        Logger.Info("OnLoadMaterialStart...");
+        Logger.Info("OnNewMaterial...");
+
+        if (_editorControllerData.MaterialPackage.Meta.IsModified)
+        {
+            _messageDialogConfiguration = new("Current material has not been saved",
+                "Are you sure you want to continue?",
+                [
+                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                        _ => LoadMaterialStart(),
+                        System.Drawing.Color.Red),
+                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
+                    )
+                ]);
+        }
+    }
+
+    private void LoadMaterialStart()
+    {
+        Logger.Info("LoadMaterialStart...");
 
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
