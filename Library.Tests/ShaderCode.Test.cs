@@ -1,4 +1,5 @@
-﻿using Library.CodeVariable;
+﻿using System.Drawing;
+using Library.CodeVariable;
 using System.Numerics;
 
 namespace Library.Tests;
@@ -43,6 +44,6 @@ public sealed class ShaderCodeTest
         Assert.AreEqual(variables.Count, 2);
 
         Assert.AreEqual(variables["texture0"].GetType(), typeof(CodeVariableTexture));
-        Assert.AreEqual(variables["colDiffuse"].GetType(), typeof(Vector4));
+        Assert.AreEqual(variables["colDiffuse"].GetType(), typeof(CodeVariableColor));
     }
 }

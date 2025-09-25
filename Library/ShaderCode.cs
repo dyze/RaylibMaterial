@@ -69,7 +69,9 @@ public class ShaderCode(string code)
             if (type != null)
             {
                 // Special case for colors. It will change the way to edit the value (color picker)
-                if (type == typeof(CodeVariableVector4) && name.ToLower().Contains("color"))
+                var nameLower = name.ToLower();
+                if (type == typeof(CodeVariableVector4) && nameLower.Contains("color") ||
+                    nameLower.StartsWith("col"))
                     type = typeof(CodeVariableColor);
 
                 var variable = CodeVariableFactory.Build(type);
