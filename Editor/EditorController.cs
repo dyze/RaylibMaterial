@@ -19,6 +19,7 @@ class EditorController
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private const string ResourceUiPath = "resources/ui";
+    private const string ResourceModelsPath = "resources/models";
     private const string ShaderFolderPath = "resources/shaders";
     private const string MaterialsPath = "materials";
     private const string MaterialFileExtension = ".mat";
@@ -49,8 +50,9 @@ class EditorController
     enum ModelType
     {
         Cube = 0,
-        Plane = 1,
-        Sphere = 2,
+        Plane,
+        Sphere,
+        Model
     }
 
     private ModelType _modelType = ModelType.Cube;
@@ -60,18 +62,21 @@ class EditorController
         { ModelType.Cube, new ToolConfig("cube", "cube.png") },
         { ModelType.Plane, new ToolConfig("plane", "plane.png") },
         { ModelType.Sphere, new ToolConfig("sphere", "sphere.png") },
+        { ModelType.Model, new ToolConfig("model", "model.png") }
     };
 
     enum BackgroundType
     {
         Cloud = 0,
-        WildPark = 1,
+        WildPark,
+        Space
     }
 
     private readonly Dictionary<BackgroundType, BackgroundConfig> _backgrounds = new()
     {
         { BackgroundType.Cloud, new BackgroundConfig("clouds", "clouds.jpg") },
         { BackgroundType.WildPark, new BackgroundConfig("wild park", "wildpark.png") },
+        { BackgroundType.Space, new BackgroundConfig("space", "space.jpg") },
     };
 
     private readonly MessageWindow _messageWindow = new();
@@ -98,6 +103,7 @@ class EditorController
     private bool _processingRequestToClose;
     private bool _requestToCloseAccepted;
     private bool _requestToClose;
+    //private List<BoundingBox> _boundingBoxes = [];
 
     private const string DefaultMaterialName = "noname";
 
@@ -176,8 +182,24 @@ class EditorController
                     break;
             }
 
+            //Raylib.UpdateCamera(ref _camera, CameraMode.Orbital);
 
             prevMousePos = HandleMouseMovement(prevMousePos);
+
+            if (Raylib.IsFileDropped())
+            {
+                var droppedFiles = Raylib.GetDroppedFiles();
+                if (droppedFiles.Length == 1)
+                {
+                    string modelPath = droppedFiles.First();
+
+                    string[] supportedExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
+                    if (supportedExtensions.Contains(Path.GetExtension(modelPath)))
+                    {
+                        SelectModelType(modelPath);
+                    }
+                }
+            }
 
             UpdateLights();
 
@@ -438,6 +460,8 @@ class EditorController
 
     private void MaterialPackageMeta_OnVariablesChanged()
     {
+        _editorControllerData.MaterialPackage.UpdateFileReferences();
+
         LoadShaderCode();
         _editorControllerData.MaterialPackage.ApplyVariablesToModel(_currentModel);
     }
@@ -467,7 +491,16 @@ class EditorController
         Raylib.DrawModel(_backgroundModel, Vector3.Zero, 1f, Color.White);
         Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
 
+        //if (Raylib.IsKeyDown(KeyboardKey.Tab))
+        //    foreach (var boundingBox in _boundingBoxes)
+        //    {
+        //        Raylib.DrawBoundingBox(boundingBox, Color.White);
+        //    }
+
+
         RenderLights();
+
+        Raylib.DrawGrid(10, 1.0f);
 
         Raylib.EndMode3D();
 
@@ -501,7 +534,7 @@ class EditorController
         return prevMousePos;
     }
 
-    private void SelectModelType()
+    private void SelectModelType(string modelFilePath = "")
     {
         switch (_modelType)
         {
@@ -514,9 +547,24 @@ class EditorController
             case ModelType.Sphere:
                 _currentModel = GenerateSphereModel();
                 break;
+            case ModelType.Model:
+                _currentModel = LoadModel(modelFilePath);
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
+        Logger.Trace($"MeshCount={_currentModel.MeshCount}, MaterialCount={_currentModel.MaterialCount}");
+
+        //unsafe
+        //{
+        //    _boundingBoxes = new List<BoundingBox>(_currentModel.MeshCount);
+        //    for (var i = 0; i < _currentModel.MeshCount; i++)
+        //    {
+        //        _boundingBoxes.Add(Raylib.GetMeshBoundingBox(_currentModel.Meshes[i]));
+        //    }
+
+        //}
 
         ApplyShaderToModel();
     }
@@ -643,8 +691,6 @@ class EditorController
 
     }
 
-
-
     private void SelectBackground(BackgroundType key)
     {
         Logger.Trace($"{key} selected");
@@ -663,8 +709,6 @@ class EditorController
 
         if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
         {
-
-
             foreach (var (key, tool) in _configs)
             {
                 ImGui.SameLine();
@@ -824,33 +868,9 @@ class EditorController
             material.Meta.Variables.Remove(name);
         }
 
-        UpdateFileReferences();
+        _editorControllerData.MaterialPackage.UpdateFileReferences();
 
         Logger.Trace($"{toDelete.Count} variables removed from materialMeta");
-    }
-
-    private void UpdateFileReferences()
-    {
-        var material = _editorControllerData.MaterialPackage;
-
-        foreach (var (key, _) in material.Files)
-        {
-            material.CreateFileReferences(key);
-
-            if (key.FileType == FileType.VertexShader ||
-                key.FileType == FileType.FragmentShader)
-            {
-                if (material.GetShaderName(key.FileType) == key.FileName)
-                    material.IncFileReferences(key);
-            }
-            else if (key.FileType == FileType.Image)
-            {
-                var count = material.Meta.Variables.Count(v =>
-                                                v.Value.GetType() == typeof(CodeVariableTexture)
-                                                && (v.Value as CodeVariableTexture)?.Value == key.FileName);
-                material.IncFileReferences(key, (uint)count);
-            }
-        }
     }
 
     private Tuple<FileId, ShaderCode>? GetShaderCode(MaterialPackage material,
@@ -887,10 +907,29 @@ class EditorController
         return model;
     }
 
+    private Model LoadModel(string modelFilePath)
+    {
+        string filePath;
+
+        if (modelFilePath == "")
+            filePath = $"{ResourceModelsPath}\\glb\\robot.glb";
+        else
+            filePath = modelFilePath;
+
+        Logger.Trace($"Loading {filePath}");
+        var model = Raylib.LoadModel(filePath);
+
+        if (Raylib.IsModelValid(model) == false)
+            throw new InvalidDataException("model is not valid");
+
+
+        return model;
+    }
+
     private void PrepareCamera()
     {
         // Define our custom camera to look into our 3d world
-        _camera = new Camera3D(new Vector3(0f, 0f, -5),
+        _camera = new Camera3D(new Vector3(0f, 5f, -5),
             new Vector3(0.0f, 0.0f, 0.0f),
             new Vector3(0.0f, 1.0f, 0.0f),
             45f,

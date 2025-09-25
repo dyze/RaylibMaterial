@@ -161,12 +161,16 @@ public class MaterialPackage : IDisposable
         if (fileType == null)
             fileType = FileType.Unknown;
 
-        if (_files.TryAdd(new FileId(fileType.Value, fileName),
+        var fileId = new FileId(fileType.Value, fileName);
+
+        if (_files.TryAdd(fileId,
                 fileContent) == false)
         {
             Logger.Error($"{fileName} is already in the list");
             return;
         }
+
+        CreateFileReferences(fileId);
 
         OnFilesChanged?.Invoke();
     }
@@ -376,5 +380,27 @@ public class MaterialPackage : IDisposable
         Logger.Trace($"{variableName}={fileName}");
     }
 
+    public void UpdateFileReferences()
+    {
+        ClearFileReferences();
 
+        foreach (var (key, _) in Files)
+        {
+            CreateFileReferences(key);
+
+            if (key.FileType == FileType.VertexShader ||
+                key.FileType == FileType.FragmentShader)
+            {
+                if (GetShaderName(key.FileType) == key.FileName)
+                    IncFileReferences(key);
+            }
+            else if (key.FileType == FileType.Image)
+            {
+                var count = Meta.Variables.Count(v =>
+                    v.Value.GetType() == typeof(CodeVariableTexture)
+                    && (v.Value as CodeVariableTexture)?.Value == key.FileName);
+                IncFileReferences(key, (uint)count);
+            }
+        }
+    }
 }
