@@ -91,8 +91,7 @@ internal class Controller
 
     private void OnMaterialSelected(string filePath)
     {
-        _materialPackage = new MaterialPackage();
-        _materialPackage.Load(filePath);
+        _materialPackage = MaterialPackage.Load(filePath);
 
         var shader = _materialPackage.LoadShader();
         _currentShader = shader;

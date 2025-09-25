@@ -224,7 +224,7 @@ class EditorController
                     _editorControllerData.MaterialPackage.UpdateFile(key, array);
                 }
 
-                _editorControllerData.MaterialPackage.Meta.SetModified();
+                _editorControllerData.MaterialPackage.SetModified();
             }
 
             RenderOutputWindow();
@@ -324,7 +324,7 @@ class EditorController
 
 
 
-        if (_editorControllerData.MaterialPackage.Meta.IsModified)
+        if (_editorControllerData.MaterialPackage.IsModified)
         {
             _processingRequestToClose = true;
             _requestToCloseAccepted = false;
@@ -349,7 +349,7 @@ class EditorController
     {
         Logger.Info("OnNewMaterial...");
 
-        if (_editorControllerData.MaterialPackage.Meta.IsModified)
+        if (_editorControllerData.MaterialPackage.IsModified)
         {
             _messageDialogConfiguration = new("Current material has not been saved",
                 "Are you sure you want to continue?",
@@ -372,7 +372,7 @@ class EditorController
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
-        _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
+        _editorControllerData.MaterialPackage.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
 
         _currentShader = _defaultShader;
 
@@ -388,7 +388,7 @@ class EditorController
     {
         Logger.Info("OnLoadMaterial...");
 
-        if (_editorControllerData.MaterialPackage.Meta.IsModified)
+        if (_editorControllerData.MaterialPackage.IsModified)
         {
             _messageDialogConfiguration = new("Current material has not been saved",
                 "Are you sure you want to continue?",
@@ -440,12 +440,22 @@ class EditorController
         Logger.Info("LoadMaterial...");
         Logger.Info($"filePath={filePath}");
 
-        _editorControllerData.MaterialPackage = new();
+        try
+        {
+            _editorControllerData.MaterialPackage = MaterialPackage.Load(filePath);
+        }
+        catch (FileNotFoundException e)
+        {
+            Logger.Error(e);
+            return;
+        }
+
+
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
-        _editorControllerData.MaterialPackage.Meta.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
+        _editorControllerData.MaterialPackage.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
 
-        _editorControllerData.MaterialPackage.Load(filePath);
+        
         _editorControllerData.MaterialFilePath = filePath;
 
         _outputFilePath = filePath;
@@ -824,7 +834,7 @@ class EditorController
         // Sync materialMeta variables
         foreach (var (key, variable) in allShaderVariables)
         {
-            var result = material.Meta.Variables.TryGetValue(key, out var materialVariable);
+            var result = material.Variables.TryGetValue(key, out var materialVariable);
             if (result == false)
             {
                 Logger.Trace($"{key}: doesn't exist in materialMeta -> create it");
@@ -836,7 +846,7 @@ class EditorController
                     // Set pink as default color
                     (newVariable as CodeVariableColor).Value = System.Drawing.Color.FromArgb(255, 255, 0, 255);
 
-                material.Meta.Variables.Add(key, newVariable);
+                material.Variables.Add(key, newVariable);
             }
             else
             {
@@ -853,7 +863,7 @@ class EditorController
         }
 
         List<string> toDelete = [];
-        foreach (var (key, _) in material.Meta.Variables)
+        foreach (var (key, _) in material.Variables)
         {
             var result = allShaderVariables.TryGetValue(key, out var _);
             if (result == false)
@@ -865,7 +875,7 @@ class EditorController
 
         foreach (var name in toDelete)
         {
-            material.Meta.Variables.Remove(name);
+            material.Variables.Remove(name);
         }
 
         _editorControllerData.MaterialPackage.UpdateFileReferences();

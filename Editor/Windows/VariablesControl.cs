@@ -9,8 +9,8 @@ namespace Editor.Windows
     class VariablesControl
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private readonly EditorControllerData editorControllerData;
-        private Dictionary<Type, Func<CodeVariableBase, string, bool, bool>> _handlers;
+        private readonly EditorControllerData _editorControllerData;
+        private readonly Dictionary<Type, Func<CodeVariableBase, string, bool, bool>> _handlers;
 
         public VariablesControl(EditorControllerData editorControllerData)
         {
@@ -21,10 +21,8 @@ namespace Editor.Windows
                 { typeof(CodeVariableTexture), HandleTexture },
                 { typeof(CodeVariableColor), HandleColor },
             };
-                this.editorControllerData = editorControllerData;
-            }
-
-
+            this._editorControllerData = editorControllerData;
+        }
 
         /// <summary>
         /// Render variables
@@ -111,18 +109,18 @@ namespace Editor.Windows
 
                 if (isDropping)
                 {
-                    var draggedRelativeFilePath = editorControllerData.DataFileExplorerData.DraggedRelativeFilePath;
+                    var draggedRelativeFilePath = _editorControllerData.DataFileExplorerData.DraggedRelativeFilePath;
                     Logger.Trace($"dropped {draggedRelativeFilePath}");
 
-                    var draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
-                    editorControllerData.MaterialPackage.AddFile(draggedFileName,
-                        editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
+                    var draggedFileName = _editorControllerData.DataFileExplorerData.DraggedFileName;
+                    _editorControllerData.MaterialPackage.AddFile(draggedFileName,
+                        _editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath));
 
                     (variable as CodeVariableTexture).Value = draggedFileName;
                     variableChanged = true;
 
-                    editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
-                    editorControllerData.DataFileExplorerData.DraggedFileName = "";
+                    _editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
+                    _editorControllerData.DataFileExplorerData.DraggedFileName = "";
                 }
 
                 ImGui.EndDragDropTarget();

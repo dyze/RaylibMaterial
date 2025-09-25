@@ -2,6 +2,7 @@
 using Library.Helpers;
 using NLog;
 using Raylib_cs;
+using System.ComponentModel.DataAnnotations;
 
 namespace Library.Packaging;
 
@@ -29,9 +30,11 @@ public class MaterialPackage : IDisposable
 
     public const string MetaFileName = "material.meta";
 
-    public MaterialMeta Meta = new();
+    public MaterialDescription Meta = new();
     private Dictionary<FileId, byte[]> _files = [];
     private Dictionary<FileId, uint> _fileReferences = [];
+
+    [Required] public Dictionary<string, CodeVariableBase> Variables = [];
 
     /// <summary>
     /// Number of files in package
@@ -44,6 +47,17 @@ public class MaterialPackage : IDisposable
     public IReadOnlyDictionary<FileId, byte[]> Files => _files;
 
     public IReadOnlyDictionary<FileId, uint> FileReferences => _fileReferences;
+
+
+    public bool IsModified { get; set; } = false;
+
+    public void SetModified() => IsModified = true;
+
+    public void ClearModified() => IsModified = false;
+
+    public void TriggerVariablesChanged() => OnVariablesChanged?.Invoke();
+
+    public event Action? OnVariablesChanged;
 
 
     public MaterialPackage()
@@ -74,11 +88,11 @@ public class MaterialPackage : IDisposable
     /// </summary>
     private Shader? _shader;
 
-    public void Load(string packageFilePath)
+    public static MaterialPackage Load(string packageFilePath)
     {
-        Logger.Info($"MaterialPackage.Load {packageFilePath}");
+        Logger Logger = LogManager.GetCurrentClassLogger();
 
-        Clear();
+        Logger.Info($"MaterialPackage.Load {packageFilePath}");
 
         var inputDataAccess = new PackageAccess();
         inputDataAccess.Open(packageFilePath, AccessMode.Read);
@@ -88,7 +102,16 @@ public class MaterialPackage : IDisposable
         Logger.Info($"Reading entry {MetaFileName}...");
         var metaJson = inputDataAccess.ReadTextFile(MetaFileName);
 
-        Meta = MaterialMetaStorage.ParseJson(metaJson);
+        var metaFileObject = MaterialMetaFileStorage.ParseJson(metaJson);
+
+        var materialPackage = new MaterialPackage();
+
+        // Copy fields
+        materialPackage.Meta.Author = metaFileObject.Author;
+        materialPackage.Meta.Description = metaFileObject.Description;
+        materialPackage.Meta.Tags  = metaFileObject.Tags;
+        materialPackage.Meta.ShaderNames = metaFileObject.ShaderNames;
+        materialPackage.Variables = metaFileObject.Variables;
 
         // Reading files
         foreach (var fileName in inputDataAccess.GetAllFiles())
@@ -96,16 +119,16 @@ public class MaterialPackage : IDisposable
             if (fileName == MetaFileName)
                 continue;
 
-            AddFile(fileName,
+            materialPackage.AddFile(fileName,
                 inputDataAccess.ReadBinaryFile(fileName));
         }
 
 
         inputDataAccess.Close();
+        
+        Logger.Info($"MaterialPackage.Load OK: files read={1 + materialPackage.Files.Count}");
 
-        Meta.ClearModified();
-
-        Logger.Info($"MaterialPackage.Load OK: files read={1 + _files.Count}");
+        return materialPackage;
     }
 
 
@@ -129,8 +152,19 @@ public class MaterialPackage : IDisposable
         var outputDataAccess = new PackageAccess();
         outputDataAccess.Open(outputPackageFilePath, AccessMode.Create);
 
+        // Copy fields
+        var metaFileObject = new MaterialMetaFile
+        {
+            Author = Meta.Author,
+            Description = Meta.Description,
+            Tags = Meta.Tags,
+            ShaderNames = Meta.ShaderNames,
+
+            Variables = Variables
+        };
+
         // Add meta file
-        var metaJson = MaterialMetaStorage.ToJson(Meta);
+        var metaJson = MaterialMetaFileStorage.ToJson(metaFileObject);
         Logger.Info($"Adding entry {MetaFileName}...");
 
         outputDataAccess.AddTextFile(metaJson, MetaFileName);
@@ -147,7 +181,7 @@ public class MaterialPackage : IDisposable
 
         outputDataAccess.Close();
 
-        Meta.ClearModified();
+        ClearModified();
 
         Logger.Info($"MaterialPackage.Save OK: files added={1 + _files.Count}");
     }
@@ -285,7 +319,7 @@ public class MaterialPackage : IDisposable
         if (_shader.HasValue == false)
             return;
 
-        foreach (var (name, variable) in Meta.Variables)
+        foreach (var (name, variable) in Variables)
         {
             var location = Raylib.GetShaderLocation(_shader.Value, name);
             if (location < 0)
@@ -396,7 +430,7 @@ public class MaterialPackage : IDisposable
             }
             else if (key.FileType == FileType.Image)
             {
-                var count = Meta.Variables.Count(v =>
+                var count = Variables.Count(v =>
                     v.Value.GetType() == typeof(CodeVariableTexture)
                     && (v.Value as CodeVariableTexture)?.Value == key.FileName);
                 IncFileReferences(key, (uint)count);

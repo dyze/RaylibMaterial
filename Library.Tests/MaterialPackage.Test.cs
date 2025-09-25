@@ -15,11 +15,7 @@ public sealed class MaterialPackageTest
 
         materialPackage.Save("MaterialPackageTest/test.mat");
 
-        materialPackage = null;
-
-        materialPackage = new MaterialPackage();
-
-        materialPackage.Load("MaterialPackageTest/test.mat");
+        materialPackage = MaterialPackage.Load("MaterialPackageTest/test.mat");
 
         Assert.AreEqual("author", materialPackage.Meta.Author);
         Assert.AreEqual(2, materialPackage.Files.Count);

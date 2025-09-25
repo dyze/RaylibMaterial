@@ -3,18 +3,18 @@ using Newtonsoft.Json;
 
 namespace Library;
 
-public class MaterialMetaStorage
+public class MaterialMetaFileStorage
 {
-    public static MaterialMeta Load(string filePath)
+    public static MaterialMetaFile Load(string filePath)
     {
         var json = File.ReadAllText(filePath);
 
-        var configuration = ParseJson(json);
+        var obj = ParseJson(json);
 
-        return configuration;
+        return obj;
     }
 
-    public static MaterialMeta ParseJson(string json)
+    public static MaterialMetaFile ParseJson(string json)
     {
         JsonSerializerSettings jsonDeserializerSettings = new()
         {
@@ -23,7 +23,7 @@ public class MaterialMetaStorage
             SerializationBinder = new SerializationBinder(PayloadValidator.GetAllowedPayloadTypes()),
         };
 
-        var content = JsonConvert.DeserializeObject<MaterialMeta>(json,
+        var content = JsonConvert.DeserializeObject<MaterialMetaFile>(json,
                           jsonDeserializerSettings) ??
                       throw new ApplicationException("json can't be deserialized");
 
@@ -33,7 +33,7 @@ public class MaterialMetaStorage
         return content;
     }
 
-    public static string ToJson(MaterialMeta projectConfiguration)
+    public static string ToJson(MaterialMetaFile projectConfiguration)
     {
         JsonSerializerSettings jsonSerializerSettings = new()
         {
@@ -47,7 +47,7 @@ public class MaterialMetaStorage
             jsonSerializerSettings);
     }
 
-    public static void Save(MaterialMeta materialMeta,
+    public static void Save(MaterialMetaFile materialMeta,
         string filePath)
     {
         var json = ToJson(materialMeta);
@@ -58,7 +58,5 @@ public class MaterialMetaStorage
         Directory.CreateDirectory(directionPath);
 
         File.WriteAllText(filePath, json);
-
-        materialMeta.IsModified = false;
     }
 }

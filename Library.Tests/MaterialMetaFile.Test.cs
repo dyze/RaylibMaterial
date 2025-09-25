@@ -1,15 +1,14 @@
 ﻿using Library.CodeVariable;
-using System.Numerics;
 
 namespace Library.Tests;
 
 [TestClass]
-public sealed class MaterialMetaTest
+public sealed class MaterialMetaFileTest
 {
     [TestMethod]
     public void SaveLoad()
     {
-        var material = new MaterialMeta();
+        var material = new MaterialMetaFile();
         material.Author = "Author";
         material.Description = "Description";
         material.Tags.Add("materialMeta");
@@ -18,9 +17,9 @@ public sealed class MaterialMetaTest
         material.Variables.Add("color", new CodeVariableVector4());
         material.Variables.Add("texture", new CodeVariableTexture());
 
-        MaterialMetaStorage.Save(material, "MaterialMetaTest/test.mat");
+        MaterialMetaFileStorage.Save(material, "MaterialMetaTest/test.mat");
 
-        var loadedMaterial = MaterialMetaStorage.Load("MaterialMetaTest/test.mat");
+        var loadedMaterial = MaterialMetaFileStorage.Load("MaterialMetaTest/test.mat");
         Assert.IsNotNull(loadedMaterial != null);
 
         if (loadedMaterial == null)

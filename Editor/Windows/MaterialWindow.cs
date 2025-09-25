@@ -25,7 +25,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
             RenderShaders();
             RenderFiles();
 
-            var material = editorControllerData.MaterialPackage.Meta;
+            var material = editorControllerData.MaterialPackage;
             if (_variablesControl.Render(material.Variables))
             {
                 material.SetModified();
@@ -49,7 +49,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
     {
         var material = editorControllerData.MaterialPackage;
         var file = material.GetShaderName(fileType);
-        ImGui.LabelText(fileType.ToString(), file != null ? file : "");
+        ImGui.LabelText(fileType.ToString(), file ?? "");
 
         if (ImGui.BeginDragDropTarget())
         {
@@ -92,14 +92,14 @@ class MaterialWindow(EditorControllerData editorControllerData)
 
         var material = editorControllerData.MaterialPackage;
 
-        if (material.Meta.IsModified)
+        if (material.IsModified)
             ImGui.PushStyleColor(ImGuiCol.Button, 
                 TypeConvertors.ColorToVector4(System.Drawing.Color.Red));
 
         if (ImGui.Button("Save"))
             saveMaterial = true;
 
-        if (material.Meta.IsModified)
+        if (material.IsModified)
             ImGui.PopStyleColor(1);
 
         if (saveMaterial)
@@ -108,17 +108,12 @@ class MaterialWindow(EditorControllerData editorControllerData)
 
     private void RenderMeta()
     {
-        ImGui.SeparatorText("Meta");
+        ImGui.SeparatorText("Properties");
 
         if (ImGui.InputText("Description", ref editorControllerData.MaterialPackage.Meta.Description, 200))
-            editorControllerData.MaterialPackage.Meta.SetModified();
+            editorControllerData.MaterialPackage.SetModified();
         if (ImGui.InputText("Author", ref editorControllerData.MaterialPackage.Meta.Author, 200))
-            editorControllerData.MaterialPackage.Meta.SetModified();
-
-        ImGui.BeginDisabled();
-        var isModified = editorControllerData.MaterialPackage.Meta.IsModified;
-        ImGui.Checkbox("is modified", ref isModified);
-        ImGui.EndDisabled();
+            editorControllerData.MaterialPackage.SetModified();
     }
 
 
