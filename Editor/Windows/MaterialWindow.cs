@@ -36,6 +36,8 @@ class MaterialWindow(EditorControllerData editorControllerData)
         ImGui.End();
     }
 
+
+
     private void RenderShaders()
     {
         RenderShaderField(FileType.VertexShader);

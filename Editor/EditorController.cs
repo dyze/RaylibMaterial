@@ -189,7 +189,6 @@ class EditorController
             RenderMenu();
             RenderModels();
 
-            RenderToolBar();
             RenderFileDialog();
             RenderMessageDialog();
 
@@ -595,41 +594,6 @@ class EditorController
         Logger.Info("SaveAs OK");
     }
 
-    private void RenderToolBar()
-    {
-        ImGui.SetNextWindowSize(new Vector2(400, 80));
-        if (ImGui.Begin("Tools", ImGuiWindowFlags.NoTitleBar))
-        {
-            foreach (var (key, tool) in _configs)
-            {
-                ImGui.SameLine();
-                if (rlImGui.ImageButtonSize(tool.Name,
-                        tool.Texture,
-                        new Vector2(32, 32)))
-                {
-                    _modelType = key;
-                    Logger.Trace($"{_modelType} selected");
-                    SelectModelType();
-                }
-            }
-
-            ImGui.SameLine(40);
-
-            foreach (var (key, background) in _backgrounds)
-            {
-                ImGui.SameLine();
-                if (rlImGui.ImageButtonSize(background.Name,
-                        background.Texture,
-                        new Vector2(32, 32)))
-                {
-                    SelectBackground(key);
-                }
-            }
-
-            ImGui.End();
-        }
-    }
-
     private void RenderFileDialog()
     {
         var open = _fileDialogInfo != null;
@@ -690,10 +654,45 @@ class EditorController
 
     private void RenderOutputWindow()
     {
-        ImGui.SetNextWindowSize(_outputSize
-            + new Vector2(0, ImGui.GetFrameHeightWithSpacing()));
+        var outputSize = _outputSize;
+
+        outputSize += new Vector2(0, 60);
+
+        ImGui.SetNextWindowSize(outputSize
+                                + new Vector2(0, ImGui.GetFrameHeightWithSpacing()));
+
         if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
         {
+
+
+            foreach (var (key, tool) in _configs)
+            {
+                ImGui.SameLine();
+                if (rlImGui.ImageButtonSize(tool.Name,
+                        tool.Texture,
+                        new Vector2(32, 32)))
+                {
+                    _modelType = key;
+                    Logger.Trace($"{_modelType} selected");
+                    SelectModelType();
+                }
+            }
+
+            ImGui.SameLine(40);
+
+            foreach (var (key, background) in _backgrounds)
+            {
+                ImGui.SameLine();
+                if (rlImGui.ImageButtonSize(background.Name,
+                        background.Texture,
+                        new Vector2(32, 32)))
+                {
+                    SelectBackground(key);
+                }
+            }
+
+            ImGui.Separator();
+
             rlImGui.ImageRenderTexture(_viewTexture);
         }
 
