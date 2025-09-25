@@ -198,7 +198,9 @@ namespace Editor.Helpers
             ImGui.PushID(dialogInfo.GetHashCode());
             ImGui.SetNextWindowSize(new Vector2(740.0f, 410.0f), ImGuiCond.FirstUseEver);
 
-            if (ImGui.Begin(dialogInfo.Title, ref open, ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoCollapse))
+            ImGui.OpenPopup(dialogInfo.Title);
+
+            if (ImGui.BeginPopupModal(dialogInfo.Title, ref open, ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoCollapse))
             {
                 if (dialogInfo.CurrentFiles.Count == 0 && dialogInfo.CurrentDirectories.Count == 0 || dialogInfo.RefreshInfo)
                     RefreshInfo(dialogInfo);
@@ -471,9 +473,11 @@ namespace Editor.Helpers
                         }
                     }
                 }
+
+                ImGui.End();
             }
 
-            ImGui.End();
+
             ImGui.PopID();
 
             return complete;
