@@ -3,18 +3,18 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Editor", "Editor\Editor.csproj", "{A67A8DAD-8077-46CA-A0CD-DB992CC04283}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Editor", "src\Editor\Editor.csproj", "{A67A8DAD-8077-46CA-A0CD-DB992CC04283}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library.Tests", "Library.Tests\Library.Tests.csproj", "{8B33B16A-79D1-4E83-99BD-CCB19D707383}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library.Tests", "tests\Library.Tests\Library.Tests.csproj", "{8B33B16A-79D1-4E83-99BD-CCB19D707383}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library", "Library\Library.csproj", "{E6096CFD-92D5-4FA1-9EC1-9046BC626675}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library", "src\Library\Library.csproj", "{E6096CFD-92D5-4FA1-9EC1-9046BC626675}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsumerSampleApp", "ConsumerSampleApp\ConsumerSampleApp.csproj", "{BB272C3E-29F3-40C4-A9A8-56B7DFBD43E5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsumerSampleApp", "samples\ConsumerSampleApp\ConsumerSampleApp.csproj", "{BB272C3E-29F3-40C4-A9A8-56B7DFBD43E5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

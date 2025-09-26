@@ -6,10 +6,10 @@ The goal of this project is to simplify the applying materials to our models. Fo
 And then to apply such created packages to any of your models.
 
 Such editor looks like:
-![image info](./doc/Shader-Editor.png)
+![image info](./docs/Shader-Editor.png)
 
 The produce package are simple zip files that contains whatever is needed for Raylib:
-![image info](./doc/package-content.png)
+![image info](./docs/package-content.png)
 
 It is based on RayLib-cs project.
 
