@@ -2,7 +2,7 @@
 
 namespace Editor;
 
-class ToolConfig
+public class ToolConfig
 {
     public string Name { get; set; }
     public string ImageFileName;

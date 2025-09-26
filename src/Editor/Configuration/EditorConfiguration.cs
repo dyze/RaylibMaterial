@@ -1,5 +1,7 @@
 ﻿using Editor.Helpers;
 using Newtonsoft.Json;
+using System.Numerics;
+using static Editor.EditorControllerData;
 
 namespace Editor.Configuration;
 
@@ -21,15 +23,38 @@ public class EditorConfiguration
 
     private const int MaxCustomModels = 5;
 
+    /// <summary>
+    /// Model file to load if CurrentModelType is CurrentModelType.Model
+    /// Can be either an entry from _builtInModels or from _editorConfiguration.CustomModels
+    /// </summary>
+    public string CurrentModelFilePath = "";
+
+    public readonly Vector2 ScreenSize = new(1600, 900); // initial size of window
+
+    public readonly Vector2 OutputSize = new(1600 / 2, 900 / 2);
+
+    public enum BackgroundType
+    {
+        Cloud = 0,
+        WildPark,
+        Space
+    }
+
+    [JsonProperty("Background")] public BackgroundType Background { get; set; } = BackgroundType.Cloud;
+
+    public enum ModelType
+    {
+        Cube = 0,
+        Plane,
+        Sphere,
+        Model
+    }
+
+    public ModelType CurrentModelType = ModelType.Cube;
+
     public void AddRecentFile(string filePath) =>
         CollectionHelpers.AddEntryToHistory(RecentFiles, filePath, MaxRecentFiles);
 
     public void AddCustomModel(string filePath) =>
         CollectionHelpers.AddEntryToHistory(CustomModels, filePath, MaxCustomModels);
-
-    /// <summary>
-    /// Model file to load if ModelType is ModelType.Model
-    /// Can be either an entry from _builtInModels or from _editorConfiguration.CustomModels
-    /// </summary>
-    public string SelectedModelFilePath = "";
 }

@@ -10,6 +10,7 @@ using NLog;
 using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
+using static Editor.EditorControllerData;
 using Color = Raylib_cs.Color;
 
 namespace Editor;
@@ -24,10 +25,6 @@ class EditorController
     private const string MaterialsPath = "materials";
     private const string MaterialFileExtension = ".mat";
     private const string MaterialBackupFileExtension = ".mat.bck";
-
-    private readonly Vector2 _screenSize = new(1600, 900); // initial size of window
-
-    private readonly Vector2 _outputSize = new(1600 / 2, 900 / 2);
 
     private Camera3D _camera;
     private float _modelXAngle = (float)(Math.PI / 4);
@@ -45,43 +42,6 @@ class EditorController
 
     private Dictionary<FileId, ShaderCode> _shaderCode = new();
 
-    private RenderTexture2D _viewTexture;
-
-    enum ModelType
-    {
-        Cube = 0,
-        Plane,
-        Sphere,
-        Model
-    }
-
-    private ModelType _modelType = ModelType.Cube;
-
-    private readonly Dictionary<ModelType, ToolConfig> _configs = new()
-    {
-        { ModelType.Cube, new ToolConfig("cube", "cube.png") },
-        { ModelType.Plane, new ToolConfig("plane", "plane.png") },
-        { ModelType.Sphere, new ToolConfig("sphere", "sphere.png") },
-        { ModelType.Model, new ToolConfig("model", "model.png") }
-    };
-
-    private List<string> _builtInModels = [];
-
-
-
-    enum BackgroundType
-    {
-        Cloud = 0,
-        WildPark,
-        Space
-    }
-
-    private readonly Dictionary<BackgroundType, BackgroundConfig> _backgrounds = new()
-    {
-        { BackgroundType.Cloud, new BackgroundConfig("clouds", "clouds.jpg") },
-        { BackgroundType.WildPark, new BackgroundConfig("wild park", "wildpark.png") },
-        { BackgroundType.Space, new BackgroundConfig("space", "space.jpg") },
-    };
 
     private readonly MessageWindow _messageWindow = new();
     public static MessageQueue MessageQueue { get; set; } = new();
@@ -113,6 +73,8 @@ class EditorController
 
     private string WindowCaption => $"Raylib Material Editor - {_outputFilePath}";
 
+    private readonly OutputWindow _outputWindow;
+
     public EditorController()
     {
         LoadEditorConfiguration();
@@ -135,16 +97,22 @@ class EditorController
 
         UpdateBuiltInModels();
 
-        if (_editorConfiguration.SelectedModelFilePath == "" ||
-            File.Exists(Path.GetFullPath(_editorConfiguration.SelectedModelFilePath)) == false)
+        if (_editorConfiguration.CurrentModelFilePath == "" ||
+            File.Exists(Path.GetFullPath(_editorConfiguration.CurrentModelFilePath)) == false)
         {
-            _editorConfiguration.SelectedModelFilePath = _builtInModels.First();
+            _editorConfiguration.CurrentModelFilePath = _editorControllerData.BuiltInModels.First();
         }
+
+        _outputWindow = new(_editorConfiguration,
+            _editorControllerData);
+
+        _outputWindow.ModelTypeChangeRequest += (type, path) => SelectModel(type, path);
+        _outputWindow.BackgroundChanged += SelectBackground;
     }
 
     private void UpdateBuiltInModels()
     {
-        _builtInModels = Directory.GetFiles(Path.GetFullPath(ResourceModelsPath), "*.*", SearchOption.AllDirectories)
+        _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(ResourceModelsPath), "*.*", SearchOption.AllDirectories)
             .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
             .ToList();
     }
@@ -159,7 +127,7 @@ class EditorController
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
-        Raylib.InitWindow((int)_screenSize.X, (int)_screenSize.Y, WindowCaption);
+        Raylib.InitWindow((int)_editorConfiguration.ScreenSize.X, (int)_editorConfiguration.ScreenSize.Y, WindowCaption);
         Raylib.SetExitKey(KeyboardKey.Null);
         rlImGui.Setup();
 
@@ -167,7 +135,7 @@ class EditorController
 
         _defaultShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
 
-        _viewTexture = Raylib.LoadRenderTexture((int)_outputSize.X, (int)_outputSize.Y);
+        _editorControllerData.ViewTexture = Raylib.LoadRenderTexture((int)_editorConfiguration.OutputSize.X, (int)_editorConfiguration.OutputSize.Y);
 
         var mesh = Raylib.GenMeshPlane(12, 8, 1, 1);
         _backgroundModel = Raylib.LoadModelFromMesh(mesh);
@@ -177,7 +145,7 @@ class EditorController
         _backgroundModel.Transform = Raymath.MatrixMultiply(matRotate, matTranslate);
 
 
-        SelectBackground(BackgroundType.WildPark);
+        SelectBackground(_editorConfiguration.Background);
 
         NewMaterial();
 
@@ -234,7 +202,7 @@ class EditorController
                 _editorControllerData.MaterialPackage.SetModified();
             }
 
-            RenderOutputWindow();
+            _outputWindow.RenderOutputWindow();
             _materialWindow.Render();
 
             _messageWindow.Render(MessageQueue,
@@ -265,11 +233,11 @@ class EditorController
             {
                 var modelPath = droppedFiles.First();
 
-                
+
                 if (_supportedModelExtensions.Contains(Path.GetExtension(modelPath)))
                 {
-                    _editorConfiguration.SelectedModelFilePath = modelPath;
-                    _modelType = ModelType.Model;
+                    _editorConfiguration.CurrentModelFilePath = modelPath;
+                    _editorConfiguration.CurrentModelType = EditorConfiguration.ModelType.Model;
                     SelectModel(modelPath);
                 }
             }
@@ -409,7 +377,7 @@ class EditorController
         _outputFilePath = $"{directoryPath}\\{DefaultMaterialName}{MaterialFileExtension}";
         Raylib.SetWindowTitle(WindowCaption);
 
-        SelectModelType();
+        LoadCurrentModel();
         LoadShaders();
     }
 
@@ -490,7 +458,7 @@ class EditorController
 
         _editorConfiguration.AddRecentFile(filePath);
 
-        SelectModelType();
+        LoadCurrentModel();
         LoadShaderCode();
         LoadShaders();
     }
@@ -520,7 +488,7 @@ class EditorController
 
     private void RenderModels()
     {
-        Raylib.BeginTextureMode(_viewTexture);
+        Raylib.BeginTextureMode(_editorControllerData.ViewTexture);
 
         Raylib.BeginMode3D(_camera);
         Raylib.ClearBackground(Color.Black);
@@ -572,21 +540,29 @@ class EditorController
         return prevMousePos;
     }
 
-    private void SelectModelType()
+    private void SelectModel(EditorConfiguration.ModelType modelType, string modelFilePath)
     {
-        switch (_modelType)
+        Logger.Trace($"{modelType}, {modelFilePath} selected");
+        _editorConfiguration.CurrentModelType = modelType;
+        _editorConfiguration.CurrentModelFilePath = modelFilePath;
+        LoadCurrentModel();
+    }
+
+    private void LoadCurrentModel()
+    {
+        switch (_editorConfiguration.CurrentModelType)
         {
-            case ModelType.Cube:
+            case EditorConfiguration.ModelType.Cube:
                 _currentModel = GenerateCubeModel();
                 break;
-            case ModelType.Plane:
+            case EditorConfiguration.ModelType.Plane:
                 _currentModel = GeneratePlaneModel();
                 break;
-            case ModelType.Sphere:
+            case EditorConfiguration.ModelType.Sphere:
                 _currentModel = GenerateSphereModel();
                 break;
-            case ModelType.Model:
-                SelectModel(_editorConfiguration.SelectedModelFilePath);
+            case EditorConfiguration.ModelType.Model:
+                SelectModel(_editorConfiguration.CurrentModelFilePath);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -599,28 +575,35 @@ class EditorController
 
     private void SelectModel(string modelFilePath)
     {
-        if (File.Exists(Path.GetFullPath(modelFilePath)) == false)
+        if (modelFilePath == "" ||
+            File.Exists(Path.GetFullPath(modelFilePath)) == false)
         {
-            modelFilePath = _builtInModels.First();
+            modelFilePath = _editorControllerData.BuiltInModels.First();
         }
+        
+        Logger.Trace($"Loading {modelFilePath}");
+        var model = Raylib.LoadModel(modelFilePath);
 
-        _currentModel = LoadModel(modelFilePath);
+        if (Raylib.IsModelValid(model) == false)
+            throw new InvalidDataException("model is not valid");
 
-        _editorConfiguration.SelectedModelFilePath = modelFilePath;
+        _currentModel = model;
+
+        _editorConfiguration.CurrentModelFilePath = modelFilePath;
 
         _editorConfiguration.AddCustomModel(modelFilePath);
     }
 
     private void LoadUiResources()
     {
-        foreach (var (_, tool) in _configs)
+        foreach (var (_, tool) in _editorControllerData.Tools)
         {
             var image = Raylib.LoadImage($"{ResourceUiPath}/{tool.ImageFileName}");
             tool.Texture = Raylib.LoadTextureFromImage(image);
             Raylib.UnloadImage(image);
         }
 
-        foreach (var (_, background) in _backgrounds)
+        foreach (var (_, background) in _editorControllerData.Backgrounds)
         {
             var image = Raylib.LoadImage($"{ResourceUiPath}/{background.ImageFileName}");
             background.Texture = Raylib.LoadTextureFromImage(image);
@@ -733,102 +716,12 @@ class EditorController
 
     }
 
-    private void SelectBackground(BackgroundType key)
+    private void SelectBackground(EditorConfiguration.BackgroundType key)
     {
         Logger.Trace($"{key} selected");
-        var background = _backgrounds[key];
+        _editorConfiguration.Background = key;
+        var background = _editorControllerData.Backgrounds[key];
         Raylib.SetMaterialTexture(ref _backgroundModel, 0, MaterialMapIndex.Albedo, ref background.Texture);
-    }
-
-    private void RenderOutputWindow()
-    {
-        var selectedModel = _editorConfiguration.SelectedModelFilePath;
-
-        var outputSize = _outputSize;
-
-        outputSize += new Vector2(0, 60);
-
-        ImGui.SetNextWindowSize(outputSize
-                                + new Vector2(0, ImGui.GetFrameHeightWithSpacing()));
-
-        if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
-        {
-            foreach (var (key, tool) in _configs)
-            {
-                ImGui.SameLine();
-                if (rlImGui.ImageButtonSize(tool.Name,
-                        tool.Texture,
-                        new Vector2(32, 32)))
-                {
-                    _modelType = key;
-                    Logger.Trace($"{_modelType} selected");
-                    SelectModelType();
-                }
-            }
-
-            ImGui.BeginDisabled(_modelType != ModelType.Model);
-
-            if(ImGui.BeginCombo("models", Path.GetFileName(_editorConfiguration.SelectedModelFilePath)))
-            {
-                // Built in models
-                ImGui.PushID("BuildIn");
-                foreach (var model in _builtInModels)
-                {
-                    var selected = model == _editorConfiguration.SelectedModelFilePath;
-                    if (ImGui.Selectable(Path.GetFileName(model),
-                            selected))
-                    {
-                        _editorConfiguration.SelectedModelFilePath = model;
-                        break;
-                    }
-                }
-                ImGui.PopID();
-
-                ImGui.Separator();
-
-                // Custom models
-                ImGui.PushID("Custom");
-                foreach (var model in _editorConfiguration.CustomModels)
-                {
-                    var selected = model == _editorConfiguration.SelectedModelFilePath;
-                    if (ImGui.Selectable(Path.GetFileName(model),
-                            selected))
-                    {
-                        _editorConfiguration.SelectedModelFilePath = model;
-                        break;
-                    }
-                }
-                ImGui.PopID();
-
-                ImGui.EndCombo();
-            }
-
-            ImGui.EndDisabled();
-
-            ImGui.SameLine(40);
-
-            foreach (var (key, background) in _backgrounds)
-            {
-                ImGui.SameLine();
-                if (rlImGui.ImageButtonSize(background.Name,
-                        background.Texture,
-                        new Vector2(32, 32)))
-                {
-                    SelectBackground(key);
-                }
-            }
-
-            ImGui.Separator();
-
-            rlImGui.ImageRenderTexture(_viewTexture);
-        }
-
-        ImGui.End();
-
-        if (selectedModel != _editorConfiguration.SelectedModelFilePath)
-        {
-            SelectModelType();
-        }
     }
 
     private void ApplyShaderToModel()
@@ -996,25 +889,6 @@ class EditorController
     {
         var mesh = Raylib.GenMeshSphere(2, 20, 20);
         var model = Raylib.LoadModelFromMesh(mesh);
-        return model;
-    }
-
-    private Model LoadModel(string modelFilePath = "")
-    {
-        string filePath;
-
-        if (modelFilePath == "")
-            filePath = $"{ResourceModelsPath}\\glb\\robot.glb";
-        else
-            filePath = modelFilePath;
-
-        Logger.Trace($"Loading {filePath}");
-        var model = Raylib.LoadModel(filePath);
-
-        if (Raylib.IsModelValid(model) == false)
-            throw new InvalidDataException("model is not valid");
-
-
         return model;
     }
 

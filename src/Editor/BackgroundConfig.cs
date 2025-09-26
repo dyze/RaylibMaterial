@@ -2,7 +2,7 @@
 
 namespace Editor;
 
-class BackgroundConfig
+public class BackgroundConfig
 {
     public string Name { get; set; }
     public string? ImageFileName;
