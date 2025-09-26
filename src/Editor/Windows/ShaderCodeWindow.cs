@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using ImGuiNET;
 using System.Numerics;
+using Editor.Configuration;
 using Library;
 using Library.Helpers;
 using Library.Packaging;
@@ -10,7 +11,8 @@ namespace Editor.Windows
     /// <summary>
     /// Handles the display and the modification of code
     /// </summary>
-    internal class ShaderCodeWindow
+    internal class ShaderCodeWindow(EditorConfiguration editorConfiguration,
+        EditorControllerData editorControllerData)
     {
         public event Action? BuildPressed;
 
@@ -22,6 +24,8 @@ namespace Editor.Windows
         public bool Render(Dictionary<FileId, ShaderCode> shaderCodes)
         {
             var codeChanged = false;
+
+            editorControllerData.UpdateWindowPosAndSize(EditorControllerData.WindowId.Code);
 
             if (ImGui.Begin("Code"))
             {

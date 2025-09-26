@@ -1,4 +1,5 @@
-﻿using Editor.Helpers;
+﻿using Editor.Configuration;
+using Editor.Helpers;
 using ImGuiNET;
 using Library.Helpers;
 using Library.Packaging;
@@ -8,7 +9,8 @@ using System.Text;
 namespace Editor.Windows;
 
 
-class MaterialWindow(EditorControllerData editorControllerData)
+class MaterialWindow(EditorConfiguration editorConfiguration, 
+    EditorControllerData editorControllerData)
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -18,6 +20,8 @@ class MaterialWindow(EditorControllerData editorControllerData)
 
     public void Render()
     {
+        editorControllerData.UpdateWindowPosAndSize(EditorControllerData.WindowId.Material);
+
         if (ImGui.Begin("Material"))
         {
             RenderToolBar();

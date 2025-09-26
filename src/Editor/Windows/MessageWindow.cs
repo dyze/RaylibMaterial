@@ -5,9 +5,9 @@ using Raylib_cs;
 using Color = System.Drawing.Color;
 
 
-namespace Editor;
+namespace Editor.Windows;
 
-internal class MessageWindow
+internal class MessageWindow(EditorControllerData editorControllerData)
 {
     private bool _autoScroll = true;
 
@@ -26,11 +26,7 @@ internal class MessageWindow
         if (isVisible == false)
             return;
 
-        var size = new Vector2(1000, 200);
-        var position = new Vector2(0, Raylib.GetScreenHeight() - size.Y);
-
-        ImGui.SetNextWindowPos(position, ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSize(size, ImGuiCond.FirstUseEver);
+        editorControllerData.UpdateWindowPosAndSize(EditorControllerData.WindowId.Message);
 
         if (ImGui.Begin("Messages", ref isVisible))
         {

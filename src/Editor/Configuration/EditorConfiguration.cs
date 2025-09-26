@@ -1,7 +1,7 @@
-﻿using Editor.Helpers;
+﻿using System.Drawing;
+using Editor.Helpers;
 using Newtonsoft.Json;
 using System.Numerics;
-using static Editor.EditorControllerData;
 
 namespace Editor.Configuration;
 
@@ -41,6 +41,8 @@ public class EditorConfiguration
     }
 
     [JsonProperty("Background")] public BackgroundType Background { get; set; } = BackgroundType.Cloud;
+    [JsonProperty("WindowPosition")] public Point WindowPosition { get; set; } = new Point(40, 40);
+    [JsonProperty("MonitorIndex")] public int MonitorIndex { get; set; } = 0;
 
     public enum ModelType
     {

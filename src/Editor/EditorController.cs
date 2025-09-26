@@ -1,4 +1,5 @@
-﻿using Editor.Configuration;
+﻿using System.Drawing;
+using Editor.Configuration;
 using Editor.Helpers;
 using Editor.Windows;
 using Examples.Shared;
@@ -10,7 +11,6 @@ using NLog;
 using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
-using static Editor.EditorControllerData;
 using Color = Raylib_cs.Color;
 
 namespace Editor;
@@ -43,15 +43,15 @@ class EditorController
     private Dictionary<FileId, ShaderCode> _shaderCode = new();
 
 
-    private readonly MessageWindow _messageWindow = new();
+    private readonly MessageWindow _messageWindow;
     public static MessageQueue MessageQueue { get; set; } = new();
 
     private Model _backgroundModel;
 
-    private readonly EditorControllerData _editorControllerData = new();
+    private readonly EditorControllerData _editorControllerData;
 
 
-    private readonly ShaderCodeWindow _shaderCodeWindow = new();
+    private readonly ShaderCodeWindow _shaderCodeWindow;
     private EditorConfiguration _editorConfiguration = new();
 
     private readonly DataFileExplorer _dataFileExplorer;
@@ -82,12 +82,21 @@ class EditorController
         if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
             _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = "./resources";
 
+        _editorControllerData = new(_editorConfiguration);
+
         _editorControllerData.DataFileExplorerData.DataFolder.Open(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
         _editorControllerData.DataFileExplorerData.RefreshDataRootFolder();
 
-        _dataFileExplorer = new(_editorConfiguration, _editorControllerData.DataFileExplorerData);
+        _messageWindow = new(_editorControllerData);
 
-        _materialWindow = new(_editorControllerData);
+
+        _dataFileExplorer = new(_editorConfiguration, _editorControllerData, _editorControllerData.DataFileExplorerData);
+
+        _shaderCodeWindow = new(_editorConfiguration,
+            _editorControllerData);
+
+        _materialWindow = new(_editorConfiguration,
+            _editorControllerData);
         _materialWindow.OnSave += _materialWindow_OnSave;
 
         _shaderCodeWindow.BuildPressed += ShaderCodeWindow_OnBuildPressed;
@@ -129,6 +138,10 @@ class EditorController
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
         Raylib.InitWindow((int)_editorConfiguration.ScreenSize.X, (int)_editorConfiguration.ScreenSize.Y, WindowCaption);
+
+        Raylib.SetWindowMonitor(_editorConfiguration.MonitorIndex);
+        Raylib.SetWindowPosition(_editorConfiguration.WindowPosition.X, _editorConfiguration.WindowPosition.Y);
+
         Raylib.SetExitKey(KeyboardKey.Null);
         rlImGui.Setup();
 
@@ -191,7 +204,7 @@ class EditorController
             RenderMessageDialog();
 
 
-            var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
+            var codeIsModified = _shaderCodeWindow.Render( _shaderCode);
             if (codeIsModified)
             {
                 foreach (var (key, value) in _shaderCode)
@@ -213,6 +226,12 @@ class EditorController
 
             rlImGui.End();
             Raylib.EndDrawing();
+
+            if(_editorControllerData.WorkspaceLayoutResetRequested)
+            {
+                Logger.Trace("WorkspaceLayoutReset done");
+                _editorControllerData.WorkspaceLayoutResetRequested = false;
+            }
         }
 
 
@@ -291,6 +310,8 @@ class EditorController
             }
             if (ImGui.BeginMenu("Display"))
             {
+                if (ImGui.MenuItem("Reset workspace layout"))
+                    _editorControllerData.ResetWorkspaceLayout();
                 //if (ImGui.MenuItem("Fullscreen", null, _generalConfiguration.IsFullScreen))
                 //    _generalConfiguration.IsFullScreen = !_generalConfiguration.IsFullScreen;
 
@@ -382,7 +403,7 @@ class EditorController
         LoadShaders();
     }
 
-    private void OnLoadMaterial(string filePath)
+    private void OnLoadMaterial(string? filePath)
     {
         Logger.Info("OnLoadMaterial...");
 
@@ -928,6 +949,12 @@ class EditorController
 
         try
         {
+            _editorConfiguration.MonitorIndex = Raylib.GetCurrentMonitor();
+            var v = Raylib.GetWindowPosition();
+            _editorConfiguration.WindowPosition = new Point((int)v.X, (int)v.Y);
+            Raylib.SetWindowPosition(_editorConfiguration.WindowPosition.X, 
+                _editorConfiguration.WindowPosition.Y);
+
             EditorConfigurationStorage.Save(_editorConfiguration,
                 ".");
         }

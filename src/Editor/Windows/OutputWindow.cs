@@ -19,12 +19,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
         var wantedModelFilePath = editorConfiguration.CurrentModelFilePath;
         var wantedModelType = editorConfiguration.CurrentModelType;
 
-        var outputSize = editorConfiguration.OutputSize;
-
-        outputSize += new Vector2(0, 60);
-
-        ImGui.SetNextWindowSize(outputSize
-                                + new Vector2(0, ImGui.GetFrameHeightWithSpacing()));
+        editorControllerData.UpdateWindowPosAndSize(EditorControllerData.WindowId.Output);
 
         if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
         {

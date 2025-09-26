@@ -35,10 +35,14 @@ public class DataFileExplorer
         { "explore folder", (_, folder) => Process.Start("explorer.exe", Path.GetFullPath(folder.FullPath)) },
     };
 
+    private readonly EditorControllerData _editorControllerData;
+
     public DataFileExplorer(EditorConfiguration editorConfiguration,
+        EditorControllerData editorControllerData,
         DataFileExplorerData dataFileExplorerData)
     {
         _editorConfiguration = editorConfiguration;
+        _editorControllerData = editorControllerData;
         _dataFileExplorerData = dataFileExplorerData;
         _dataFileExplorerConfiguration = editorConfiguration.DataFileExplorerConfiguration;
     }
@@ -50,13 +54,7 @@ public class DataFileExplorer
 
     private void RenderInternal()
     {
-        var size = new Vector2(400,
-            (float)Raylib.GetScreenHeight() / 3);
-        var position = new Vector2(Raylib.GetScreenWidth() - size.X,
-            (float)2 * Raylib.GetScreenHeight() / 3);
-
-        ImGui.SetNextWindowPos(position, ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSize(size, ImGuiCond.FirstUseEver);
+        _editorControllerData.UpdateWindowPosAndSize(EditorControllerData.WindowId.DataFileExplorer);
 
         if (ImGui.Begin("Data file explorer",
                 ref _editorConfiguration.WorkspaceConfiguration.DataFileExplorerIsVisible))
