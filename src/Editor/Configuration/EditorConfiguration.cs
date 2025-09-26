@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Editor.Helpers;
+using Newtonsoft.Json;
 
 namespace Editor.Configuration;
 
@@ -13,24 +14,22 @@ public class EditorConfiguration
 
     private const int MaxRecentFiles = 5;
 
-    public void AddRecentFile(string filePath)
-    {
-        // Recent files at the top
+    /// <summary>
+    /// List of models once used by user
+    /// </summary>
+    [JsonProperty("CustomModels")] public List<string> CustomModels = [];
 
-        var index = RecentFiles.FindIndex(f => f == filePath);
-        if (index >= 0)
-        {
-            RecentFiles.RemoveAt(index);
-            RecentFiles.Insert(0, filePath);
-            return;
-        }
+    private const int MaxCustomModels = 5;
 
-        if (RecentFiles.Count >= MaxRecentFiles)
-        {
-            var startIndex = MaxRecentFiles - 1;
-            var count = RecentFiles.Count - startIndex;
-            RecentFiles.RemoveRange(startIndex, count);
-        }
-        RecentFiles.Insert(0, filePath);
-    }
+    public void AddRecentFile(string filePath) =>
+        CollectionHelpers.AddEntryToHistory(RecentFiles, filePath, MaxRecentFiles);
+
+    public void AddCustomModel(string filePath) =>
+        CollectionHelpers.AddEntryToHistory(CustomModels, filePath, MaxCustomModels);
+
+    /// <summary>
+    /// Model file to load if ModelType is ModelType.Model
+    /// Can be either an entry from _builtInModels or from _editorConfiguration.CustomModels
+    /// </summary>
+    public string SelectedModelFilePath = "";
 }

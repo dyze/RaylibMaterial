@@ -65,6 +65,10 @@ class EditorController
         { ModelType.Model, new ToolConfig("model", "model.png") }
     };
 
+    private List<string> _builtInModels = [];
+
+
+
     enum BackgroundType
     {
         Cloud = 0,
@@ -103,7 +107,7 @@ class EditorController
     private bool _processingRequestToClose;
     private bool _requestToCloseAccepted;
     private bool _requestToClose;
-    //private List<BoundingBox> _boundingBoxes = [];
+    private readonly string[] _supportedModelExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
 
     private const string DefaultMaterialName = "noname";
 
@@ -127,6 +131,22 @@ class EditorController
         _shaderCodeWindow.BuildPressed += ShaderCodeWindow_OnBuildPressed;
 
         _outputFilePath = Path.GetFullPath($"{MaterialsPath}\\{DefaultMaterialName}{MaterialFileExtension}");
+        Directory.CreateDirectory(Path.GetDirectoryName(_outputFilePath));
+
+        UpdateBuiltInModels();
+
+        if (_editorConfiguration.SelectedModelFilePath == "" ||
+            File.Exists(Path.GetFullPath(_editorConfiguration.SelectedModelFilePath)) == false)
+        {
+            _editorConfiguration.SelectedModelFilePath = _builtInModels.First();
+        }
+    }
+
+    private void UpdateBuiltInModels()
+    {
+        _builtInModels = Directory.GetFiles(Path.GetFullPath(ResourceModelsPath), "*.*", SearchOption.AllDirectories)
+            .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
+            .ToList();
     }
 
     private void _materialWindow_OnSave()
@@ -186,20 +206,7 @@ class EditorController
 
             prevMousePos = HandleMouseMovement(prevMousePos);
 
-            if (Raylib.IsFileDropped())
-            {
-                var droppedFiles = Raylib.GetDroppedFiles();
-                if (droppedFiles.Length == 1)
-                {
-                    string modelPath = droppedFiles.First();
-
-                    string[] supportedExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
-                    if (supportedExtensions.Contains(Path.GetExtension(modelPath)))
-                    {
-                        SelectModelType(modelPath);
-                    }
-                }
-            }
+            HandleFileDrop();
 
             UpdateLights();
 
@@ -248,6 +255,28 @@ class EditorController
 
         SaveEditorConfiguration();
     }
+
+    private void HandleFileDrop()
+    {
+        if (Raylib.IsFileDropped())
+        {
+            var droppedFiles = Raylib.GetDroppedFiles();
+            if (droppedFiles.Length == 1)
+            {
+                var modelPath = droppedFiles.First();
+
+                
+                if (_supportedModelExtensions.Contains(Path.GetExtension(modelPath)))
+                {
+                    _editorConfiguration.SelectedModelFilePath = modelPath;
+                    _modelType = ModelType.Model;
+                    SelectModel(modelPath);
+                }
+            }
+        }
+    }
+
+
 
     private void RenderMenu()
     {
@@ -417,7 +446,7 @@ class EditorController
 
     private void LoadMaterialAskForFile()
     {
-        Logger.Info("LoadMaterialStart...");
+        Logger.Info("LoadMaterialAskForFile...");
 
         _fileDialogInfo = new()
         {
@@ -432,7 +461,7 @@ class EditorController
             ]
         };
 
-        Logger.Info("LoadMaterialStart OK");
+        Logger.Info("LoadMaterialAskForFile OK");
     }
 
     private void LoadMaterial(string filePath)
@@ -450,12 +479,10 @@ class EditorController
             return;
         }
 
-
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
         _editorControllerData.MaterialPackage.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
 
-        
         _editorControllerData.MaterialFilePath = filePath;
 
         _outputFilePath = filePath;
@@ -510,7 +537,7 @@ class EditorController
 
         RenderLights();
 
-        if(Raylib.IsKeyPressed(KeyboardKey.Tab))
+        if (Raylib.IsKeyPressed(KeyboardKey.Tab))
             Raylib.DrawGrid(10, 1.0f);
 
         Raylib.EndMode3D();
@@ -545,44 +572,43 @@ class EditorController
         return prevMousePos;
     }
 
-    private void SelectModelType(string modelFilePath = "")
+    private void SelectModelType()
     {
-        if (modelFilePath != "")
+        switch (_modelType)
         {
-            _currentModel = LoadModel(modelFilePath);
+            case ModelType.Cube:
+                _currentModel = GenerateCubeModel();
+                break;
+            case ModelType.Plane:
+                _currentModel = GeneratePlaneModel();
+                break;
+            case ModelType.Sphere:
+                _currentModel = GenerateSphereModel();
+                break;
+            case ModelType.Model:
+                SelectModel(_editorConfiguration.SelectedModelFilePath);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
-        else
-            switch (_modelType)
-            {
-                case ModelType.Cube:
-                    _currentModel = GenerateCubeModel();
-                    break;
-                case ModelType.Plane:
-                    _currentModel = GeneratePlaneModel();
-                    break;
-                case ModelType.Sphere:
-                    _currentModel = GenerateSphereModel();
-                    break;
-                case ModelType.Model:
-                    _currentModel = LoadModel();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
 
         Logger.Trace($"MeshCount={_currentModel.MeshCount}, MaterialCount={_currentModel.MaterialCount}");
 
-        //unsafe
-        //{
-        //    _boundingBoxes = new List<BoundingBox>(_currentModel.MeshCount);
-        //    for (var i = 0; i < _currentModel.MeshCount; i++)
-        //    {
-        //        _boundingBoxes.Add(Raylib.GetMeshBoundingBox(_currentModel.Meshes[i]));
-        //    }
-
-        //}
-
         ApplyShaderToModel();
+    }
+
+    private void SelectModel(string modelFilePath)
+    {
+        if (File.Exists(Path.GetFullPath(modelFilePath)) == false)
+        {
+            modelFilePath = _builtInModels.First();
+        }
+
+        _currentModel = LoadModel(modelFilePath);
+
+        _editorConfiguration.SelectedModelFilePath = modelFilePath;
+
+        _editorConfiguration.AddCustomModel(modelFilePath);
     }
 
     private void LoadUiResources()
@@ -716,6 +742,8 @@ class EditorController
 
     private void RenderOutputWindow()
     {
+        var selectedModel = _editorConfiguration.SelectedModelFilePath;
+
         var outputSize = _outputSize;
 
         outputSize += new Vector2(0, 60);
@@ -738,6 +766,45 @@ class EditorController
                 }
             }
 
+            ImGui.BeginDisabled(_modelType != ModelType.Model);
+
+            if(ImGui.BeginCombo("models", Path.GetFileName(_editorConfiguration.SelectedModelFilePath)))
+            {
+                // Built in models
+                ImGui.PushID("BuildIn");
+                foreach (var model in _builtInModels)
+                {
+                    var selected = model == _editorConfiguration.SelectedModelFilePath;
+                    if (ImGui.Selectable(Path.GetFileName(model),
+                            selected))
+                    {
+                        _editorConfiguration.SelectedModelFilePath = model;
+                        break;
+                    }
+                }
+                ImGui.PopID();
+
+                ImGui.Separator();
+
+                // Custom models
+                ImGui.PushID("Custom");
+                foreach (var model in _editorConfiguration.CustomModels)
+                {
+                    var selected = model == _editorConfiguration.SelectedModelFilePath;
+                    if (ImGui.Selectable(Path.GetFileName(model),
+                            selected))
+                    {
+                        _editorConfiguration.SelectedModelFilePath = model;
+                        break;
+                    }
+                }
+                ImGui.PopID();
+
+                ImGui.EndCombo();
+            }
+
+            ImGui.EndDisabled();
+
             ImGui.SameLine(40);
 
             foreach (var (key, background) in _backgrounds)
@@ -757,6 +824,11 @@ class EditorController
         }
 
         ImGui.End();
+
+        if (selectedModel != _editorConfiguration.SelectedModelFilePath)
+        {
+            SelectModelType();
+        }
     }
 
     private void ApplyShaderToModel()
@@ -927,7 +999,7 @@ class EditorController
         return model;
     }
 
-    private Model LoadModel(string modelFilePath= "")
+    private Model LoadModel(string modelFilePath = "")
     {
         string filePath;
 
