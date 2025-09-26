@@ -19,6 +19,7 @@ It is based on RayLib-cs project.
 
 The remaining tasks for this first release are:
 * [ ] support of models with multiple materials
+* [ ] handle all kinds of uniform types (vec2, vec3...)
 * [ ] preview material using a 3D model stored on disk (today only primitives are properly supported)
 * [ ] use a sky box instead of a plane for background
 * [ ] handle versioning of packages
