@@ -5,7 +5,10 @@
     Ported to C# by W.M.R Jap-A-Joe https://github.com/japajoe
 */
 
+using System.Drawing;
 using System.Numerics;
+using Editor.Helpers;
+using Library.Helpers;
 
 namespace ImGuiNET
 {
@@ -39,6 +42,8 @@ namespace ImGuiNET
         public List<Tuple<string, string>> Extensions = [new("*.*", "All files")];
         public int CurrentExtensionIndex = 0;
         public Tuple<string, string> CurrentExtension => Extensions[CurrentExtensionIndex];
+
+        public string ErrorMessage = "";
 
         public ImFileDialogInfo()
         {
@@ -362,7 +367,8 @@ namespace ImGuiNET
 
                         if (ImGui.IsMouseDoubleClicked(0))
                         {
-                            complete = OnOpenPressed(ref open, dialogInfo, complete);
+                            complete = OnOpenPressed(dialogInfo);
+
                         }
                     }
 
@@ -425,17 +431,12 @@ namespace ImGuiNET
                 }
                 ImGui.PopID();
 
+
+                // Buttons
+
                 if (ImGui.Button("Cancel"))
                 {
-                    _fileNameSortOrder = ImGuiFileDialogSortOrder.None;
-                    _sizeSortOrder = ImGuiFileDialogSortOrder.None;
-                    _typeSortOrder = ImGuiFileDialogSortOrder.None;
-                    _dateSortOrder = ImGuiFileDialogSortOrder.None;
-
-                    dialogInfo.RefreshInfo = false;
-                    dialogInfo.CurrentIndex = 0;
-                    dialogInfo.CurrentFiles.Clear();
-                    dialogInfo.CurrentDirectories.Clear();
+                    ClearFileDialogInfo(dialogInfo);
 
                     open = false;
                 }
@@ -444,33 +445,22 @@ namespace ImGuiNET
 
                 if (dialogInfo.Type == ImGuiFileDialogType.OpenFile)
                 {
-                    if (ImGui.Button("Open"))
+                    if(ColoredButton.Render(TypeConvertors.ColorToVector4(Color.Green), "Open"))
                     {
-                        complete = OnOpenPressed(ref open, dialogInfo, complete);
+                        complete = OnOpenPressed(dialogInfo);
                     }
                 }
                 else if (dialogInfo.Type == ImGuiFileDialogType.SaveFile)
                 {
-                    if (ImGui.Button("Save"))
+                    if (ColoredButton.Render(TypeConvertors.ColorToVector4(Color.Green), "Save"))
                     {
-                        dialogInfo.ResultPath = Path.Combine(dialogInfo.DirectoryPath.FullName, dialogInfo.FileName);
-
-                        if (Directory.Exists(dialogInfo.DirectoryPath.FullName))
-                        {
-                            _fileNameSortOrder = ImGuiFileDialogSortOrder.None;
-                            _sizeSortOrder = ImGuiFileDialogSortOrder.None;
-                            _typeSortOrder = ImGuiFileDialogSortOrder.None;
-                            _dateSortOrder = ImGuiFileDialogSortOrder.None;
-
-                            dialogInfo.RefreshInfo = false;
-                            dialogInfo.CurrentIndex = 0;
-                            dialogInfo.CurrentFiles.Clear();
-                            dialogInfo.CurrentDirectories.Clear();
-
-                            complete = true;
-                            open = false;
-                        }
+                        complete = OnSavePressed(dialogInfo);
                     }
+                }
+
+                //if (dialogInfo.ErrorMessage != "")
+                {
+                    ImGui.TextColored(TypeConvertors.ColorToVector4(Color.Red), dialogInfo.ErrorMessage);
                 }
 
                 ImGui.End();
@@ -479,30 +469,77 @@ namespace ImGuiNET
 
             ImGui.PopID();
 
+            if (complete)
+                open = false;
+
             return complete;
         }
 
-        private static bool OnOpenPressed(ref bool open, ImFileDialogInfo dialogInfo, bool complete)
+        /// <summary>
+        /// Validate the open request
+        /// </summary>
+        /// <param name="dialogInfo"></param>
+        /// <returns>true if complete</returns>
+        private static bool OnOpenPressed(ImFileDialogInfo dialogInfo)
         {
             dialogInfo.ResultPath = Path.Combine(dialogInfo.DirectoryPath.FullName, dialogInfo.FileName);
 
-            if (File.Exists(dialogInfo.ResultPath))
+            if (File.Exists(dialogInfo.ResultPath) == false)
             {
-                _fileNameSortOrder = ImGuiFileDialogSortOrder.None;
-                _sizeSortOrder = ImGuiFileDialogSortOrder.None;
-                _typeSortOrder = ImGuiFileDialogSortOrder.None;
-                _dateSortOrder = ImGuiFileDialogSortOrder.None;
-
-                dialogInfo.RefreshInfo = false;
-                dialogInfo.CurrentIndex = 0;
-                dialogInfo.CurrentFiles.Clear();
-                dialogInfo.CurrentDirectories.Clear();
-
-                complete = true;
-                open = false;
+                dialogInfo.ErrorMessage = "File doesn't exist";
+                return false;
             }
 
-            return complete;
+            ClearFileDialogInfo(dialogInfo);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validate the save request
+        /// </summary>
+        /// <param name="dialogInfo"></param>
+        /// <returns>true if complete</returns>
+        private static bool OnSavePressed(ImFileDialogInfo dialogInfo)
+        {
+            if (dialogInfo.FileName == "")
+                return false;
+
+            if (Directory.Exists(dialogInfo.DirectoryPath.FullName) == false)
+            {
+                dialogInfo.ErrorMessage = "Directory doesn't exist";
+                return false;
+            }
+
+            dialogInfo.ResultPath = Path.Combine(dialogInfo.DirectoryPath.FullName, dialogInfo.FileName);
+
+            if (dialogInfo.CurrentExtension.Item1 != "*.*")
+            {
+                // Ensure an extension has been given
+                var extension = Path.GetExtension(dialogInfo.ResultPath);
+                if (extension == "")
+                {
+                    dialogInfo.ErrorMessage = "An extension is required";
+                    return false;
+                }
+            }
+
+            ClearFileDialogInfo(dialogInfo);
+
+            return true;
+        }
+
+        private static void ClearFileDialogInfo(ImFileDialogInfo dialogInfo)
+        {
+            _fileNameSortOrder = ImGuiFileDialogSortOrder.None;
+            _sizeSortOrder = ImGuiFileDialogSortOrder.None;
+            _typeSortOrder = ImGuiFileDialogSortOrder.None;
+            _dateSortOrder = ImGuiFileDialogSortOrder.None;
+
+            dialogInfo.RefreshInfo = false;
+            dialogInfo.CurrentIndex = 0;
+            dialogInfo.CurrentFiles.Clear();
+            dialogInfo.CurrentDirectories.Clear();
         }
     }
 }

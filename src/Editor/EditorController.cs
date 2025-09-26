@@ -92,7 +92,8 @@ class EditorController
 
         _shaderCodeWindow.BuildPressed += ShaderCodeWindow_OnBuildPressed;
 
-        _outputFilePath = Path.GetFullPath($"{MaterialsPath}\\{DefaultMaterialName}{MaterialFileExtension}");
+        //_outputFilePath = Path.GetFullPath($"{MaterialsPath}\\{DefaultMaterialName}{MaterialFileExtension}");
+        _outputFilePath = Path.GetFullPath($"{MaterialsPath}\\");
         Directory.CreateDirectory(Path.GetDirectoryName(_outputFilePath));
 
         UpdateBuiltInModels();
@@ -374,7 +375,7 @@ class EditorController
         _currentShader = _defaultShader;
 
         var directoryPath = Path.GetDirectoryName(_outputFilePath);
-        _outputFilePath = $"{directoryPath}\\{DefaultMaterialName}{MaterialFileExtension}";
+        _outputFilePath = $"{directoryPath}\\";
         Raylib.SetWindowTitle(WindowCaption);
 
         LoadCurrentModel();
