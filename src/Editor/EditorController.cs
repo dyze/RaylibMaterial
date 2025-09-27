@@ -27,9 +27,10 @@ class EditorController
     private const string MaterialBackupFileExtension = ".mat.bck";
 
     private Camera3D _camera;
-    private float _modelXAngle = (float)(Math.PI / 4);
-    private float _modelYAngle = (float)(Math.PI / 4);
-    private float _distance;
+    private float _cameraYAngle = 0;
+    private float _cameraXAngle = 0;
+    private float _cameraDistance = 5;
+    private const float CameraMinDistance = 5;
 
     private Model _currentModel;
     private Shader? _currentShader;
@@ -176,7 +177,6 @@ class EditorController
                     break;
             }
 
-            //Raylib.UpdateCamera(ref _camera, CameraMode.Orbital);
 
             prevMousePos = HandleMouseMovement(prevMousePos);
 
@@ -534,23 +534,25 @@ class EditorController
 
         var mouseDelta = Raylib.GetMouseWheelMove();
 
-        _distance = Math.Max(0f,
-            _distance + mouseDelta * 0.1f);
+        _cameraDistance = Math.Max(CameraMinDistance,
+            _cameraDistance + mouseDelta * 0.1f);
 
-        var delta = Raymath.Vector2Subtract(prevMousePos, Raylib.GetMousePosition());
-        prevMousePos = thisPos;
+        var delta = Raymath.Vector2Subtract(prevMousePos, thisPos);
 
         if (Raylib.IsMouseButtonDown(MouseButton.Right))
         {
-            _modelYAngle -= delta.X / 100;
-            _modelXAngle += delta.Y / 100;
+            _cameraXAngle -= delta.Y / 100;
+            _cameraYAngle += delta.X / 100;
         }
 
-        var matRotate = Raymath.MatrixRotateXYZ(new Vector3(_modelXAngle, _modelYAngle, 0));
-        var matTranslate = Raymath.MatrixTranslate(0, 0, _distance);
-        _currentModel.Transform = Raymath.MatrixMultiply(matRotate, matTranslate);
+        var q = Raymath.QuaternionFromEuler(_cameraXAngle, _cameraYAngle, 0);
 
-        return prevMousePos;
+        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, 0, -_cameraDistance),
+            q);
+
+        _camera.Position = v;
+
+        return thisPos;
     }
 
     private void SelectModel(EditorConfiguration.ModelType modelType, string modelFilePath)
@@ -912,7 +914,7 @@ class EditorController
     private void PrepareCamera()
     {
         // Define our custom camera to look into our 3d world
-        _camera = new Camera3D(new Vector3(0f, 0, -5),
+        _camera = new Camera3D(new Vector3(0, 0, -_cameraDistance),
             new Vector3(0.0f, 0.0f, 0.0f),
             new Vector3(0.0f, 1.0f, 0.0f),
             45f,
