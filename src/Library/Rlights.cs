@@ -1,91 +1,138 @@
-using Raylib_cs;
+// rlights.cs - Some useful functions to deal with lights data
+// This is the C# version of rlights.h: https://github.com/raysan5/raylib/blob/master/examples/shaders/rlights.h
+//
+// It is available for free. Do whatever you want with it.
+//
+// Such implementation only works with provided fs and vs shader files
+//
+// Author: dyze@dlabs.eu
+
 using System.Numerics;
-using static Raylib_cs.Raylib;
+using Raylib_cs;
 
-namespace Examples.Shared;
-
-public struct Light
+// Must match values in fs shader file
+public enum LightType
 {
-    public bool Enabled;
+    Directional = 0,
+    Point = 1
+}
+
+
+public class Light
+{
     public LightType Type;
     public Vector3 Position;
     public Vector3 Target;
     public Color Color;
+    public bool Enabled;
 
-    public int EnabledLoc;
-    public int TypeLoc;
-    public int PosLoc;
-    public int TargetLoc;
-    public int ColorLoc;
-}
+    // Shader locations
+    public List<int> EnabledLoc = [];
+    public List<int> TypeLoc = [];
+    public List<int> PosLoc = [];
+    public List<int> TargetLoc = [];
+    public List<int> ColorLoc = [];
 
-public enum LightType
-{
-    Directorional,
-    Point
-}
+    // shaders that use light
+    public List<Shader> Shaders;
+};
+
 
 public static class Rlights
 {
-    public static Light CreateLight(
-        int lightsCount,
-        LightType type,
-        Vector3 pos,
-        Vector3 target,
-        Color color,
-        Shader shader
-    )
+    public const int MaxLights = 4;         // Max dynamic lights supported by shader
+    private static int _lightsCount = 0;
+
+    public static void Clear()
+    {
+        _lightsCount = 0;
+    }
+
+    /// <summary>
+    /// Create a light and get shader locations
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="position"></param>
+    /// <param name="target"></param>
+    /// <param name="color"></param>
+    /// <param name="shaders"></param>
+    /// <returns></returns>
+    /// <exception cref="IndexOutOfRangeException"></exception>
+
+    public static Light CreateLight(LightType type, Vector3 position, Vector3 target, Color color, List<Shader> shaders)
     {
         Light light = new();
 
+        if (_lightsCount >= MaxLights)
+            throw new IndexOutOfRangeException($"Count of lights {_lightsCount} exceeds {MaxLights}");
+
         light.Enabled = true;
         light.Type = type;
-        light.Position = pos;
+        light.Position = position;
         light.Target = target;
         light.Color = color;
 
-        string enabledName = "lights[" + lightsCount + "].enabled";
-        string typeName = "lights[" + lightsCount + "].type";
-        string posName = "lights[" + lightsCount + "].position";
-        string targetName = "lights[" + lightsCount + "].target";
-        string colorName = "lights[" + lightsCount + "].color";
+        // names below must match those defined in shader fs files
 
-        light.EnabledLoc = GetShaderLocation(shader, enabledName);
-        light.TypeLoc = GetShaderLocation(shader, typeName);
-        light.PosLoc = GetShaderLocation(shader, posName);
-        light.TargetLoc = GetShaderLocation(shader, targetName);
-        light.ColorLoc = GetShaderLocation(shader, colorName);
+        var enabledName = $"lights[{_lightsCount}].enabled";
+        var typeName = $"lights[{_lightsCount}].type";
+        var posName = $"lights[{_lightsCount}].position";
+        var targetName = $"lights[{_lightsCount}].target";
+        var colorName = $"lights[{_lightsCount}].color";
 
-        UpdateLightValues(shader, light);
+        foreach (var shader in shaders)
+        {
+            light.EnabledLoc.Add(Raylib.GetShaderLocation(shader, enabledName));
+            light.TypeLoc.Add(Raylib.GetShaderLocation(shader, typeName));
+            light.PosLoc.Add(Raylib.GetShaderLocation(shader, posName));
+            light.TargetLoc.Add(Raylib.GetShaderLocation(shader, targetName));
+            light.ColorLoc.Add(Raylib.GetShaderLocation(shader, colorName));
+        }
+
+        light.Shaders = shaders;
+
+        UpdateLightValues(light);
+
+        _lightsCount++;
+
 
         return light;
     }
 
-    public static void UpdateLightValues(Shader shader, Light light)
+    /// <summary>
+    /// Send light properties to shader
+    ///  NOTE: Light shader locations should be available 
+    /// </summary>
+    /// <param name="light"></param>
+    public static void UpdateLightValues(Light light)
     {
-        // Send to shader light enabled state and type
-        Raylib.SetShaderValue(
-            shader,
-            light.EnabledLoc,
-            light.Enabled ? 1 : 0,
-            ShaderUniformDataType.Int
-        );
-        Raylib.SetShaderValue(shader, light.TypeLoc, (int)light.Type, ShaderUniformDataType.Int);
-
-        // Send to shader light target position values
-        Raylib.SetShaderValue(shader, light.PosLoc, light.Position, ShaderUniformDataType.Vec3);
-
-        // Send to shader light target position values
-        Raylib.SetShaderValue(shader, light.TargetLoc, light.Target, ShaderUniformDataType.Vec3);
-
-        // Send to shader light color values
-        float[] color = new[]
+        for (var i = 0; i < light.Shaders.Count(); i++)
         {
-                (float)light.Color.R / (float)255,
-                (float)light.Color.G / (float)255,
-                (float)light.Color.B / (float)255,
-                (float)light.Color.A / (float)255
-            };
-        Raylib.SetShaderValue(shader, light.ColorLoc, color, ShaderUniformDataType.Vec4);
+            // Send to shader light enabled state and type
+            var enabled = light.Enabled ? 1 : 0;
+            Raylib.SetShaderValue(light.Shaders[i], light.EnabledLoc[i], enabled, ShaderUniformDataType.Int);
+            Raylib.SetShaderValue(light.Shaders[i], light.TypeLoc[i], light.Type, ShaderUniformDataType.Int);
+            Raylib.SetShaderValue(light.Shaders[i], light.PosLoc[i], light.Position, ShaderUniformDataType.Vec3);
+            Raylib.SetShaderValue(light.Shaders[i], light.TargetLoc[i], light.Target, ShaderUniformDataType.Vec3);
+
+            // Send to shader light color values
+            var color = new Vector4(light.Color.R / (float)255, light.Color.G / (float)255,
+                light.Color.B / (float)255, light.Color.A / (float)255);
+            Raylib.SetShaderValue(light.Shaders[i], light.ColorLoc[i], color, ShaderUniformDataType.Vec4);
+        }
+    }
+
+    public static void SetAmbientColor(Shader shader, System.Drawing.Color ambientColor)
+    {
+        var ambientLoc = Raylib.GetShaderLocation(shader, "ambient");
+
+        Vector4 color = new Vector4((float)ambientColor.R / (float)255, (float)ambientColor.G / (float)255,
+            (float)ambientColor.B / (float)255, (float)ambientColor.A / (float)255);
+
+        Raylib.SetShaderValue(shader, ambientLoc, color, ShaderUniformDataType.Vec4);
     }
 }
+
+
+
+

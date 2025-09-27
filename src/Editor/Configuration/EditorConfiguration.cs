@@ -36,8 +36,8 @@ public class EditorConfiguration
     public enum BackgroundType
     {
         Cloud = 0,
-        WildPark,
-        Space
+        //WildPark,
+        NightSky
     }
 
     [JsonProperty("Background")] public BackgroundType Background { get; set; } = BackgroundType.Cloud;

@@ -35,6 +35,22 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                     break;
                 }
             }
+
+            ImGui.SameLine(40);
+
+            foreach (var (key, background) in editorControllerData.Backgrounds)
+            {
+                ImGui.SameLine();
+                if (rlImGui.ImageButtonSize(background.Name,
+                        background.Texture,
+                        new Vector2(32, 32)))
+                {
+                    backgroundChangeIsRequested = true;
+                    wantedBackground = key;
+                    break;
+                }
+            }
+
             ImGui.BeginDisabled(editorConfiguration.CurrentModelType != EditorConfiguration.ModelType.Model);
 
             if (ImGui.BeginCombo("models", Path.GetFileName(editorConfiguration.CurrentModelFilePath)))
@@ -76,19 +92,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
             ImGui.EndDisabled();
 
-            ImGui.SameLine(40);
 
-            foreach (var (key, background) in editorControllerData.Backgrounds)
-            {
-                ImGui.SameLine();
-                if (rlImGui.ImageButtonSize(background.Name,
-                        background.Texture,
-                        new Vector2(32, 32)))
-                {
-                    wantedBackground = key;
-                    break;
-                }
-            }
 
             ImGui.Separator();
             rlImGui.ImageRenderTexture(editorControllerData.ViewTexture);

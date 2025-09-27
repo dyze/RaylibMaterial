@@ -2,7 +2,6 @@
 using Editor.Configuration;
 using Editor.Helpers;
 using Editor.Windows;
-using Examples.Shared;
 using ImGuiNET;
 using Library;
 using Library.CodeVariable;
@@ -21,7 +20,8 @@ class EditorController
 
     private const string ResourceUiPath = "resources/ui";
     private const string ResourceModelsPath = "resources/models";
-    private const string ShaderFolderPath = "resources/shaders";
+    private const string ResourceShaderFolderPath = "resources/shaders";
+    private const string ResourceImageFolderPath = "resources/images";
     private const string MaterialsPath = "materials";
     private const string MaterialFileExtension = ".mat";
     private const string MaterialBackupFileExtension = ".mat.bck";
@@ -46,7 +46,7 @@ class EditorController
     private readonly MessageWindow _messageWindow;
     public static MessageQueue MessageQueue { get; set; } = new();
 
-    private Model _backgroundModel;
+    private SkyBox _skyBox = new();
 
     private readonly EditorControllerData _editorControllerData;
 
@@ -147,17 +147,9 @@ class EditorController
 
         LoadUiResources();
 
-        _defaultShader = Raylib.LoadShader($"{ShaderFolderPath}\\base.vert", $"{ShaderFolderPath}\\base.frag");
+        _defaultShader = Raylib.LoadShader($"{ResourceShaderFolderPath}\\base.vert", $"{ResourceShaderFolderPath}\\base.frag");
 
         _editorControllerData.ViewTexture = Raylib.LoadRenderTexture((int)_editorConfiguration.OutputSize.X, (int)_editorConfiguration.OutputSize.Y);
-
-        var mesh = Raylib.GenMeshPlane(12, 8, 1, 1);
-        _backgroundModel = Raylib.LoadModelFromMesh(mesh);
-
-        var matRotate = Raymath.MatrixRotateXYZ(new Vector3((float)(-Math.PI / 2), (float)(Math.PI), 0));
-        var matTranslate = Raymath.MatrixTranslate(0, 0, 3f);
-        _backgroundModel.Transform = Raymath.MatrixMultiply(matRotate, matTranslate);
-
 
         SelectBackground(_editorConfiguration.Background);
 
@@ -515,14 +507,13 @@ class EditorController
         Raylib.BeginMode3D(_camera);
         Raylib.ClearBackground(Color.Black);
 
-        Raylib.DrawModel(_backgroundModel, Vector3.Zero, 1f, Color.White);
-        Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
+        Rlgl.DisableBackfaceCulling();
+        Rlgl.DisableDepthMask();
+        Raylib.DrawModel(_skyBox.Model, Vector3.Zero, 1f, Color.White);
+        Rlgl.EnableBackfaceCulling();
+        Rlgl.EnableDepthMask();
 
-        //if (Raylib.IsKeyDown(KeyboardKey.Tab))
-        //    foreach (var boundingBox in _boundingBoxes)
-        //    {
-        //        Raylib.DrawBoundingBox(boundingBox, Color.White);
-        //    }
+        Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
 
 
         RenderLights();
@@ -627,7 +618,7 @@ class EditorController
 
         foreach (var (_, background) in _editorControllerData.Backgrounds)
         {
-            var image = Raylib.LoadImage($"{ResourceUiPath}/{background.ImageFileName}");
+            var image = Raylib.LoadImage($"{ResourceImageFolderPath}/skybox/{background.ImageFileName}");
             background.Texture = Raylib.LoadTextureFromImage(image);
             Raylib.UnloadImage(image);
         }
@@ -743,7 +734,11 @@ class EditorController
         Logger.Trace($"{key} selected");
         _editorConfiguration.Background = key;
         var background = _editorControllerData.Backgrounds[key];
-        Raylib.SetMaterialTexture(ref _backgroundModel, 0, MaterialMapIndex.Albedo, ref background.Texture);
+
+        _skyBox = new SkyBox();
+
+        var filePath = Path.GetFullPath($"{ResourceImageFolderPath}\\skybox\\{background.ImageFileName}");
+        _skyBox.PrepareSkyBoxStatic(filePath);
     }
 
     private void ApplyShaderToModel()
@@ -972,39 +967,47 @@ class EditorController
         if (_currentShader.HasValue == false)
             throw new NullReferenceException("_currentShader is null");
 
+        Rlights.Clear();
         _lights.Clear();
 
+        List<Shader> shaders;
+        
+        unsafe
+        {
+            shaders =
+            [
+                _currentShader.Value,
+                _skyBox.Model.Materials[0].Shader
+            ];
+        }
+
         _lights.Add(Rlights.CreateLight(
-            0,
             LightType.Point,
             new Vector3(-2, 1, -2),
             Vector3.Zero,
             Color.Yellow,
-            _currentShader.Value
+            shaders
         ));
         _lights.Add(Rlights.CreateLight(
-            1,
             LightType.Point,
             new Vector3(2, 1, 2),
             Vector3.Zero,
             Color.Red,
-            _currentShader.Value
+            shaders
         ));
         _lights.Add(Rlights.CreateLight(
-            2,
             LightType.Point,
             new Vector3(-2, 1, 2),
             Vector3.Zero,
             Color.Green,
-            _currentShader.Value
+            shaders
         ));
         _lights.Add(Rlights.CreateLight(
-            3,
             LightType.Point,
             new Vector3(2, 1, -2),
             Vector3.Zero,
             Color.Blue,
-            _currentShader.Value
+            shaders
         ));
     }
 
@@ -1020,7 +1023,7 @@ class EditorController
     {
         foreach (var light in _lights)
         {
-            Rlights.UpdateLightValues(_currentShader.Value, light);
+            Rlights.UpdateLightValues(light);
         }
     }
 }

@@ -36,9 +36,9 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
 
     public readonly Dictionary<EditorConfiguration.BackgroundType, BackgroundConfig> Backgrounds = new()
     {
-        { EditorConfiguration.BackgroundType.Cloud, new BackgroundConfig("clouds", "clouds.jpg") },
-        { EditorConfiguration.BackgroundType.WildPark, new BackgroundConfig("wild park", "wildpark.png") },
-        { EditorConfiguration.BackgroundType.Space, new BackgroundConfig("space", "space.jpg") },
+        { EditorConfiguration.BackgroundType.Cloud, new BackgroundConfig("clouds", "Daylight Box UV.png") },
+        //{ EditorConfiguration.BackgroundType.WildPark, new BackgroundConfig("wild park", "wildpark.png") },
+        { EditorConfiguration.BackgroundType.NightSky, new BackgroundConfig("night sky", "night-sky.png") },
     };
 
     public bool WorkspaceLayoutResetRequested { get; set; }

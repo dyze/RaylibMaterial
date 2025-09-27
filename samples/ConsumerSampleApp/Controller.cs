@@ -1,5 +1,4 @@
-﻿using Examples.Shared;
-using ImGuiNET;
+﻿using ImGuiNET;
 using Library.Packaging;
 using Raylib_cs;
 using rlImGui_cs;
