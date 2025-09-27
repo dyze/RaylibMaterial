@@ -63,7 +63,6 @@ public class ShaderCode(string code)
             // Jump over type
             currentPosition = currentPosition.Substring(match.Index + match.Length);
 
-            Console.WriteLine($"{typeString} {name}");
 
             var type = TypeConvertors.StringToType(typeString);
             if (type != null)

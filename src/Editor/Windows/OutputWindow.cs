@@ -13,7 +13,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     public event Action<EditorConfiguration.ModelType, string>? ModelTypeChangeRequest;
-    public event Action<EditorConfiguration.BackgroundType>? BackgroundChanged;
+    public event Action<string>? BackgroundChanged;
     
 
     private Vector2? _previousSize;
@@ -76,6 +76,8 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
             if (ImGui.BeginCombo("models", Path.GetFileName(editorConfiguration.CurrentModelFilePath)))
             {
+                ImGui.SeparatorText("Build in");
+
                 // Built in models
                 ImGui.PushID("BuildIn");
                 foreach (var model in editorControllerData.BuiltInModels)
@@ -91,7 +93,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                 }
                 ImGui.PopID();
 
-                ImGui.Separator();
+                ImGui.SeparatorText("Custom");
 
                 // Custom models
                 ImGui.PushID("Custom");

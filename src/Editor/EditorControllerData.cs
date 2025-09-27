@@ -34,12 +34,7 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
     public List<string> BuiltInModels = [];
 
 
-    public readonly Dictionary<EditorConfiguration.BackgroundType, BackgroundConfig> Backgrounds = new()
-    {
-        { EditorConfiguration.BackgroundType.Cloud, new BackgroundConfig("clouds", "Daylight Box UV.png") },
-        //{ EditorConfiguration.BackgroundType.WildPark, new BackgroundConfig("wild park", "wildpark.png") },
-        { EditorConfiguration.BackgroundType.NightSky, new BackgroundConfig("night sky", "night-sky.png") },
-    };
+    public Dictionary<string, BackgroundConfig> Backgrounds = new();
 
     public bool WorkspaceLayoutResetRequested { get; set; }
 

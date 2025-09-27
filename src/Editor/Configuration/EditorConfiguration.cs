@@ -34,10 +34,11 @@ public class EditorConfiguration
     public enum BackgroundType
     {
         Cloud = 0,
-        NightSky
+        NightSky,
+        ThatchChapel
     }
 
-    [JsonProperty("Background")] public BackgroundType Background { get; set; } = BackgroundType.Cloud;
+    [JsonProperty("Background")] public string Background { get; set; }
     [JsonProperty("WindowPosition")] public Point WindowPosition { get; set; } = new(40, 40);
     [JsonProperty("WindowSize")] public Size WindowSize = new(1600, 900);
     [JsonProperty("MonitorIndex")] public int MonitorIndex { get; set; } = 0;

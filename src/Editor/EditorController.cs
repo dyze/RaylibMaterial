@@ -22,6 +22,7 @@ class EditorController
     private const string ResourceModelsPath = "resources/models";
     private const string ResourceShaderFolderPath = "resources/shaders";
     private const string ResourceImageFolderPath = "resources/images";
+    private const string ResourceSkyBoxesFolderPath = "resources/ui/skyboxes";
     private const string MaterialsPath = "materials";
     private const string MaterialFileExtension = ".mat";
     private const string MaterialBackupFileExtension = ".mat.bck";
@@ -69,6 +70,7 @@ class EditorController
     private bool _requestToCloseAccepted;
     private bool _requestToClose;
     private readonly string[] _supportedModelExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
+    private readonly string[] _supportedImagesExtensions = [".png", ".jpg"];
 
     private const string DefaultMaterialName = "noname";
 
@@ -108,7 +110,7 @@ class EditorController
         _outputFilePath = Path.GetFullPath($"{MaterialsPath}\\");
         Directory.CreateDirectory(Path.GetDirectoryName(_outputFilePath));
 
-        UpdateBuiltInModels();
+        DiscoverBuiltInModels();
 
         if (_editorConfiguration.CurrentModelFilePath == "" ||
             File.Exists(Path.GetFullPath(_editorConfiguration.CurrentModelFilePath)) == false)
@@ -123,7 +125,28 @@ class EditorController
         _outputWindow.BackgroundChanged += SelectBackground;
     }
 
-    private void UpdateBuiltInModels()
+    private void DiscoverBackgrounds()
+    {
+        var files = Directory.GetFiles(Path.GetFullPath(ResourceSkyBoxesFolderPath), "*.*", SearchOption.AllDirectories)
+            .Where(file => _supportedImagesExtensions.Contains(Path.GetExtension(file)))
+            .ToList();
+
+        _editorControllerData.Backgrounds = new();
+
+        foreach (var filePath in files)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(filePath);
+
+            var background = new BackgroundConfig(fileName, Path.GetFileName(filePath));
+            var image = Raylib.LoadImage(filePath);
+            background.Texture = Raylib.LoadTextureFromImage(image);
+            Raylib.UnloadImage(image);
+
+            _editorControllerData.Backgrounds.Add(fileName, background);
+        }
+    }
+
+    private void DiscoverBuiltInModels()
     {
         _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(ResourceModelsPath), "*.*", SearchOption.AllDirectories)
             .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
@@ -140,7 +163,7 @@ class EditorController
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
-        Raylib.InitWindow((int)_editorConfiguration.WindowSize.Width, (int)_editorConfiguration.WindowSize.Height, WindowCaption);
+        Raylib.InitWindow(_editorConfiguration.WindowSize.Width, _editorConfiguration.WindowSize.Height, WindowCaption);
 
         Raylib.SetWindowMonitor(_editorConfiguration.MonitorIndex);
         Raylib.SetWindowPosition(_editorConfiguration.WindowPosition.X, _editorConfiguration.WindowPosition.Y);
@@ -153,6 +176,9 @@ class EditorController
         _defaultShader = Raylib.LoadShader($"{ResourceShaderFolderPath}\\base.vert", $"{ResourceShaderFolderPath}\\base.frag");
 
         _editorControllerData.ViewTexture = Raylib.LoadRenderTexture(400, 300);
+
+
+        DiscoverBackgrounds();
 
         SelectBackground(_editorConfiguration.Background);
 
@@ -657,13 +683,6 @@ class EditorController
             tool.Texture = Raylib.LoadTextureFromImage(image);
             Raylib.UnloadImage(image);
         }
-
-        foreach (var (_, background) in _editorControllerData.Backgrounds)
-        {
-            var image = Raylib.LoadImage($"{ResourceImageFolderPath}/skybox/{background.ImageFileName}");
-            background.Texture = Raylib.LoadTextureFromImage(image);
-            Raylib.UnloadImage(image);
-        }
     }
 
     private void OnSave()
@@ -771,15 +790,21 @@ class EditorController
 
     }
 
-    private void SelectBackground(EditorConfiguration.BackgroundType key)
+    private void SelectBackground(string name)
     {
-        Logger.Trace($"{key} selected");
-        _editorConfiguration.Background = key;
-        var background = _editorControllerData.Backgrounds[key];
+        Logger.Trace($"{name} selected");
+
+        if (_editorControllerData.Backgrounds.TryGetValue(name, out var value) == false)
+        {
+            name = _editorControllerData.Backgrounds.Keys.First();
+        }
+
+        _editorConfiguration.Background = name;
+        var background = _editorControllerData.Backgrounds[name];
 
         _skyBox = new SkyBox();
 
-        var filePath = Path.GetFullPath($"{ResourceImageFolderPath}\\skybox\\{background.ImageFileName}");
+        var filePath = Path.GetFullPath($"{ResourceSkyBoxesFolderPath}/{background.ImageFileName}");
         _skyBox.PrepareSkyBoxStatic(filePath);
     }
 
