@@ -29,19 +29,17 @@ public class EditorConfiguration
     /// </summary>
     public string CurrentModelFilePath = "";
 
-    public readonly Vector2 ScreenSize = new(1600, 900); // initial size of window
-
-    public readonly Vector2 OutputSize = new(1600 / 2, 900 / 2);
+    //public readonly Vector2 DefaultOutputSize = new(1600 / 2, 900 / 2);
 
     public enum BackgroundType
     {
         Cloud = 0,
-        //WildPark,
         NightSky
     }
 
     [JsonProperty("Background")] public BackgroundType Background { get; set; } = BackgroundType.Cloud;
-    [JsonProperty("WindowPosition")] public Point WindowPosition { get; set; } = new Point(40, 40);
+    [JsonProperty("WindowPosition")] public Point WindowPosition { get; set; } = new(40, 40);
+    [JsonProperty("WindowSize")] public Size WindowSize = new(1600, 900);
     [JsonProperty("MonitorIndex")] public int MonitorIndex { get; set; } = 0;
 
     public enum ModelType

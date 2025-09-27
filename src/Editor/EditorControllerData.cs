@@ -68,54 +68,68 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
         Output
     }
 
-    public void UpdateWindowPosAndSize(WindowId windowId)
+    public Vector2 UpdateWindowPosAndSize(WindowId windowId)
     {
         Vector2 finalPosition;
         Vector2 finalSize;
 
-        var outputSize = editorConfiguration.OutputSize;
-        var toolbarSize = new Vector2(0, 60);
-        var wholeOutputSize = outputSize + toolbarSize + new Vector2(0, ImGui.GetFrameHeightWithSpacing());
+        var manWindowSize = new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+
+
+        var marging = new Vector2(20f, 20f);
+        var spacing = new Vector2(10f, 10f);
 
         var menuSize = new Vector2(0, 20);
 
-        var screenSizeMinusMenu = editorConfiguration.ScreenSize - menuSize;
+        var mainWindowSizeMinusMenu = new Vector2(manWindowSize.X,
+            manWindowSize.Y) - menuSize;
 
-        const int materialWindowWidth = 200;
+        var materialWindowWidth = mainWindowSizeMinusMenu.X * 0.2f - marging.X - spacing.X;
+        var outputWidth = mainWindowSizeMinusMenu.X * 0.5f - marging.X - spacing.X;
+        var codeWidth = mainWindowSizeMinusMenu.X * 0.3f - spacing.X - spacing.X;
+
+        var heightRatioTop = 0.7f;
+        var heightRatioBottom = 1f - heightRatioTop;
+
+        var topHeight = mainWindowSizeMinusMenu.Y * heightRatioTop - marging.Y - spacing.Y;
+        var bottomHeight = mainWindowSizeMinusMenu.Y * heightRatioBottom - marging.Y - spacing.Y;
 
         switch (windowId)
         {
             case WindowId.Material:
-                finalSize = new Vector2(materialWindowWidth, 
-                    screenSizeMinusMenu.Y * 0.6f);
-                finalSize -= new Vector2(0, ImGui.GetFrameHeightWithSpacing());
-                finalPosition = menuSize;
+                finalSize = new Vector2(materialWindowWidth,
+                    topHeight);
+
+                finalPosition = new Vector2(spacing.X,
+                    menuSize.Y + marging.Y);
                 break;
             case WindowId.Code:
-                finalSize = new Vector2(editorConfiguration.ScreenSize.X - editorConfiguration.OutputSize.X - 200,
-                    screenSizeMinusMenu.Y * 0.6f);
-                finalSize -= new Vector2(0, ImGui.GetFrameHeightWithSpacing()); 
+                finalSize = new Vector2(codeWidth,
+                    topHeight);
 
-                finalPosition = new Vector2(materialWindowWidth, menuSize.Y);
+                finalPosition = new Vector2(materialWindowWidth + marging.X + spacing.X,
+                    menuSize.Y + marging.Y);
                 break;
             case WindowId.Message:
-                finalSize = new Vector2(screenSizeMinusMenu.X - materialWindowWidth,
-                    screenSizeMinusMenu.Y * 0.4f);
-                finalSize -= new Vector2(0, ImGui.GetFrameHeightWithSpacing());
-                finalPosition = new Vector2(editorConfiguration.ScreenSize.X - finalSize.X,
-                    editorConfiguration.ScreenSize.Y - finalSize.Y);
+                finalSize = new Vector2(mainWindowSizeMinusMenu.X - materialWindowWidth,
+                    bottomHeight);
+
+                finalPosition = new Vector2(materialWindowWidth + marging.X + spacing.X,
+                    mainWindowSizeMinusMenu.Y - finalSize.Y);
                 break;
             case WindowId.DataFileExplorer:
-                finalSize = new Vector2(materialWindowWidth, 
-                    screenSizeMinusMenu.Y * 0.4f);
-                finalSize -= new Vector2(0, ImGui.GetFrameHeightWithSpacing());
+                finalSize = new Vector2(materialWindowWidth,
+                    bottomHeight);
 
-                finalPosition = new Vector2(0, screenSizeMinusMenu.Y - finalSize.Y);
+                finalPosition = new Vector2(spacing.X,
+                    mainWindowSizeMinusMenu.Y - finalSize.Y);
                 break;
             case WindowId.Output:
-                finalSize = wholeOutputSize;
-                finalPosition = new Vector2(editorConfiguration.ScreenSize.X - outputSize.X,
-                    menuSize.Y);
+                finalSize = new Vector2(outputWidth,
+                    topHeight);
+
+                finalPosition = new Vector2(marging.X + materialWindowWidth + spacing.X + codeWidth + spacing.X,
+                    menuSize.Y + marging.Y);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(windowId), windowId, null);
@@ -124,9 +138,9 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
         ImGui.SetNextWindowSize(finalSize,
             WindowPosSizeCondition);
 
-        ImGui.SetNextWindowPos(finalPosition, 
+        ImGui.SetNextWindowPos(finalPosition,
             WindowPosSizeCondition);
 
-
+        return finalSize;
     }
 }

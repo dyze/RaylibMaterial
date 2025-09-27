@@ -2,13 +2,21 @@
 using ImGuiNET;
 using rlImGui_cs;
 using System.Numerics;
+using NLog;
+using Raylib_cs;
+
 namespace Editor.Windows;
 
 class OutputWindow(EditorConfiguration editorConfiguration,
     EditorControllerData editorControllerData)
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     public event Action<EditorConfiguration.ModelType, string>? ModelTypeChangeRequest;
     public event Action<EditorConfiguration.BackgroundType>? BackgroundChanged;
+    
+
+    private Vector2? _previousSize;
 
     public void RenderOutputWindow()
     {
@@ -21,8 +29,21 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
         editorControllerData.UpdateWindowPosAndSize(EditorControllerData.WindowId.Output);
 
-        if (ImGui.Begin("Output", ImGuiWindowFlags.NoResize))
+
+        if (ImGui.Begin("Output", ImGuiWindowFlags.None))
         {
+            var newSize = ImGui.GetWindowSize();
+            if (newSize != _previousSize)
+            {
+                Logger.Trace($"{nameof(OutputWindow)}: window size changed {_previousSize}->{newSize}");
+
+                const int toolBarHeight = 110;
+
+                editorControllerData.ViewTexture = Raylib.LoadRenderTexture((int)newSize.X, (int)newSize.Y - toolBarHeight);
+            }
+
+            _previousSize = newSize;
+
             foreach (var (key, tool) in editorControllerData.Tools)
             {
                 ImGui.SameLine();

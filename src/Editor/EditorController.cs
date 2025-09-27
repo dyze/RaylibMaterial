@@ -76,6 +76,8 @@ class EditorController
 
     private readonly OutputWindow _outputWindow;
 
+    private bool _windowSizeChanged; // set to true when switching to fullscreen
+
     public EditorController()
     {
         LoadEditorConfiguration();
@@ -138,7 +140,7 @@ class EditorController
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
-        Raylib.InitWindow((int)_editorConfiguration.ScreenSize.X, (int)_editorConfiguration.ScreenSize.Y, WindowCaption);
+        Raylib.InitWindow((int)_editorConfiguration.WindowSize.Width, (int)_editorConfiguration.WindowSize.Height, WindowCaption);
 
         Raylib.SetWindowMonitor(_editorConfiguration.MonitorIndex);
         Raylib.SetWindowPosition(_editorConfiguration.WindowPosition.X, _editorConfiguration.WindowPosition.Y);
@@ -150,7 +152,7 @@ class EditorController
 
         _defaultShader = Raylib.LoadShader($"{ResourceShaderFolderPath}\\base.vert", $"{ResourceShaderFolderPath}\\base.frag");
 
-        _editorControllerData.ViewTexture = Raylib.LoadRenderTexture((int)_editorConfiguration.OutputSize.X, (int)_editorConfiguration.OutputSize.Y);
+        _editorControllerData.ViewTexture = Raylib.LoadRenderTexture(400, 300);
 
         SelectBackground(_editorConfiguration.Background);
 
@@ -177,6 +179,7 @@ class EditorController
                     break;
             }
 
+            HandleWindowResize();
 
             prevMousePos = HandleMouseMovement(prevMousePos);
 
@@ -234,6 +237,43 @@ class EditorController
         rlImGui.Shutdown();
 
         SaveEditorConfiguration();
+    }
+
+    private void HandleWindowResize()
+    {
+        if (Raylib.IsWindowResized() == false
+            && _windowSizeChanged == false)
+            return;
+
+        _windowSizeChanged = false;
+
+        //unsafe
+        //{
+        //    // resize fbos based on screen size
+        //    Raylib.UnloadRenderTexture(_applicationBuffer);
+        //    Raylib.UnloadRenderTexture(_reflectionBuffer);
+        //    Raylib.UnloadRenderTexture(_refractionBuffer);
+        //    _applicationBuffer =
+        //        Raylib.LoadRenderTexture(Raylib.GetScreenWidth(),
+        //            Raylib.GetScreenHeight()); // main FBO used for postprocessing
+        //    _reflectionBuffer =
+        //        Raylib.LoadRenderTexture((int)(Raylib.GetScreenWidth() / FboSize),
+        //            (int)(Raylib.GetScreenHeight() / FboSize)); // FBO used for water reflection
+        //    _refractionBuffer =
+        //        Raylib.LoadRenderTexture((int)(Raylib.GetScreenWidth() / FboSize),
+        //            (int)(Raylib.GetScreenHeight() / FboSize)); // FBO used for water refraction
+        //    Raylib.SetTextureFilter(_reflectionBuffer.Texture, TextureFilter.Bilinear);
+        //    Raylib.SetTextureFilter(_refractionBuffer.Texture, TextureFilter.Bilinear);
+
+        //    // to be sure
+        //    _ocean.Model.Materials[0].Maps[0].Texture = _reflectionBuffer.Texture; // uniform texture0
+        //    _ocean.Model.Materials[0].Maps[1].Texture = _refractionBuffer.Texture; // uniform texture1
+
+        //    Raylib.SetTraceLogLevel(TraceLogLevel.Info);
+        //    Raylib.TraceLog(TraceLogLevel.Info,
+        //        $"Window resized: {Raylib.GetScreenWidth()} x {Raylib.GetScreenHeight()}");
+        //    Raylib.SetTraceLogLevel(TraceLogLevel.None);
+        //}
     }
 
     private void HandleFileDrop()
@@ -515,10 +555,10 @@ class EditorController
 
         Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
 
+        if (Raylib.IsKeyDown(KeyboardKey.Tab))
+            RenderLights();
 
-        RenderLights();
-
-        if (Raylib.IsKeyPressed(KeyboardKey.Tab))
+        if (Raylib.IsKeyDown(KeyboardKey.Tab))
             Raylib.DrawGrid(10, 1.0f);
 
         Raylib.EndMode3D();
@@ -949,8 +989,11 @@ class EditorController
             _editorConfiguration.MonitorIndex = Raylib.GetCurrentMonitor();
             var v = Raylib.GetWindowPosition();
             _editorConfiguration.WindowPosition = new Point((int)v.X, (int)v.Y);
-            Raylib.SetWindowPosition(_editorConfiguration.WindowPosition.X, 
-                _editorConfiguration.WindowPosition.Y);
+            var width = Raylib.GetScreenWidth();
+            var height = Raylib.GetScreenHeight();
+            _editorConfiguration.WindowSize = new Size(width, height);
+
+
 
             EditorConfigurationStorage.Save(_editorConfiguration,
                 ".");
