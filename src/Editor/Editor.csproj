@@ -22,6 +22,12 @@
     </Content>
   </ItemGroup>
 
+	<ItemGroup>
+		<Content Include="materials\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Library\Library.csproj" />
   </ItemGroup>
