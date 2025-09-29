@@ -44,7 +44,7 @@ public static class TypeConvertors
         {
             { "float", typeof(CodeVariableFloat) },
             //{ "vec2", typeof(Vector2) },
-            //{ "vec3", typeof(Vector3) },
+            { "vec3", typeof(CodeVariableVector3) },
             { "vec4", typeof(CodeVariableVector4) },
             //{ "int", typeof(int) },
             //{ "uint", typeof(uint) },

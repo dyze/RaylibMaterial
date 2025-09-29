@@ -1,7 +1,6 @@
 ﻿using System.Drawing;
 using Editor.Helpers;
 using Newtonsoft.Json;
-using System.Numerics;
 
 namespace Editor.Configuration;
 
@@ -51,7 +50,17 @@ public class EditorConfiguration
         Model
     }
 
-    public ModelType CurrentModelType = ModelType.Cube;
+    [JsonProperty("CurrentModelType")] public ModelType CurrentModelType = ModelType.Cube;
+
+    public enum LightingPreset
+    {
+        SingleWhiteLight = 0,
+        YellowRedGreenBlue,
+    }
+
+    [JsonProperty("CurrentLightingPreset")] public LightingPreset CurrentLightingPreset = LightingPreset.SingleWhiteLight;
+
+    [JsonProperty("CameraSettings")] public CameraSettings CameraSettings = new();
 
     public void AddRecentFile(string filePath) =>
         CollectionHelpers.AddEntryToHistory(RecentFiles, filePath, MaxRecentFiles);

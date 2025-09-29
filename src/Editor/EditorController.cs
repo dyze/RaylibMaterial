@@ -28,11 +28,7 @@ class EditorController
     private const string MaterialBackupFileExtension = ".mat.bck";
 
     private Camera3D _camera;
-    private float _cameraYAngle = 0;
-    private float _cameraXAngle = 0;
-    private float _cameraYPosition = 0;
-    private float _cameraDistance = 5;
-    private const float CameraMinDistance = 5;
+
 
     private Model _currentModel;
     private Shader? _currentShader;
@@ -122,8 +118,15 @@ class EditorController
         _outputWindow = new(_editorConfiguration,
             _editorControllerData);
 
-        _outputWindow.ModelTypeChangeRequest += (type, path) => SelectModel(type, path);
+        _outputWindow.ModelTypeChangeRequest += SelectModel;
         _outputWindow.BackgroundChanged += SelectBackground;
+        _outputWindow.LightingPresetChangeRequest += CreateLights;
+        _outputWindow.ResetCameraIsRequest += ResetCamera;
+    }
+
+    private void ResetCamera()
+    {
+        _editorConfiguration.CameraSettings = new CameraSettings();
     }
 
     private void DiscoverBackgrounds()
@@ -602,28 +605,30 @@ class EditorController
         var thisPos = Raylib.GetMousePosition();
         var mouseDelta = Raylib.GetMouseWheelMove();
 
-        _cameraDistance = Math.Max(CameraMinDistance,
-            _cameraDistance + mouseDelta * 0.1f);
+        var cameraSettings = _editorConfiguration.CameraSettings;
+
+        cameraSettings.Distance = Math.Max(CameraSettings.MinDistance,
+            cameraSettings.Distance + mouseDelta * 0.1f);
 
         var delta = Raymath.Vector2Subtract(prevMousePos, thisPos);
 
         if (Raylib.IsMouseButtonDown(MouseButton.Middle))
         {
-            _cameraYPosition += delta.Y / 100;
+            cameraSettings.Target.Y += delta.Y / 100;
         }
 
         if (Raylib.IsMouseButtonDown(MouseButton.Right))
         {
-            _cameraXAngle -= delta.Y / 100;
-            _cameraYAngle += delta.X / 100;
+            cameraSettings.Angles.X -= delta.Y / 100;
+            cameraSettings.Angles.Y += delta.X / 100;
         }
 
-        var q = Raymath.QuaternionFromEuler(_cameraXAngle, _cameraYAngle, 0);
+        var q = Raymath.QuaternionFromEuler(cameraSettings.Angles.X, cameraSettings.Angles.Y, cameraSettings.Angles.Z);
 
-        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, 0, -_cameraDistance),
+        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, 0, -cameraSettings.Distance),
             q);
 
-        _camera.Target = new Vector3(0, _cameraYPosition, 0);
+        _camera.Target = cameraSettings.Target;
         _camera.Position = v;
 
         return thisPos;
@@ -863,7 +868,7 @@ class EditorController
 
         ApplyShaderToModel();
 
-        CreateLights();
+        CreateLights(_editorConfiguration.CurrentLightingPreset);
     }
 
     private void LoadShaderCode()
@@ -988,7 +993,7 @@ class EditorController
     private void PrepareCamera()
     {
         // Define our custom camera to look into our 3d world
-        _camera = new Camera3D(new Vector3(0, 0, -_cameraDistance),
+        _camera = new Camera3D(new Vector3(0, 0, -5),
             new Vector3(0.0f, 0.0f, 0.0f),
             new Vector3(0.0f, 1.0f, 0.0f),
             45f,
@@ -1041,7 +1046,7 @@ class EditorController
         Logger.Info("editor config saved");
     }
 
-    private void CreateLights()
+    private void CreateLights(EditorConfiguration.LightingPreset preset)
     {
         if (_currentShader.HasValue == false)
             throw new NullReferenceException("_currentShader is null");
@@ -1060,34 +1065,55 @@ class EditorController
             ];
         }
 
-        _lights.Add(Rlights.CreateLight(
-            LightType.Point,
-            new Vector3(-2, 1, -2),
-            Vector3.Zero,
-            Color.Yellow,
-            shaders
-        ));
-        _lights.Add(Rlights.CreateLight(
-            LightType.Point,
-            new Vector3(2, 1, 2),
-            Vector3.Zero,
-            Color.Red,
-            shaders
-        ));
-        _lights.Add(Rlights.CreateLight(
-            LightType.Point,
-            new Vector3(-2, 1, 2),
-            Vector3.Zero,
-            Color.Green,
-            shaders
-        ));
-        _lights.Add(Rlights.CreateLight(
-            LightType.Point,
-            new Vector3(2, 1, -2),
-            Vector3.Zero,
-            Color.Blue,
-            shaders
-        ));
+        switch (preset)
+        {
+            case EditorConfiguration.LightingPreset.SingleWhiteLight:
+                _lights.Add(Rlights.CreateLight(
+                    LightType.Point,
+                    new Vector3(-2, 1, -2),
+                    Vector3.Zero,
+                    Color.White,
+                    shaders
+                ));
+                break;
+
+            case EditorConfiguration.LightingPreset.YellowRedGreenBlue:
+                _lights.Add(Rlights.CreateLight(
+                    LightType.Point,
+                    new Vector3(-2, 1, -2),
+                    Vector3.Zero,
+                    Color.Yellow,
+                    shaders
+                ));
+                _lights.Add(Rlights.CreateLight(
+                    LightType.Point,
+                    new Vector3(2, 1, 2),
+                    Vector3.Zero,
+                    Color.Red,
+                    shaders
+                ));
+                _lights.Add(Rlights.CreateLight(
+                    LightType.Point,
+                    new Vector3(-2, 1, 2),
+                    Vector3.Zero,
+                    Color.Green,
+                    shaders
+                ));
+                _lights.Add(Rlights.CreateLight(
+                    LightType.Point,
+                    new Vector3(2, 1, -2),
+                    Vector3.Zero,
+                    Color.Blue,
+                    shaders
+                ));
+                break;
+
+
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        _editorConfiguration.CurrentLightingPreset = preset;
     }
 
     public void RenderLights()

@@ -331,7 +331,13 @@ public class MaterialPackage : IDisposable
                 continue;
             }
 
-            if (variable.GetType() == typeof(CodeVariableVector4))
+            if (variable.GetType() == typeof(CodeVariableVector3))
+            {
+                var currentValue = (variable as CodeVariableVector3).Value;
+                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec3);
+                Logger.Trace($"{name}={currentValue}");
+            }
+            else if(variable.GetType() == typeof(CodeVariableVector4))
             {
                 var currentValue = (variable as CodeVariableVector4).Value;
                 Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
@@ -353,6 +359,8 @@ public class MaterialPackage : IDisposable
             {
                 SetUniformTexture(name, (variable as CodeVariableTexture).Value, model);
             }
+            else
+                Logger.Error($"{variable.GetType()} not supported");
         }
     }
 

@@ -3,6 +3,7 @@ using ImGuiNET;
 using Library.CodeVariable;
 using Library.Helpers;
 using NLog;
+using System.Xml.Linq;
 
 namespace Editor.Windows
 {
@@ -16,6 +17,7 @@ namespace Editor.Windows
         {
             _handlers = new()
             {
+                { typeof(CodeVariableVector3), HandleVector3 },
                 { typeof(CodeVariableVector4), HandleVector4 },
                 { typeof(CodeVariableFloat), HandleFloat },
                 { typeof(CodeVariableTexture), HandleTexture },
@@ -23,6 +25,8 @@ namespace Editor.Windows
             };
             this._editorControllerData = editorControllerData;
         }
+
+
 
         /// <summary>
         /// Render variables
@@ -62,6 +66,18 @@ namespace Editor.Windows
             if (ImGui.InputFloat(name, ref currentValue))
             {
                 (variable as CodeVariableFloat).Value = currentValue;
+                variableChanged = true;
+            }
+
+            return variableChanged;
+        }
+
+        private bool HandleVector3(CodeVariableBase variable, string name, bool variableChanged)
+        {
+            var currentValue = (variable as CodeVariableVector3).Value;
+            if (ImGui.InputFloat3(name, ref currentValue))
+            {
+                (variable as CodeVariableVector3).Value = currentValue;
                 variableChanged = true;
             }
 

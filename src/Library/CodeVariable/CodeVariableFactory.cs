@@ -1,7 +1,4 @@
-﻿using System.Drawing;
-using System.Numerics;
-
-namespace Library.CodeVariable;
+﻿namespace Library.CodeVariable;
 
 
 public static class CodeVariableFactory
@@ -17,6 +14,9 @@ public static class CodeVariableFactory
         else
         if (type == typeof(CodeVariableColor))
             return new CodeVariableColor();
+        else
+        if (type == typeof(CodeVariableVector3))
+            return new CodeVariableVector3();
         else
         if (type == typeof(CodeVariableVector4))
             return new CodeVariableVector4();

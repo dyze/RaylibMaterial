@@ -14,7 +14,8 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
     public event Action<EditorConfiguration.ModelType, string>? ModelTypeChangeRequest;
     public event Action<string>? BackgroundChanged;
-    
+    public event Action<EditorConfiguration.LightingPreset>? LightingPresetChangeRequest;
+    public event Action? ResetCameraIsRequest;
 
     private Vector2? _previousSize;
 
@@ -22,10 +23,14 @@ class OutputWindow(EditorConfiguration editorConfiguration,
     {
         var backgroundChangeIsRequested = false;
         var modelTypeChangeIsRequested = false;
+        var lightingPresetChangeIsRequested = false;
+        var resetCameraIsRequested = false;
 
         var wantedBackground = editorConfiguration.Background;
         var wantedModelFilePath = editorConfiguration.CurrentModelFilePath;
         var wantedModelType = editorConfiguration.CurrentModelType;
+
+        var wantedLightingPreset = editorConfiguration.CurrentLightingPreset;
 
         editorControllerData.UpdateWindowPosAndSize(EditorControllerData.WindowId.Output);
 
@@ -57,7 +62,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                 }
             }
 
-            ImGui.SameLine(40);
+            ImGui.SameLine();
 
             foreach (var (key, background) in editorControllerData.Backgrounds)
             {
@@ -71,6 +76,14 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                     break;
                 }
             }
+
+            ImGui.SameLine();
+
+            if (ImGui.Button("Reset camera"))
+            {
+                resetCameraIsRequested = true;
+            }
+
 
             ImGui.BeginDisabled(editorConfiguration.CurrentModelType != EditorConfiguration.ModelType.Model);
 
@@ -116,6 +129,45 @@ class OutputWindow(EditorConfiguration editorConfiguration,
             ImGui.EndDisabled();
 
 
+            if (ImGui.BeginCombo("lighting", editorConfiguration.CurrentLightingPreset.ToString()))
+            {
+
+                // Built in models
+                ImGui.PushID("lighting");
+                foreach (var preset in Enum.GetValues<EditorConfiguration.LightingPreset>())
+                {
+                    var selected = preset == editorConfiguration.CurrentLightingPreset;
+                    if (ImGui.Selectable(preset.ToString(),
+                            selected))
+                    {
+                        wantedLightingPreset = preset;
+                        lightingPresetChangeIsRequested = true;
+                        break;
+                    }
+                }
+                ImGui.PopID();
+
+                ImGui.SeparatorText("Custom");
+
+                // Custom models
+                ImGui.PushID("Custom");
+                foreach (var model in editorConfiguration.CustomModels)
+                {
+                    var selected = model == editorConfiguration.CurrentModelFilePath;
+                    if (ImGui.Selectable(Path.GetFileName(model),
+                            selected))
+                    {
+                        wantedModelFilePath = model;
+                        modelTypeChangeIsRequested = true;
+                        break;
+                    }
+                }
+                ImGui.PopID();
+
+                ImGui.EndCombo();
+            }
+
+
 
             ImGui.Separator();
             rlImGui.ImageRenderTexture(editorControllerData.ViewTexture);
@@ -124,11 +176,15 @@ class OutputWindow(EditorConfiguration editorConfiguration,
         ImGui.End();
 
         if (modelTypeChangeIsRequested)
-        {
             ModelTypeChangeRequest?.Invoke(wantedModelType, wantedModelFilePath);
-        }
 
         if(backgroundChangeIsRequested)
             BackgroundChanged?.Invoke(wantedBackground);
+
+        if(lightingPresetChangeIsRequested)
+            LightingPresetChangeRequest?.Invoke(wantedLightingPreset);
+
+        if(resetCameraIsRequested)
+            ResetCameraIsRequest?.Invoke();
     }
 }
