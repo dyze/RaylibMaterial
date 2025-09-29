@@ -1,27 +1,10 @@
 ﻿
 using Library.CodeVariable;
-using System.Numerics;
-using Rectangle = Raylib_cs.Rectangle;
 
 namespace Library.Helpers;
 
 public static class TypeConvertors
 {
-    public static Raylib_cs.Color ToRayLibColor(System.Drawing.Color src)
-    {
-        return new Raylib_cs.Color(src.R, src.G, src.B, src.A);
-    }
-
-    public static Rectangle ToRayLibRectangle(System.Drawing.RectangleF src)
-    {
-        return new Rectangle(src.X, src.Y, src.Width, src.Height);
-    }
-
-    public static System.Drawing.RectangleF FromRayLibRectangle(Rectangle src)
-    {
-        return new System.Drawing.RectangleF(src.X, src.Y, src.Width, src.Height);
-    }
-
     public static Type? StringToType(string input)
     {
         Dictionary<string, Type> table = new()
@@ -30,6 +13,7 @@ public static class TypeConvertors
             //{ "vec2", typeof(Vector2) },
             { "vec3", typeof(CodeVariableVector3) },
             { "vec4", typeof(CodeVariableVector4) },
+            { "mat4", typeof(CodeVariableMatrix4x4) },
             //{ "int", typeof(int) },
             //{ "uint", typeof(uint) },
             { "sampler2D", typeof(CodeVariableTexture) },

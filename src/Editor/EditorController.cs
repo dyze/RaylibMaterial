@@ -219,6 +219,8 @@ class EditorController
 
             UpdateLights();
 
+            _editorControllerData.MaterialPackage.SetCameraPosition(_camera.Position);
+
             Raylib.BeginDrawing();
             rlImGui.Begin();
 
@@ -930,7 +932,13 @@ class EditorController
                 if (materialVariable.GetType() != variable.GetType())
                 {
                     Logger.Trace($"{key}: type changed");
-                    allShaderVariables[key] = CodeVariableFactory.Build(variable.GetType());
+                    material.Variables[key] = CodeVariableFactory.Build(variable.GetType());
+                }
+
+                if (materialVariable.Internal != variable.Internal)
+                {
+                    Logger.Trace($"{key}: internal flag changed");
+                    material.Variables[key].Internal = variable.Internal;
                 }
             }
         }

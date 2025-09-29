@@ -1,8 +1,8 @@
 ﻿using Library.CodeVariable;
-using Library.Helpers;
 using NLog;
 using Raylib_cs;
 using System.ComponentModel.DataAnnotations;
+using System.Numerics;
 using ImGuiNET;
 
 namespace Library.Packaging;
@@ -301,6 +301,12 @@ public class MaterialPackage : IDisposable
             throw new InvalidDataException("Shader is not valid");
         }
 
+        unsafe
+        {
+            _shader.Value.Locs[(int)ShaderLocationIndex.VectorView] =
+                Raylib.GetShaderLocation(_shader.Value, "viewPos");
+        }
+
         return _shader.Value;
     }
 
@@ -338,7 +344,7 @@ public class MaterialPackage : IDisposable
                 Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec3);
                 Logger.Trace($"{name}={currentValue}");
             }
-            else if(variable.GetType() == typeof(CodeVariableVector4))
+            else if (variable.GetType() == typeof(CodeVariableVector4))
             {
                 var currentValue = (variable as CodeVariableVector4).Value;
                 Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
@@ -453,5 +459,27 @@ public class MaterialPackage : IDisposable
     public void ActivateShader(FileId fileKey)
     {
         SetShaderName(fileKey.FileType, fileKey.FileName);
+    }
+
+    public void SetCameraPosition(Vector3 cameraPosition)
+    {
+        if (_shader == null)
+            return;
+
+        if (Variables.TryGetValue("viewPos", out var variable))
+        {
+            var v = variable as CodeVariableVector3;
+            v.Value = cameraPosition;
+        }
+
+        unsafe
+        {
+            Raylib.SetShaderValue(
+                _shader.Value,
+                _shader.Value.Locs[(int)ShaderLocationIndex.VectorView],
+                cameraPosition,
+                ShaderUniformDataType.Vec3
+            );
+        }
     }
 }

@@ -67,22 +67,56 @@ public class ShaderCode(string code)
             currentPosition = currentPosition.Substring(match.Index + match.Length);
 
 
-            var type = TypeConvertors.StringToType(typeString);
-            if (type != null)
-            {
-                // Special case for colors. It will change the way to edit the value (color picker)
-                var nameLower = name.ToLower();
-                if (type == typeof(CodeVariableVector4) && nameLower.Contains("color") ||
-                    nameLower.StartsWith("col"))
-                    type = typeof(CodeVariableColor);
 
-                var variable = CodeVariableFactory.Build(type);
-                result.Add(name, variable);
+
+            {
+                var type = TypeConvertors.StringToType(typeString);
+                if (type != null)
+                {
+                    // Special case for colors. It will change the way to edit the value (color picker)
+                    var nameLower = name.ToLower();
+                    if (type == typeof(CodeVariableVector4) && nameLower.Contains("color") ||
+                        nameLower.StartsWith("col"))
+                        type = typeof(CodeVariableColor);
+
+                    var uniformDescription = GetUniformDescription(name);
+                    var internallyHandled = false;
+                    if (uniformDescription != null)
+                    {
+                        internallyHandled = true;
+                        Logger.Error($"{name} is internally handled");
+                    }
+
+                    var variable = CodeVariableFactory.Build(type);
+                    variable.Internal = internallyHandled;
+                    result.Add(name, variable);
+                }
+                else
+                {
+                    var variable = CodeVariableFactory.Build(typeof(CodeVariableUnsupported));
+                    result.Add(name, variable);
+
+                    Logger.Error($"{typeString} not supported");
+                }
             }
-            else
-                Logger.Error($"{typeString} not supported");
         }
 
         return result;
+    }
+
+    private string? GetUniformDescription(string name)
+    {
+        Dictionary<string, string> internalUniforms = new()
+        {
+            { "mvp", "model-view-projection matrix" },
+            { "matView", "view matrix" },
+            { "matProjection", "projection matrix" },
+            { "matModel", "model matrix" },
+            { "matNormal", "normal matrix (transpose(inverse(matModelView))" },
+            { "colDiffuse", "color diffuse (base tint color, multiplied by texture color)" },
+            { "viewPos", "Location of camera"}
+        };
+
+        return internalUniforms.GetValueOrDefault(name);
     }
 }

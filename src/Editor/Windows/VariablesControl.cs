@@ -1,4 +1,5 @@
-﻿using Editor.Helpers;
+﻿using System.Numerics;
+using Editor.Helpers;
 using ImGuiNET;
 using Library.CodeVariable;
 using Library.Helpers;
@@ -19,9 +20,11 @@ namespace Editor.Windows
             {
                 { typeof(CodeVariableVector3), HandleVector3 },
                 { typeof(CodeVariableVector4), HandleVector4 },
+                { typeof(CodeVariableMatrix4x4), HandleMatrix4x4 },
                 { typeof(CodeVariableFloat), HandleFloat },
                 { typeof(CodeVariableTexture), HandleTexture },
                 { typeof(CodeVariableColor), HandleColor },
+                { typeof(CodeVariableUnsupported), HandleUnsupported },
             };
             this._editorControllerData = editorControllerData;
         }
@@ -47,7 +50,11 @@ namespace Editor.Windows
 
                     if (_handlers.TryGetValue(variable.GetType(), out var handler))
                     {
+                        ImGui.BeginDisabled(variable.Internal);
+
                         variableChanged = handler(variable, name, variableChanged);
+
+                        ImGui.EndDisabled();
                     }
                     else
                     {
@@ -93,6 +100,64 @@ namespace Editor.Windows
                 variableChanged = true;
             }
 
+            return variableChanged;
+        }
+
+        private static bool HandleMatrix4x4(CodeVariableBase variable, string name, bool variableChanged)
+        {
+            var matrix4X4 = (variable as CodeVariableMatrix4x4).Value;
+            var currentValue = matrix4X4;
+            {
+                var row1 = new Vector4(currentValue.M11, currentValue.M12, currentValue.M13, currentValue.M14);
+
+                if (ImGui.InputFloat4($"{name} row1", ref row1))
+                {
+                    matrix4X4.M11 = row1.X;
+                    matrix4X4.M12 = row1.Y;
+                    matrix4X4.M13 = row1.Z;
+                    matrix4X4.M14 = row1.W;
+                    variableChanged = true;
+                }
+            }
+
+            {
+                var row2 = new Vector4(currentValue.M21, currentValue.M22, currentValue.M23, currentValue.M24);
+
+                if (ImGui.InputFloat4($"{name} row2", ref row2))
+                {
+                    matrix4X4.M21 = row2.X;
+                    matrix4X4.M22 = row2.Y;
+                    matrix4X4.M23 = row2.Z;
+                    matrix4X4.M24 = row2.W;
+                    variableChanged = true;
+                }
+            }
+
+            {
+                var row3 = new Vector4(currentValue.M31, currentValue.M32, currentValue.M33, currentValue.M34);
+
+                if (ImGui.InputFloat4($"{name} row3", ref row3))
+                {
+                    matrix4X4.M31 = row3.X;
+                    matrix4X4.M32 = row3.Y;
+                    matrix4X4.M33 = row3.Z;
+                    matrix4X4.M34 = row3.W;
+                    variableChanged = true;
+                }
+            }
+
+            {
+                var row4 = new Vector4(currentValue.M41, currentValue.M42, currentValue.M43, currentValue.M44);
+
+                if (ImGui.InputFloat4($"{name} row4", ref row4))
+                {
+                    matrix4X4.M41 = row4.X;
+                    matrix4X4.M42 = row4.Y;
+                    matrix4X4.M43 = row4.Z;
+                    matrix4X4.M44 = row4.W;
+                    variableChanged = true;
+                }
+            }
             return variableChanged;
         }
 
@@ -144,5 +209,18 @@ namespace Editor.Windows
 
             return variableChanged;
         }
+
+        private bool HandleUnsupported(CodeVariableBase variable, string name, bool variableChanged)
+        {
+            ImGui.LabelText(name, "unsupported");
+            return false;
+        }
+
+        private bool HandleInternal(CodeVariableBase variable, string name, bool variableChanged)
+        {
+            ImGui.LabelText(name, "internal, set by RayLib");
+            return false;
+        }
+
     }
 }

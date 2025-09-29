@@ -3,4 +3,9 @@
 [Serializable]
 public abstract class CodeVariableBase
 {
+    /// <summary>
+    /// is true if handled by Raylib or MaterialPackage
+    /// such variable can't be modified by user
+    /// </summary>
+    public bool Internal = false;
 }

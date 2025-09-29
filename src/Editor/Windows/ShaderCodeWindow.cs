@@ -3,7 +3,6 @@ using ImGuiNET;
 using System.Numerics;
 using Editor.Configuration;
 using Library;
-using Library.Helpers;
 using Library.Packaging;
 
 namespace Editor.Windows
