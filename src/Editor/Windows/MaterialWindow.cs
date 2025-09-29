@@ -8,8 +8,8 @@ using System.Text;
 
 namespace Editor.Windows;
 
-
-class MaterialWindow(EditorConfiguration editorConfiguration, 
+class MaterialWindow(
+    EditorConfiguration editorConfiguration,
     EditorControllerData editorControllerData)
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -39,7 +39,6 @@ class MaterialWindow(EditorConfiguration editorConfiguration,
 
         ImGui.End();
     }
-
 
 
     private void RenderShaders()
@@ -97,7 +96,7 @@ class MaterialWindow(EditorConfiguration editorConfiguration,
         var material = editorControllerData.MaterialPackage;
 
         if (material.IsModified)
-            ImGui.PushStyleColor(ImGuiCol.Button, 
+            ImGui.PushStyleColor(ImGuiCol.Button,
                 TypeConvertors.ColorToVector4(System.Drawing.Color.Red));
 
         if (ImGui.Button("Save"))
@@ -123,8 +122,8 @@ class MaterialWindow(EditorConfiguration editorConfiguration,
 
     private void RenderFiles()
     {
-        ImGui.SeparatorText("Files"); 
-        ImGuiHelpers.HelpMarker("Files that will be part of final package");
+        ImGui.SeparatorText("Files");
+        HelpMarker.Run("Files that will be part of final package");
         if (editorControllerData.MaterialPackage.FilesCount == 0)
             ImGui.TextDisabled("Empty");
         else
@@ -138,16 +137,27 @@ class MaterialWindow(EditorConfiguration editorConfiguration,
                     ImGui.SameLine();
                     ImGui.TextColored(TypeConvertors.ColorToVector4(System.Drawing.Color.Orange), "unused!");
                     ImGui.SameLine();
-                    ImGui.PushID(file.ToString());
+                    ImGui.PushID("delete"+file.ToString());
                     if (ImGui.Button("delete"))
                     {
                         editorControllerData.MaterialPackage.DeleteFile(file.Key);
                     }
+
+                    ImGui.PopID();
+                }
+
+                if (file.Key.FileType == FileType.FragmentShader ||
+                    file.Key.FileType == FileType.VertexShader)
+                {
+                    ImGui.SameLine();
+                    ImGui.PushID("activate" + file.ToString());
+                    if (ImGui.Button("activate"))
+                    {
+                        editorControllerData.MaterialPackage.ActivateShader(file.Key);
+                    }
+
                     ImGui.PopID();
                 }
             }
-
     }
-
-
 }

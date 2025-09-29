@@ -30,6 +30,7 @@ class EditorController
     private Camera3D _camera;
     private float _cameraYAngle = 0;
     private float _cameraXAngle = 0;
+    private float _cameraYPosition = 0;
     private float _cameraDistance = 5;
     private const float CameraMinDistance = 5;
 
@@ -62,7 +63,7 @@ class EditorController
 
     private readonly List<Light> _lights = new();
 
-    private ImFileDialogInfo? _fileDialogInfo;
+    private FileDialogInfo? _fileDialogInfo;
     private string _outputFilePath;
 
     private ImGuiMessageDialog.Configuration? _messageDialogConfiguration;
@@ -170,6 +171,8 @@ class EditorController
 
         Raylib.SetExitKey(KeyboardKey.Null);
         rlImGui.Setup();
+
+        Raylib.SetTraceLogLevel(TraceLogLevel.All);
 
         LoadUiResources();
 
@@ -597,13 +600,17 @@ class EditorController
     private Vector2 HandleMouseMovement(Vector2 prevMousePos)
     {
         var thisPos = Raylib.GetMousePosition();
-
         var mouseDelta = Raylib.GetMouseWheelMove();
 
         _cameraDistance = Math.Max(CameraMinDistance,
             _cameraDistance + mouseDelta * 0.1f);
 
         var delta = Raymath.Vector2Subtract(prevMousePos, thisPos);
+
+        if (Raylib.IsMouseButtonDown(MouseButton.Middle))
+        {
+            _cameraYPosition += delta.Y / 100;
+        }
 
         if (Raylib.IsMouseButtonDown(MouseButton.Right))
         {
@@ -613,8 +620,10 @@ class EditorController
 
         var q = Raymath.QuaternionFromEuler(_cameraXAngle, _cameraYAngle, 0);
 
-        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, 0, -_cameraDistance),
+        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, _cameraYPosition, -_cameraDistance),
             q);
+
+       // v.Y += _cameraYPosition;
 
         _camera.Position = v;
 
@@ -698,8 +707,8 @@ class EditorController
         _editorControllerData.MaterialPackage.Save(_editorControllerData.MaterialFilePath);
         _editorConfiguration.AddRecentFile(_editorControllerData.MaterialFilePath);
 
-        var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
-        System.Diagnostics.Process.Start("explorer.exe", argument);
+        //var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
+        //System.Diagnostics.Process.Start("explorer.exe", argument);
 
         Logger.Info("OnSave OK");
     }
@@ -744,7 +753,7 @@ class EditorController
     private void RenderFileDialog()
     {
         var open = _fileDialogInfo != null;
-        if (ImGuiFileDialog.FileDialog(ref open, _fileDialogInfo))
+        if (FileDialog.Run(ref open, _fileDialogInfo))
         {
             if (_fileDialogInfo.Type == ImGuiFileDialogType.OpenFile)
                 LoadMaterial(_fileDialogInfo.ResultPath);
@@ -790,11 +799,11 @@ class EditorController
 
     }
 
-    private void SelectBackground(string name)
+    private void SelectBackground(string? name)
     {
         Logger.Trace($"{name} selected");
 
-        if (_editorControllerData.Backgrounds.TryGetValue(name, out var value) == false)
+        if (name == null || _editorControllerData.Backgrounds.TryGetValue(name, out var value) == false)
         {
             name = _editorControllerData.Backgrounds.Keys.First();
         }
@@ -850,6 +859,7 @@ class EditorController
         foreach (var (_, value) in _shaderCode)
         {
             value.IsValid = shaderIsValid;
+            value.NeedsRebuild = !shaderIsValid;
         }
 
         ApplyShaderToModel();

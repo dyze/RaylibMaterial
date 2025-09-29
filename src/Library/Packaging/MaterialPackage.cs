@@ -61,7 +61,8 @@ public class MaterialPackage : IDisposable
 
 
     public MaterialPackage()
-    { }
+    {
+    }
 
 
     public void Clear()
@@ -79,6 +80,7 @@ public class MaterialPackage : IDisposable
     public static Dictionary<string, FileType> ExtensionToFileType = new()
     {
         { ".png", FileType.Image },
+        { ".jpg", FileType.Image },
         { ".vert", FileType.VertexShader },
         { ".frag", FileType.FragmentShader }
     };
@@ -109,7 +111,7 @@ public class MaterialPackage : IDisposable
         // Copy fields
         materialPackage.Meta.Author = metaFileObject.Author;
         materialPackage.Meta.Description = metaFileObject.Description;
-        materialPackage.Meta.Tags  = metaFileObject.Tags;
+        materialPackage.Meta.Tags = metaFileObject.Tags;
         materialPackage.Meta.ShaderNames = metaFileObject.ShaderNames;
         materialPackage.Variables = metaFileObject.Variables;
 
@@ -125,7 +127,7 @@ public class MaterialPackage : IDisposable
 
 
         inputDataAccess.Close();
-        
+
         Logger.Info($"MaterialPackage.Load OK: files read={1 + materialPackage.Files.Count}");
 
         return materialPackage;
@@ -209,7 +211,8 @@ public class MaterialPackage : IDisposable
         OnFilesChanged?.Invoke();
     }
 
-    public byte[] GetFile(FileType fileType, string fileName) => Files.GetValueOrDefault(new FileId(fileType, fileName));
+    public byte[] GetFile(FileType fileType, string fileName) =>
+        Files.GetValueOrDefault(new FileId(fileType, fileName));
 
     public KeyValuePair<FileId, byte[]>? GetFileMatchingType(FileType fileType)
     {
@@ -246,7 +249,7 @@ public class MaterialPackage : IDisposable
     }
 
     public void IncFileReferences(FileId key,
-        uint count=1)
+        uint count = 1)
     {
         _fileReferences[key] += count;
     }
@@ -372,7 +375,7 @@ public class MaterialPackage : IDisposable
         if (file == null)
             throw new NullReferenceException($"No file {fileName} found");
 
-        var image = Raylib.LoadImageFromMemory(extension, file);       // ignore period
+        var image = Raylib.LoadImageFromMemory(extension, file); // ignore period
         if (Raylib.IsImageValid(image) == false)
         {
             Logger.Error($"image {fileName} is not valid");
@@ -436,5 +439,10 @@ public class MaterialPackage : IDisposable
                 IncFileReferences(key, (uint)count);
             }
         }
+    }
+
+    public void ActivateShader(FileId fileKey)
+    {
+        SetShaderName(fileKey.FileType, fileKey.FileName);
     }
 }
