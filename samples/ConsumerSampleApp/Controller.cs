@@ -116,39 +116,36 @@ internal class Controller
         if (_currentShader.HasValue == false)
             throw new NullReferenceException("_currentShader is null");
 
+        Rlights.Clear();
         _lights.Clear();
 
         _lights.Add(Rlights.CreateLight(
-            0,
             LightType.Point,
             new Vector3(-2, 1, -2),
             Vector3.Zero,
             Color.Yellow,
-            _currentShader.Value
+            [_currentShader.Value]
         ));
         _lights.Add(Rlights.CreateLight(
-            1,
             LightType.Point,
             new Vector3(2, 1, 2),
             Vector3.Zero,
             Color.Red,
-            _currentShader.Value
+            [_currentShader.Value]
         ));
         _lights.Add(Rlights.CreateLight(
-            2,
             LightType.Point,
             new Vector3(-2, 1, 2),
             Vector3.Zero,
             Color.Green,
-            _currentShader.Value
+            [_currentShader.Value]
         ));
         _lights.Add(Rlights.CreateLight(
-            3,
             LightType.Point,
             new Vector3(2, 1, -2),
             Vector3.Zero,
             Color.Blue,
-            _currentShader.Value
+            [_currentShader.Value]
         ));
     }
 
@@ -167,7 +164,7 @@ internal class Controller
 
         foreach (var light in _lights)
         {
-            Rlights.UpdateLightValues(_currentShader.Value, light);
+            Rlights.UpdateLightValues(light);
         }
     }
 }
