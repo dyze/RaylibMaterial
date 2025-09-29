@@ -66,7 +66,7 @@ class EditorController
     private FileDialogInfo? _fileDialogInfo;
     private string _outputFilePath;
 
-    private ImGuiMessageDialog.Configuration? _messageDialogConfiguration;
+    private MessageDialog.Configuration? _messageDialogConfiguration;
     private bool _processingRequestToClose;
     private bool _requestToCloseAccepted;
     private bool _requestToClose;
@@ -412,10 +412,10 @@ class EditorController
             _messageDialogConfiguration = new("Current material has not been saved",
                 "Are you sure you want to continue?",
                 [
-                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Yes, "Yes, I'm sure",
                         _ => _requestToCloseAccepted = true,
                         System.Drawing.Color.Red),
-                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind",
+                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.No, "No, I changed my mind",
                         _ => _processingRequestToClose = false
                     )
                 ]);
@@ -434,10 +434,10 @@ class EditorController
             _messageDialogConfiguration = new("Current material has not been saved",
                 "Are you sure you want to continue?",
                 [
-                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Yes, "Yes, I'm sure",
                         _ => NewMaterial(),
                         System.Drawing.Color.Red),
-                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
+                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.No, "No, I changed my mind"
                     )
                 ]);
         }
@@ -473,7 +473,7 @@ class EditorController
             _messageDialogConfiguration = new("Current material has not been saved",
                 "Are you sure you want to continue?",
                 [
-                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Yes, "Yes, I'm sure",
                         _ =>
                         {
                             if (filePath == null)
@@ -482,7 +482,7 @@ class EditorController
                                 LoadMaterial(filePath);
                         },
                         System.Drawing.Color.Red),
-                    new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
+                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.No, "No, I changed my mind"
                     )
                 ]);
         }
@@ -620,11 +620,10 @@ class EditorController
 
         var q = Raymath.QuaternionFromEuler(_cameraXAngle, _cameraYAngle, 0);
 
-        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, _cameraYPosition, -_cameraDistance),
+        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, 0, -_cameraDistance),
             q);
 
-       // v.Y += _cameraYPosition;
-
+        _camera.Target = new Vector3(0, _cameraYPosition, 0);
         _camera.Position = v;
 
         return thisPos;
@@ -766,10 +765,10 @@ class EditorController
                     _messageDialogConfiguration = new("A material with same name already exists",
                         "Are you sure you want to continue?",
                         [
-                            new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.Yes, "Yes, I'm sure",
+                            new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Yes, "Yes, I'm sure",
                                 _ => SaveAs(filePath),
                                 System.Drawing.Color.Red),
-                            new ImGuiMessageDialog.ButtonConfiguration(ImGuiMessageDialog.ButtonId.No, "No, I changed my mind"
+                            new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.No, "No, I changed my mind"
                             )
                         ]);
                 }
@@ -785,7 +784,7 @@ class EditorController
     private void RenderMessageDialog()
     {
 
-        var buttonPressed = ImGuiMessageDialog.Run(_messageDialogConfiguration);
+        var buttonPressed = MessageDialog.Run(_messageDialogConfiguration);
 
         if (buttonPressed != null)
             _messageDialogConfiguration = null;

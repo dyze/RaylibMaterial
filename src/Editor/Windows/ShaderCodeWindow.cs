@@ -11,7 +11,8 @@ namespace Editor.Windows
     /// <summary>
     /// Handles the display and the modification of code
     /// </summary>
-    internal class ShaderCodeWindow(EditorConfiguration editorConfiguration,
+    internal class ShaderCodeWindow(
+        EditorConfiguration editorConfiguration,
         EditorControllerData editorControllerData)
     {
         public event Action? BuildPressed;
@@ -44,7 +45,7 @@ namespace Editor.Windows
 
 
                 ImGui.SameLine();
-                if(isValid)
+                if (isValid)
                     ImGui.TextColored(TypeConvertors.ColorToVector4(Color.LimeGreen), "valid");
                 else
                     ImGui.TextColored(TypeConvertors.ColorToVector4(Color.Red), "not valid");
@@ -59,6 +60,7 @@ namespace Editor.Windows
                     ImGui.EndTabBar();
                 }
             }
+
             ImGui.End();
 
 
@@ -76,8 +78,18 @@ namespace Editor.Windows
             var codeChanged = false;
 
             var name = fileId.FileName;
+            var styleAttributesPushed = 0;
             if (code.NeedsRebuild)
-                name += " *";
+            {
+                ImGui.PushStyleColor(ImGuiCol.Tab, TypeConverters.ColorToVector4(Color.DarkRed));
+                styleAttributesPushed++;
+                ImGui.PushStyleColor(ImGuiCol.TabSelected, TypeConverters.ColorToVector4(Color.Red));
+                styleAttributesPushed++;
+                ImGui.PushStyleColor(ImGuiCol.TabHovered, TypeConverters.ColorToVector4(Color.IndianRed));
+                styleAttributesPushed++;
+            }
+
+
             if (ImGui.BeginTabItem(name))
             {
                 var inputFlags = ImGuiInputTextFlags.AllowTabInput;
@@ -94,8 +106,11 @@ namespace Editor.Windows
                 ImGui.EndTabItem();
             }
 
+            if (styleAttributesPushed > 0)
+                ImGui.PopStyleColor(styleAttributesPushed);
+
+
             return codeChanged;
         }
     }
-
 }
