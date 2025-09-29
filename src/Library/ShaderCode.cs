@@ -1,11 +1,14 @@
 ﻿using Library.CodeVariable;
 using Library.Helpers;
+using NLog;
 using System.Text.RegularExpressions;
 
 namespace Library;
 
 public class ShaderCode(string code)
 {
+    private readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     public bool NeedsRebuild = false;
     public string Code = code;
     public bool IsValid { get; set; } = false;
@@ -76,6 +79,8 @@ public class ShaderCode(string code)
                 var variable = CodeVariableFactory.Build(type);
                 result.Add(name, variable);
             }
+            else
+                Logger.Error($"{typeString} not supported");
         }
 
         return result;

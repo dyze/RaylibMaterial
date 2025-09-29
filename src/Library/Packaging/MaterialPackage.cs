@@ -3,6 +3,7 @@ using Library.Helpers;
 using NLog;
 using Raylib_cs;
 using System.ComponentModel.DataAnnotations;
+using ImGuiNET;
 
 namespace Library.Packaging;
 
@@ -345,7 +346,7 @@ public class MaterialPackage : IDisposable
             }
             else if (variable.GetType() == typeof(CodeVariableColor))
             {
-                var currentValue = TypeConvertors.ColorToVector4((variable as CodeVariableColor).Value);
+                var currentValue = TypeConverters.ColorToVector4((variable as CodeVariableColor).Value);
                 Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
                 Logger.Trace($"{name}={currentValue}");
             }

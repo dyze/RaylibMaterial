@@ -97,7 +97,7 @@ class MaterialWindow(
 
         if (material.IsModified)
             ImGui.PushStyleColor(ImGuiCol.Button,
-                TypeConvertors.ColorToVector4(System.Drawing.Color.Red));
+                TypeConverters.ColorToVector4(System.Drawing.Color.Red));
 
         if (ImGui.Button("Save"))
             saveMaterial = true;
@@ -135,7 +135,7 @@ class MaterialWindow(
                 if (fileReferences == 0)
                 {
                     ImGui.SameLine();
-                    ImGui.TextColored(TypeConvertors.ColorToVector4(System.Drawing.Color.Orange), "unused!");
+                    ImGui.TextColored(TypeConverters.ColorToVector4(System.Drawing.Color.Orange), "unused!");
                     ImGui.SameLine();
                     ImGui.PushID("delete"+file.ToString());
                     if (ImGui.Button("delete"))

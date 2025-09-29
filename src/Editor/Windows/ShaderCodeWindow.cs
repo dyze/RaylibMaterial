@@ -46,9 +46,9 @@ namespace Editor.Windows
 
                 ImGui.SameLine();
                 if (isValid)
-                    ImGui.TextColored(TypeConvertors.ColorToVector4(Color.LimeGreen), "valid");
+                    ImGui.TextColored(TypeConverters.ColorToVector4(Color.LimeGreen), "valid");
                 else
-                    ImGui.TextColored(TypeConvertors.ColorToVector4(Color.Red), "not valid");
+                    ImGui.TextColored(TypeConverters.ColorToVector4(Color.Red), "not valid");
 
                 var flags = ImGuiTabBarFlags.None;
 

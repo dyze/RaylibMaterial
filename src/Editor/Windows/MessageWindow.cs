@@ -60,7 +60,7 @@ internal class MessageWindow(EditorControllerData editorControllerData)
                 foreach (var message in messages)
                 {
                     var color = LogLevelColors[message.logLevel];
-                    ImGui.TextColored(TypeConvertors.ColorToVector4(color),
+                    ImGui.TextColored(TypeConverters.ColorToVector4(color),
                         message.text);
                 }
 
