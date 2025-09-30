@@ -12,6 +12,7 @@ using rlImGui_cs;
 using System.Numerics;
 using Color = Raylib_cs.Color;
 using System.Runtime.InteropServices;
+using Library.Dialogs;
 
 namespace Editor;
 
@@ -74,6 +75,8 @@ class EditorController
     private bool _windowSizeChanged; // set to true when switching to fullscreen
     private Vector2 _previousMousePosition;
 
+    private readonly SettingsWindow _settingsWindow;
+
     public EditorController()
     {
         LoadEditorConfiguration();
@@ -102,9 +105,11 @@ class EditorController
 
         _shaderCodeWindow.BuildPressed += ShaderCodeWindow_OnBuildPressed;
 
-        //_outputFilePath = Path.GetFullPath($"{MaterialsPath}\\{DefaultMaterialName}{MaterialFileExtension}");
-        _outputFilePath = Path.GetFullPath($"{MaterialsPath}\\");
-        Directory.CreateDirectory(Path.GetDirectoryName(_outputFilePath));
+        if (_editorConfiguration.OutputDirectoryPath == "")
+            _editorConfiguration.OutputDirectoryPath = Path.GetFullPath($"{MaterialsPath}\\");
+
+        _outputFilePath = _editorConfiguration.OutputDirectoryPath;
+        Directory.CreateDirectory(_editorConfiguration.OutputDirectoryPath);
 
         DiscoverBuiltInModels();
 
@@ -121,8 +126,11 @@ class EditorController
         _outputWindow.BackgroundChanged += SelectBackground;
         _outputWindow.LightingPresetChangeRequest += CreateLights;
         _outputWindow.ResetCameraIsRequest += ResetCamera;
-    }
 
+        _settingsWindow = new(_editorConfiguration);
+        _settingsWindow.SavePressed += SaveEditorConfiguration;
+    }
+    
     private void ResetCamera()
     {
         _editorConfiguration.CameraSettings = new CameraSettings();
@@ -255,6 +263,7 @@ class EditorController
 
             RenderFileDialog();
             RenderMessageDialog();
+            _settingsWindow.Render();
 
 
             var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
@@ -388,6 +397,14 @@ class EditorController
 
                 ImGui.EndMenu();
             }
+
+            if (ImGui.BeginMenu("Tools"))
+            {
+                if (ImGui.MenuItem("Options"))
+                    _settingsWindow.Show();
+
+                ImGui.EndMenu();
+            }
         }
 
         ImGui.EndMainMenuBar();
@@ -456,8 +473,7 @@ class EditorController
 
         _currentShader = _defaultShader;
 
-        var directoryPath = Path.GetDirectoryName(_outputFilePath);
-        _outputFilePath = $"{directoryPath}\\";
+        _outputFilePath = $"{_editorConfiguration.OutputDirectoryPath}\\new-package.mat";
         Raylib.SetWindowTitle(WindowCaption);
 
         LoadCurrentModel();

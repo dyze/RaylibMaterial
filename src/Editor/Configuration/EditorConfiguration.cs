@@ -62,6 +62,8 @@ public class EditorConfiguration
 
     [JsonProperty("CameraSettings")] public CameraSettings CameraSettings = new();
 
+    [JsonProperty("OutputDirectoryPath")] public string OutputDirectoryPath = "";
+
     public void AddRecentFile(string filePath) =>
         CollectionHelpers.AddEntryToHistory(RecentFiles, filePath, MaxRecentFiles);
 

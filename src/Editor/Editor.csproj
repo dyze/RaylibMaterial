@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
-    <PackageReference Include="ImGUI.NET.ToolBox" Version="0.1.0" />
+    <PackageReference Include="ImGUI.NET.ToolBox" Version="0.1.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="NLog" Version="6.0.4" />
     <PackageReference Include="Raylib-cs" Version="7.0.1" />
