@@ -220,7 +220,7 @@ class EditorController
             Raylib.SetTraceLogCallback(&CustomLog);
         }
 
-       _previousMousePosition = Raylib.GetMousePosition();
+        _previousMousePosition = Raylib.GetMousePosition();
 
         Logger.Info("all is set");
 
@@ -625,9 +625,7 @@ class EditorController
         }
 
         var q = Raymath.QuaternionFromEuler(cameraSettings.Angles.X, cameraSettings.Angles.Y, cameraSettings.Angles.Z);
-
-        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, 0, -cameraSettings.Distance),
-            q);
+        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, 0, -cameraSettings.Distance), q);
 
         _camera.Target = cameraSettings.Target;
         _camera.Position = v;
