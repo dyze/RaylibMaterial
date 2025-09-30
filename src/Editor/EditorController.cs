@@ -540,10 +540,15 @@ class EditorController
         {
             _editorControllerData.MaterialPackage = MaterialPackage.Load(filePath);
         }
-        catch (FileNotFoundException e)
+        catch (Exception ex)
         {
-            Logger.Error(e);
-            return;
+            if (ex is FileNotFoundException or FileLoadException)
+            {
+                Logger.Error(ex);
+                return;
+            }
+
+            throw;
         }
 
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
@@ -566,8 +571,7 @@ class EditorController
     {
         _editorControllerData.MaterialPackage.UpdateFileReferences();
 
-        LoadShaderCode();
-        _editorControllerData.MaterialPackage.ApplyVariablesToModel(_currentModel);
+        _editorControllerData.MaterialPackage.SendVariablesToModel(_currentModel, false);
     }
 
     private void MaterialPackage_OnFilesChanged()
@@ -848,7 +852,7 @@ class EditorController
             Raylib.SetMaterialShader(ref _currentModel, i, ref shader);
         }
 
-        _editorControllerData.MaterialPackage.ApplyVariablesToModel(_currentModel);
+        _editorControllerData.MaterialPackage.SendVariablesToModel(_currentModel, true);
     }
 
     private void LoadShaders()

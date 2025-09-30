@@ -8,4 +8,9 @@ public abstract class CodeVariableBase
     /// such variable can't be modified by user
     /// </summary>
     public bool Internal = false;
+
+    /// <summary>
+    /// is true when value needs to be sent to shader
+    /// </summary>
+    public bool SendToShader = true;
 }

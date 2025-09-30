@@ -4,6 +4,7 @@ using Raylib_cs;
 using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 using ImGuiNET;
+using Newtonsoft.Json;
 
 namespace Library.Packaging;
 
@@ -107,7 +108,16 @@ public class MaterialPackage : IDisposable
         Logger.Info($"Reading entry {MetaFileName}...");
         var metaJson = inputDataAccess.ReadTextFile(MetaFileName);
 
-        var metaFileObject = MaterialMetaFileStorage.ParseJson(metaJson);
+        MaterialMetaFile metaFileObject;
+        try
+        {
+            metaFileObject = MaterialMetaFileStorage.ParseJson(metaJson);
+        }
+        catch (JsonSerializationException e)
+        {
+            Logger.Error(e);
+            throw new FileLoadException($"{packageFilePath} can't be read. Serialization issue.");
+        }
 
         var materialPackage = new MaterialPackage();
 
@@ -324,15 +334,24 @@ public class MaterialPackage : IDisposable
         UnloadShader();
     }
 
-    public void ApplyVariablesToModel(Model model)
+    public void SendVariablesToModel(Model model, bool force)
     {
-        Logger.Info("ApplyVariablesToModel...");
+        Logger.Info("SendVariablesToModel...");
 
         if (Shader.HasValue == false)
             return;
 
         foreach (var (name, variable) in Variables)
         {
+            if(force == false)
+                if(variable.SendToShader == false)
+                {
+                    Logger.Trace($"{name} didn't change");
+                    continue;
+                }
+
+            variable.SendToShader = false;
+
             var location = Raylib.GetShaderLocation(Shader.Value, name);
             if (location < 0)
             {

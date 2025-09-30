@@ -97,7 +97,7 @@ internal class Controller
         _currentShader = shader;
         Raylib.SetMaterialShader(ref _currentModel, 0, ref shader);
 
-        _materialPackage.ApplyVariablesToModel(_currentModel);
+        _materialPackage.SendVariablesToModel(_currentModel);
 
         CreateLights();
     }

@@ -37,7 +37,7 @@ namespace Editor.Windows
         /// <returns>true if variables changed</returns>
         public bool Render(Dictionary<string, CodeVariableBase> variables)
         {
-            var variableChanged = false;
+            var atLeastAVariableChanged = false;
 
             ImGui.SeparatorText("Variables");
 
@@ -50,7 +50,9 @@ namespace Editor.Windows
 
                     if (_handlers.TryGetValue(variable.GetType(), out var handler))
                     {
-                        variableChanged |= handler(variable, name);
+                        variable.SendToShader = handler(variable, name);
+
+                        atLeastAVariableChanged |= variable.SendToShader;
                     }
                     else
                     {
@@ -60,7 +62,7 @@ namespace Editor.Windows
                     ImGui.EndGroup();
                 }
 
-            return variableChanged;
+            return atLeastAVariableChanged;
         }
 
         private static bool HandleFloat(CodeVariableBase variable, string name)

@@ -4,3 +4,4 @@
 **/obj/**
 **/r*.sln.DotSettings.user
 /artifacts/*
+**/*.bck
