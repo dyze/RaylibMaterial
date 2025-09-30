@@ -10,7 +10,7 @@ namespace Editor.Windows
     /// <summary>
     /// Handles the display and the modification of code
     /// </summary>
-    internal class ShaderCodeWindow(
+    internal class CodeWindow(
         EditorConfiguration editorConfiguration,
         EditorControllerData editorControllerData)
     {

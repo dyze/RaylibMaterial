@@ -65,11 +65,7 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
 
     public Vector2 UpdateWindowPosAndSize(WindowId windowId)
     {
-        Vector2 finalPosition;
-        Vector2 finalSize;
-
         var manWindowSize = new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
-
 
         var margin = new Vector2(10f, 10f);
         var spacing = new Vector2(10f, 10f);
@@ -88,6 +84,9 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
 
         var topHeight = availableArea.Y * heightRatioTop - margin.Y - spacing.Y/2;
         var bottomHeight = availableArea.Y * heightRatioBottom - margin.Y - spacing.Y/2;
+
+        Vector2 finalPosition;
+        Vector2 finalSize;
 
         switch (windowId)
         {

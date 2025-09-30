@@ -51,7 +51,7 @@ class EditorController
     private readonly EditorControllerData _editorControllerData;
 
 
-    private readonly ShaderCodeWindow _shaderCodeWindow;
+    private readonly CodeWindow _shaderCodeWindow;
     private EditorConfiguration _editorConfiguration = new();
 
     private readonly DataFileExplorer _dataFileExplorer;
@@ -166,7 +166,7 @@ class EditorController
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
     private static unsafe void CustomLog(int logLevel, sbyte* text, sbyte* args)
     {
-        Dictionary<TraceLogLevel, NLog.LogLevel> levels = new Dictionary<TraceLogLevel, NLog.LogLevel>()
+        Dictionary<TraceLogLevel, NLog.LogLevel> levels = new()
         {
             { TraceLogLevel.All, NLog.LogLevel.Warn },
             { TraceLogLevel.Trace, NLog.LogLevel.Trace },
