@@ -19,11 +19,6 @@ class EditorController
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    private const string ResourceUiPath = "resources/ui";
-    private const string ResourceModelsPath = "resources/models";
-    private const string ResourceShaderFolderPath = "resources/shaders";
-    private const string ResourceImageFolderPath = "resources/images";
-    private const string ResourceSkyBoxesFolderPath = "resources/ui/skyboxes";
     private const string MaterialsPath = "materials";
     private const string MaterialFileExtension = ".mat";
     private const string MaterialBackupFileExtension = ".mat.bck";
@@ -132,7 +127,7 @@ class EditorController
 
     private void DiscoverBackgrounds()
     {
-        var files = Directory.GetFiles(Path.GetFullPath(ResourceSkyBoxesFolderPath), "*.*", SearchOption.AllDirectories)
+        var files = Directory.GetFiles(Path.GetFullPath(Resources.ResourceSkyBoxesFolderPath), "*.*", SearchOption.AllDirectories)
             .Where(file => _supportedImagesExtensions.Contains(Path.GetExtension(file)))
             .ToList();
 
@@ -153,7 +148,7 @@ class EditorController
 
     private void DiscoverBuiltInModels()
     {
-        _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(ResourceModelsPath), "*.*", SearchOption.AllDirectories)
+        _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(Resources.ResourceModelsPath), "*.*", SearchOption.AllDirectories)
             .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
             .ToList();
     }
@@ -200,7 +195,7 @@ class EditorController
 
         LoadUiResources();
 
-        _defaultShader = Raylib.LoadShader($"{ResourceShaderFolderPath}\\base.vert", $"{ResourceShaderFolderPath}\\base.frag");
+        _defaultShader = Raylib.LoadShader($"{Resources.ResourceShaderFolderPath}\\base.vert", $"{Resources.ResourceShaderFolderPath}\\base.frag");
 
         _editorControllerData.ViewTexture = Raylib.LoadRenderTexture(400, 300);
 
@@ -689,7 +684,7 @@ class EditorController
     {
         foreach (var (_, tool) in _editorControllerData.Tools)
         {
-            var image = Raylib.LoadImage($"{ResourceUiPath}/{tool.ImageFileName}");
+            var image = Raylib.LoadImage($"{Resources.ResourceToolBoarFolderPath}/{tool.ImageFileName}");
             tool.Texture = Raylib.LoadTextureFromImage(image);
             Raylib.UnloadImage(image);
         }
@@ -814,8 +809,8 @@ class EditorController
 
         _skyBox = new SkyBox();
 
-        var filePath = Path.GetFullPath($"{ResourceSkyBoxesFolderPath}/{background.ImageFileName}");
-        _skyBox.PrepareSkyBoxStatic(filePath);
+        var filePath = Path.GetFullPath($"{Resources.ResourceSkyBoxesFolderPath}/{background.ImageFileName}");
+        _skyBox.GenerateModel(filePath);
     }
 
     private void ApplyShaderToModel()
