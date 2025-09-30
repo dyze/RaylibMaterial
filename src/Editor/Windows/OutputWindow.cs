@@ -19,6 +19,10 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
     private Vector2? _previousSize;
 
+    public bool IsWindowFocus { get; private set; }
+    public bool IsWindowHovered { get; private set; }
+    public bool IsInDebugMode = false;
+
     public void RenderOutputWindow()
     {
         var backgroundChangeIsRequested = false;
@@ -37,6 +41,9 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
         if (ImGui.Begin("Output", ImGuiWindowFlags.None))
         {
+            IsWindowFocus = ImGui.IsWindowFocused();
+            IsWindowHovered = ImGui.IsWindowHovered();
+
             var newSize = ImGui.GetWindowSize();
             if (newSize != _previousSize)
             {
@@ -167,7 +174,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                 ImGui.EndCombo();
             }
 
-
+            ImGui.Checkbox("debug mode", ref IsInDebugMode);
 
             ImGui.Separator();
             rlImGui.ImageRenderTexture(editorControllerData.ViewTexture);

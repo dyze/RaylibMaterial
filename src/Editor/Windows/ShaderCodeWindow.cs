@@ -44,10 +44,14 @@ namespace Editor.Windows
 
 
                 ImGui.SameLine();
-                if (isValid)
-                    ImGui.TextColored(TypeConverters.ColorToVector4(Color.LimeGreen), "valid");
-                else
+                if (isValid == false)
                     ImGui.TextColored(TypeConverters.ColorToVector4(Color.Red), "not valid");
+                else
+                if (needsRebuild)
+                    ImGui.TextColored(TypeConverters.ColorToVector4(Color.Orange), "needs rebuild");
+                else
+                    ImGui.TextColored(TypeConverters.ColorToVector4(Color.LimeGreen), "valid");
+
 
                 var flags = ImGuiTabBarFlags.None;
 
@@ -69,7 +73,7 @@ namespace Editor.Windows
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="fileId"></param>
         /// <param name="code"></param>
         /// <returns>code changed or not</returns>
         private bool RenderTab(FileId fileId, ShaderCode code)
@@ -78,13 +82,23 @@ namespace Editor.Windows
 
             var name = fileId.FileName;
             var styleAttributesPushed = 0;
-            if (code.NeedsRebuild)
+            if (code.IsValid == false)
             {
                 ImGui.PushStyleColor(ImGuiCol.Tab, TypeConverters.ColorToVector4(Color.DarkRed));
                 styleAttributesPushed++;
                 ImGui.PushStyleColor(ImGuiCol.TabSelected, TypeConverters.ColorToVector4(Color.Red));
                 styleAttributesPushed++;
                 ImGui.PushStyleColor(ImGuiCol.TabHovered, TypeConverters.ColorToVector4(Color.IndianRed));
+                styleAttributesPushed++;
+            }
+            else
+            if (code.NeedsRebuild)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Tab, TypeConverters.ColorToVector4(Color.DarkOrange));
+                styleAttributesPushed++;
+                ImGui.PushStyleColor(ImGuiCol.TabSelected, TypeConverters.ColorToVector4(Color.Orange));
+                styleAttributesPushed++;
+                ImGui.PushStyleColor(ImGuiCol.TabHovered, TypeConverters.ColorToVector4(Color.Yellow));
                 styleAttributesPushed++;
             }
 

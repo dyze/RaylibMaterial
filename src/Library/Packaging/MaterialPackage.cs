@@ -409,8 +409,8 @@ public class MaterialPackage : IDisposable
 
         Dictionary<string, MaterialMapIndex> table = new()
         {
-            { "texture0", MaterialMapIndex.Albedo },
-            { "texture1", MaterialMapIndex.Metalness },
+            { "texture0", MaterialMapIndex.Albedo },                // Also called diffuse
+            { "texture1", MaterialMapIndex.Metalness },             // Also called Specular
             { "texture2", MaterialMapIndex.Normal },
             { "texture3", MaterialMapIndex.Roughness },
             { "texture4", MaterialMapIndex.Occlusion },

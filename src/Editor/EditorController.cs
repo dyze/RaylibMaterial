@@ -11,6 +11,7 @@ using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
 using Color = Raylib_cs.Color;
+using System.Runtime.InteropServices;
 
 namespace Editor;
 
@@ -162,6 +163,28 @@ class EditorController
         OnSave();
     }
 
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    private static unsafe void CustomLog(int logLevel, sbyte* text, sbyte* args)
+    {
+        Dictionary<TraceLogLevel, NLog.LogLevel> levels = new Dictionary<TraceLogLevel, NLog.LogLevel>()
+        {
+            { TraceLogLevel.All, NLog.LogLevel.Warn },
+            { TraceLogLevel.Trace, NLog.LogLevel.Trace },
+            { TraceLogLevel.Debug, NLog.LogLevel.Debug },
+            { TraceLogLevel.Info, NLog.LogLevel.Info },
+            { TraceLogLevel.Warning, NLog.LogLevel.Warn },
+            { TraceLogLevel.Error, NLog.LogLevel.Error },
+            { TraceLogLevel.Fatal, NLog.LogLevel.Fatal },
+            { TraceLogLevel.None, NLog.LogLevel.Warn },
+        };
+
+        var level = levels.GetValueOrDefault((TraceLogLevel)logLevel, NLog.LogLevel.Warn);
+
+        var message = Logging.GetLogMessage(new IntPtr(text), new IntPtr(args));
+
+        Logger.Log(level, message);
+    }
+
     public void Run()
     {
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
@@ -175,14 +198,11 @@ class EditorController
         Raylib.SetExitKey(KeyboardKey.Null);
         rlImGui.Setup();
 
-        Raylib.SetTraceLogLevel(TraceLogLevel.All);
-
         LoadUiResources();
 
         _defaultShader = Raylib.LoadShader($"{ResourceShaderFolderPath}\\base.vert", $"{ResourceShaderFolderPath}\\base.frag");
 
         _editorControllerData.ViewTexture = Raylib.LoadRenderTexture(400, 300);
-
 
         DiscoverBackgrounds();
 
@@ -190,11 +210,14 @@ class EditorController
 
         NewMaterial();
 
-
         Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
-        Raylib.SetTraceLogLevel(TraceLogLevel.None); // disable logging from now on
 
         PrepareCamera();
+
+        unsafe
+        {
+            Raylib.SetTraceLogCallback(&CustomLog);
+        }
 
         var prevMousePos = Raylib.GetMousePosition();
 
@@ -213,7 +236,8 @@ class EditorController
 
             HandleWindowResize();
 
-            prevMousePos = HandleMouseMovement(prevMousePos);
+            if (_outputWindow.IsWindowHovered)
+                prevMousePos = HandleMouseMovement(prevMousePos);
 
             HandleFileDrop();
 
@@ -280,34 +304,6 @@ class EditorController
             return;
 
         _windowSizeChanged = false;
-
-        //unsafe
-        //{
-        //    // resize fbos based on screen size
-        //    Raylib.UnloadRenderTexture(_applicationBuffer);
-        //    Raylib.UnloadRenderTexture(_reflectionBuffer);
-        //    Raylib.UnloadRenderTexture(_refractionBuffer);
-        //    _applicationBuffer =
-        //        Raylib.LoadRenderTexture(Raylib.GetScreenWidth(),
-        //            Raylib.GetScreenHeight()); // main FBO used for postprocessing
-        //    _reflectionBuffer =
-        //        Raylib.LoadRenderTexture((int)(Raylib.GetScreenWidth() / FboSize),
-        //            (int)(Raylib.GetScreenHeight() / FboSize)); // FBO used for water reflection
-        //    _refractionBuffer =
-        //        Raylib.LoadRenderTexture((int)(Raylib.GetScreenWidth() / FboSize),
-        //            (int)(Raylib.GetScreenHeight() / FboSize)); // FBO used for water refraction
-        //    Raylib.SetTextureFilter(_reflectionBuffer.Texture, TextureFilter.Bilinear);
-        //    Raylib.SetTextureFilter(_refractionBuffer.Texture, TextureFilter.Bilinear);
-
-        //    // to be sure
-        //    _ocean.Model.Materials[0].Maps[0].Texture = _reflectionBuffer.Texture; // uniform texture0
-        //    _ocean.Model.Materials[0].Maps[1].Texture = _refractionBuffer.Texture; // uniform texture1
-
-        //    Raylib.SetTraceLogLevel(TraceLogLevel.Info);
-        //    Raylib.TraceLog(TraceLogLevel.Info,
-        //        $"Window resized: {Raylib.GetScreenWidth()} x {Raylib.GetScreenHeight()}");
-        //    Raylib.SetTraceLogLevel(TraceLogLevel.None);
-        //}
     }
 
     private void HandleFileDrop()
@@ -329,8 +325,6 @@ class EditorController
             }
         }
     }
-
-
 
     private void RenderMenu()
     {
@@ -589,11 +583,12 @@ class EditorController
 
         Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
 
-        if (Raylib.IsKeyDown(KeyboardKey.Tab))
+        if (_outputWindow.IsInDebugMode)
+        {
             RenderLights();
 
-        if (Raylib.IsKeyDown(KeyboardKey.Tab))
             Raylib.DrawGrid(10, 1.0f);
+        }
 
         Raylib.EndMode3D();
 
