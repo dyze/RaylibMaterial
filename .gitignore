@@ -3,3 +3,4 @@
 **/bin/**
 **/obj/**
 **/r*.sln.DotSettings.user
+/artifacts/*

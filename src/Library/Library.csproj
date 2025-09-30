@@ -7,6 +7,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+	<PropertyGroup>
+		<AssemblyName>Library</AssemblyName>
+		<AssemblyVersion>0.1.0.0</AssemblyVersion>
+		<FileVersion>$(AssemblyVersion)</FileVersion>
+		<Version>$(AssemblyVersion)</Version>
+		<Company>dlabs</Company>
+	</PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="ImGUI.NET.ToolBox" Version="0.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
