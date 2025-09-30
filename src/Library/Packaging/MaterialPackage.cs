@@ -60,6 +60,11 @@ public class MaterialPackage : IDisposable
 
     public event Action? OnVariablesChanged;
 
+    /// <summary>
+    /// Raylib Shader
+    /// </summary>
+    public Shader? Shader { get; private set; }
+
 
     public MaterialPackage()
     {
@@ -86,10 +91,7 @@ public class MaterialPackage : IDisposable
         { ".frag", FileType.FragmentShader }
     };
 
-    /// <summary>
-    /// Raylib Shader
-    /// </summary>
-    private Shader? _shader;
+
 
     public static MaterialPackage Load(string packageFilePath)
     {
@@ -282,39 +284,39 @@ public class MaterialPackage : IDisposable
         var vertexShader = GetShaderCode(FileType.VertexShader);
         var fragmentShader = GetShaderCode(FileType.FragmentShader);
 
-        if (_shader.HasValue)
-            return _shader.Value;
+        if (Shader.HasValue)
+            return Shader.Value;
 
-        _shader = Raylib.LoadShaderFromMemory(
+        Shader = Raylib.LoadShaderFromMemory(
             vertexShader != null ? System.Text.Encoding.UTF8.GetString(vertexShader.Value.Value) : null,
             fragmentShader != null ? System.Text.Encoding.UTF8.GetString(fragmentShader.Value.Value) : null);
 
-        if (_shader == null)
+        if (Shader == null)
             throw new InvalidDataException("Shader can't be instantiated");
 
-        var valid = Raylib.IsShaderValid(_shader.Value);
+        var valid = Raylib.IsShaderValid(Shader.Value);
 
         if (valid == false)
         {
-            Raylib.UnloadShader(_shader.Value);
-            _shader = null;
+            Raylib.UnloadShader(Shader.Value);
+            Shader = null;
             throw new InvalidDataException("Shader is not valid");
         }
 
         unsafe
         {
-            _shader.Value.Locs[(int)ShaderLocationIndex.VectorView] =
-                Raylib.GetShaderLocation(_shader.Value, "viewPos");
+            Shader.Value.Locs[(int)ShaderLocationIndex.VectorView] =
+                Raylib.GetShaderLocation(Shader.Value, "viewPos");
         }
 
-        return _shader.Value;
+        return Shader.Value;
     }
 
     public void UnloadShader()
     {
-        if (_shader.HasValue)
-            Raylib.UnloadShader(_shader.Value);
-        _shader = null;
+        if (Shader.HasValue)
+            Raylib.UnloadShader(Shader.Value);
+        Shader = null;
     }
 
     public void Dispose()
@@ -326,12 +328,12 @@ public class MaterialPackage : IDisposable
     {
         Logger.Info("ApplyVariablesToModel...");
 
-        if (_shader.HasValue == false)
+        if (Shader.HasValue == false)
             return;
 
         foreach (var (name, variable) in Variables)
         {
-            var location = Raylib.GetShaderLocation(_shader.Value, name);
+            var location = Raylib.GetShaderLocation(Shader.Value, name);
             if (location < 0)
             {
                 Logger.Error($"location for {name} not found in shader. maybe because unused in code");
@@ -341,25 +343,25 @@ public class MaterialPackage : IDisposable
             if (variable.GetType() == typeof(CodeVariableVector3))
             {
                 var currentValue = (variable as CodeVariableVector3).Value;
-                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec3);
+                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec3);
                 Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableVector4))
             {
                 var currentValue = (variable as CodeVariableVector4).Value;
-                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
+                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
                 Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableColor))
             {
                 var currentValue = TypeConverters.ColorToVector4((variable as CodeVariableColor).Value);
-                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
+                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
                 Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableFloat))
             {
                 var currentValue = (variable as CodeVariableFloat).Value;
-                Raylib.SetShaderValue(_shader.Value, location, currentValue, ShaderUniformDataType.Float);
+                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Float);
                 Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableTexture))
@@ -463,7 +465,7 @@ public class MaterialPackage : IDisposable
 
     public void SetCameraPosition(Vector3 cameraPosition)
     {
-        if (_shader == null)
+        if (Shader == null)
             return;
 
         if (Variables.TryGetValue("viewPos", out var variable))
@@ -475,8 +477,8 @@ public class MaterialPackage : IDisposable
         unsafe
         {
             Raylib.SetShaderValue(
-                _shader.Value,
-                _shader.Value.Locs[(int)ShaderLocationIndex.VectorView],
+                Shader.Value,
+                Shader.Value.Locs[(int)ShaderLocationIndex.VectorView],
                 cameraPosition,
                 ShaderUniformDataType.Vec3
             );

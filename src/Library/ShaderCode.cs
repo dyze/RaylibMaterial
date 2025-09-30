@@ -17,18 +17,32 @@ internal class TypeName
     }
 }
 
-public class ShaderCode(string code)
+/// <summary>
+/// Stores the code of a shader component
+/// It is used also to parse the variables inside that component
+/// </summary>
+public class ShaderCode
 {
     private readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    public bool NeedsRebuild = false;
-    public string Code = code;
+    public bool NeedsRebuild = true;
+    public string Code;
     public bool IsValid { get; set; } = false;
 
     /// <summary>
     /// List of uniforms detected inside the code
     /// </summary>
     public Dictionary<string, CodeVariableBase> Variables = [];
+
+    /// <summary>
+    /// Stores the code of a shader component
+    /// It is used also to parse the variables inside that component
+    /// </summary>
+    /// <param name="code"></param>
+    public ShaderCode(string code)
+    {
+        Code = code;
+    }
 
     public void ParseVariables()
     {
@@ -132,7 +146,8 @@ public class ShaderCode(string code)
             { "matModel", "model matrix" },
             { "matNormal", "normal matrix (transpose(inverse(matModelView))" },
             { "colDiffuse", "color diffuse (base tint color, multiplied by texture color)" },
-            { "viewPos", "Location of camera" }
+            { "viewPos", "Location of camera" },
+            { "lights", "Lights in our scene"}
         };
 
         return internalUniforms.GetValueOrDefault(name);

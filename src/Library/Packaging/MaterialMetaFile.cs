@@ -1,10 +1,12 @@
 ﻿using Library.CodeVariable;
-using Library.Packaging;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
-namespace Library;
+namespace Library.Packaging;
 
+/// <summary>
+/// This is the content of the meta file that will part of package
+/// </summary>
 [Serializable]
 public class MaterialMetaFile
 {

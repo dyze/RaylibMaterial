@@ -154,23 +154,6 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                 }
                 ImGui.PopID();
 
-                ImGui.SeparatorText("Custom");
-
-                // Custom models
-                ImGui.PushID("Custom");
-                foreach (var model in editorConfiguration.CustomModels)
-                {
-                    var selected = model == editorConfiguration.CurrentModelFilePath;
-                    if (ImGui.Selectable(Path.GetFileName(model),
-                            selected))
-                    {
-                        wantedModelFilePath = model;
-                        modelTypeChangeIsRequested = true;
-                        break;
-                    }
-                }
-                ImGui.PopID();
-
                 ImGui.EndCombo();
             }
 

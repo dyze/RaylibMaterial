@@ -1,8 +1,11 @@
 ﻿using Library.Helpers;
 using Newtonsoft.Json;
 
-namespace Library;
+namespace Library.Packaging;
 
+/// <summary>
+/// Load/Save MaterialMetaFile
+/// </summary>
 public class MaterialMetaFileStorage
 {
     public static MaterialMetaFile Load(string filePath)

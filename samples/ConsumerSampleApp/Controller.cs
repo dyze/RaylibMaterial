@@ -3,6 +3,7 @@ using Library.Packaging;
 using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
+using Library.Lighting;
 
 namespace ConsumerSampleApp;
 
@@ -116,31 +117,31 @@ internal class Controller
         if (_currentShader.HasValue == false)
             throw new NullReferenceException("_currentShader is null");
 
-        Rlights.Clear();
+        LightManager.Clear();
         _lights.Clear();
 
-        _lights.Add(Rlights.CreateLight(
+        _lights.Add(LightManager.CreateLight(
             LightType.Point,
             new Vector3(-2, 1, -2),
             Vector3.Zero,
             Color.Yellow,
             [_currentShader.Value]
         ));
-        _lights.Add(Rlights.CreateLight(
+        _lights.Add(LightManager.CreateLight(
             LightType.Point,
             new Vector3(2, 1, 2),
             Vector3.Zero,
             Color.Red,
             [_currentShader.Value]
         ));
-        _lights.Add(Rlights.CreateLight(
+        _lights.Add(LightManager.CreateLight(
             LightType.Point,
             new Vector3(-2, 1, 2),
             Vector3.Zero,
             Color.Green,
             [_currentShader.Value]
         ));
-        _lights.Add(Rlights.CreateLight(
+        _lights.Add(LightManager.CreateLight(
             LightType.Point,
             new Vector3(2, 1, -2),
             Vector3.Zero,
@@ -164,7 +165,7 @@ internal class Controller
 
         foreach (var light in _lights)
         {
-            Rlights.UpdateLightValues(light);
+            LightManager.UpdateLightValues(light);
         }
     }
 }

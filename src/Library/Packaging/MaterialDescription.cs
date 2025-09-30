@@ -1,23 +1,17 @@
-﻿using Library.CodeVariable;
-using Library.Packaging;
-using Newtonsoft.Json;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace Library;
+namespace Library.Packaging;
 
 [Serializable]
 public class MaterialDescription
 {
     [Required] public string Description = "";
-
     [Required] public string Author = "";
     [Required] public List<string> Tags = [];
 
-
-
-
     /// <summary>
-    /// Names of main shaders to apply
+    /// Package might contain sub shaders.
+    /// ShaderNames identify the main shaders to apply
     /// </summary>
     internal Dictionary<FileType, string> ShaderNames = [];
 
@@ -31,6 +25,4 @@ public class MaterialDescription
         ShaderNames.TryGetValue(shaderType, out var shaderName);
         return shaderName;
     }
-
-
 }

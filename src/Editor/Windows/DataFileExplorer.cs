@@ -74,9 +74,8 @@ public class DataFileExplorer
                     _dataFileExplorerData.SelectedFolder = _selectedFolder.RelativePath;
                 else
                     _dataFileExplorerData.SelectedFolder = "";
-
-                ImGui.EndChild();
             }
+            ImGui.EndChild();
 
             RenderActiveProcess();
         }

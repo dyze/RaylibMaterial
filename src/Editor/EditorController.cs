@@ -13,6 +13,7 @@ using System.Numerics;
 using Color = Raylib_cs.Color;
 using System.Runtime.InteropServices;
 using Library.Dialogs;
+using Library.Lighting;
 
 namespace Editor;
 
@@ -54,7 +55,6 @@ class EditorController
 
     private readonly MaterialWindow _materialWindow;
 
-    private readonly List<Light> _lights = new();
 
     private FileDialogInfo? _fileDialogInfo;
     private string _outputFilePath;
@@ -66,7 +66,7 @@ class EditorController
     private readonly string[] _supportedModelExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
     private readonly string[] _supportedImagesExtensions = [".png", ".jpg"];
 
-    private const string DefaultMaterialName = "noname";
+    private const string DefaultMaterialName = "new.mat";
 
     private string WindowCaption => $"Raylib Material Editor - {_outputFilePath}";
 
@@ -473,7 +473,7 @@ class EditorController
 
         _currentShader = _defaultShader;
 
-        _outputFilePath = $"{_editorConfiguration.OutputDirectoryPath}\\new-package.mat";
+        _outputFilePath = $"{_editorConfiguration.OutputDirectoryPath}\\{DefaultMaterialName}";
         Raylib.SetWindowTitle(WindowCaption);
 
         LoadCurrentModel();
@@ -1069,8 +1069,8 @@ class EditorController
         if (_currentShader.HasValue == false)
             throw new NullReferenceException("_currentShader is null");
 
-        Rlights.Clear();
-        _lights.Clear();
+        LightManager.Clear();
+        _editorControllerData.Lights.Clear();
 
         List<Shader> shaders;
 
@@ -1086,7 +1086,7 @@ class EditorController
         switch (preset)
         {
             case EditorConfiguration.LightingPreset.SingleWhiteLight:
-                _lights.Add(Rlights.CreateLight(
+                _editorControllerData.Lights.Add(LightManager.CreateLight(
                     LightType.Point,
                     new Vector3(-2, 1, -2),
                     Vector3.Zero,
@@ -1096,28 +1096,28 @@ class EditorController
                 break;
 
             case EditorConfiguration.LightingPreset.YellowRedGreenBlue:
-                _lights.Add(Rlights.CreateLight(
+                _editorControllerData.Lights.Add(LightManager.CreateLight(
                     LightType.Point,
                     new Vector3(-2, 1, -2),
                     Vector3.Zero,
                     Color.Yellow,
                     shaders
                 ));
-                _lights.Add(Rlights.CreateLight(
+                _editorControllerData.Lights.Add(LightManager.CreateLight(
                     LightType.Point,
                     new Vector3(2, 1, 2),
                     Vector3.Zero,
                     Color.Red,
                     shaders
                 ));
-                _lights.Add(Rlights.CreateLight(
+                _editorControllerData.Lights.Add(LightManager.CreateLight(
                     LightType.Point,
                     new Vector3(-2, 1, 2),
                     Vector3.Zero,
                     Color.Green,
                     shaders
                 ));
-                _lights.Add(Rlights.CreateLight(
+                _editorControllerData.Lights.Add(LightManager.CreateLight(
                     LightType.Point,
                     new Vector3(2, 1, -2),
                     Vector3.Zero,
@@ -1136,7 +1136,7 @@ class EditorController
 
     public void RenderLights()
     {
-        foreach (var light in _lights)
+        foreach (var light in _editorControllerData.Lights)
         {
             Raylib.DrawSphereEx(light.Position, 0.2f, 8, 8, light.Color);
         }
@@ -1144,9 +1144,9 @@ class EditorController
 
     private void UpdateLights()
     {
-        foreach (var light in _lights)
+        foreach (var light in _editorControllerData.Lights)
         {
-            Rlights.UpdateLightValues(light);
+            LightManager.UpdateLightValues(light);
         }
     }
 }

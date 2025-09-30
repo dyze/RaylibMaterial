@@ -48,6 +48,8 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
         }
     }
 
+    public readonly List<Light> Lights = new();
+
     public void ResetWorkspaceLayout()
     {
         Logger.Trace("ResetWorkspaceLayout...");

@@ -1,5 +1,7 @@
 ﻿
 using Library.CodeVariable;
+using System.Numerics;
+using Raylib_cs;
 
 namespace Library.Helpers;
 
@@ -17,10 +19,14 @@ public static class TypeConvertors
             //{ "int", typeof(int) },
             //{ "uint", typeof(uint) },
             { "sampler2D", typeof(CodeVariableTexture) },
+            { "Light", typeof(CodeVariableLight) },
         };
 
         return table.GetValueOrDefault(input);
     }
 
-
+    public static Vector4 ColorToVector4(Color src)
+    {
+        return new Vector4((float)src.R / (float)byte.MaxValue, (float)src.G / (float)byte.MaxValue, (float)src.B / (float)byte.MaxValue, (float)src.A / (float)byte.MaxValue);
+    }
 }
