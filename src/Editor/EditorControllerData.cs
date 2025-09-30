@@ -71,23 +71,23 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
         var manWindowSize = new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
 
 
-        var marging = new Vector2(20f, 20f);
+        var margin = new Vector2(10f, 10f);
         var spacing = new Vector2(10f, 10f);
 
         var menuSize = new Vector2(0, 20);
 
-        var mainWindowSizeMinusMenu = new Vector2(manWindowSize.X,
+        var availableArea = new Vector2(manWindowSize.X,
             manWindowSize.Y) - menuSize;
 
-        var materialWindowWidth = mainWindowSizeMinusMenu.X * 0.2f - marging.X - spacing.X;
-        var outputWidth = mainWindowSizeMinusMenu.X * 0.5f - marging.X - spacing.X;
-        var codeWidth = mainWindowSizeMinusMenu.X * 0.3f - spacing.X - spacing.X;
+        var materialWindowWidth = availableArea.X * 0.2f - margin.X - spacing.X/2;
+        var outputWidth = availableArea.X * 0.4f - spacing.X / 2 - margin.X;
+        var codeWidth = availableArea.X * 0.4f - spacing.X / 2 - spacing.X / 2;
 
-        var heightRatioTop = 0.7f;
+        var heightRatioTop = 0.8f;
         var heightRatioBottom = 1f - heightRatioTop;
 
-        var topHeight = mainWindowSizeMinusMenu.Y * heightRatioTop - marging.Y - spacing.Y;
-        var bottomHeight = mainWindowSizeMinusMenu.Y * heightRatioBottom - marging.Y - spacing.Y;
+        var topHeight = availableArea.Y * heightRatioTop - margin.Y - spacing.Y/2;
+        var bottomHeight = availableArea.Y * heightRatioBottom - margin.Y - spacing.Y/2;
 
         switch (windowId)
         {
@@ -95,36 +95,36 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
                 finalSize = new Vector2(materialWindowWidth,
                     topHeight);
 
-                finalPosition = new Vector2(spacing.X,
-                    menuSize.Y + marging.Y);
+                finalPosition = new Vector2(margin.X,
+                    menuSize.Y + margin.Y);
                 break;
             case WindowId.Code:
                 finalSize = new Vector2(codeWidth,
                     topHeight);
 
-                finalPosition = new Vector2(materialWindowWidth + marging.X + spacing.X,
-                    menuSize.Y + marging.Y);
+                finalPosition = new Vector2(margin.X + materialWindowWidth + spacing.X,
+                    menuSize.Y + margin.Y);
                 break;
             case WindowId.Message:
-                finalSize = new Vector2(mainWindowSizeMinusMenu.X - materialWindowWidth,
+                finalSize = new Vector2(availableArea.X - materialWindowWidth - margin.X*2 - spacing.X,
                     bottomHeight);
 
-                finalPosition = new Vector2(materialWindowWidth + marging.X + spacing.X,
-                    mainWindowSizeMinusMenu.Y - finalSize.Y);
+                finalPosition = new Vector2(materialWindowWidth + margin.X + spacing.X,
+                    menuSize.Y + margin.Y + topHeight + spacing.Y);
                 break;
             case WindowId.DataFileExplorer:
                 finalSize = new Vector2(materialWindowWidth,
                     bottomHeight);
 
-                finalPosition = new Vector2(spacing.X,
-                    mainWindowSizeMinusMenu.Y - finalSize.Y);
+                finalPosition = new Vector2(margin.X,
+                    menuSize.Y + margin.Y + topHeight + spacing.Y);
                 break;
             case WindowId.Output:
                 finalSize = new Vector2(outputWidth,
                     topHeight);
 
-                finalPosition = new Vector2(marging.X + materialWindowWidth + spacing.X + codeWidth + spacing.X,
-                    menuSize.Y + marging.Y);
+                finalPosition = new Vector2(margin.X + materialWindowWidth + spacing.X + codeWidth + spacing.X,
+                    menuSize.Y + margin.Y);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(windowId), windowId, null);
