@@ -72,6 +72,7 @@ class EditorController
     private readonly OutputWindow _outputWindow;
 
     private bool _windowSizeChanged; // set to true when switching to fullscreen
+    private Vector2 _previousMousePosition;
 
     public EditorController()
     {
@@ -82,13 +83,15 @@ class EditorController
 
         _editorControllerData = new(_editorConfiguration);
 
-        _editorControllerData.DataFileExplorerData.DataFolder.Open(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
+        _editorControllerData.DataFileExplorerData.DataFolder.Open(
+            _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
         _editorControllerData.DataFileExplorerData.RefreshDataRootFolder();
 
         _messageWindow = new(_editorControllerData);
 
 
-        _dataFileExplorer = new(_editorConfiguration, _editorControllerData, _editorControllerData.DataFileExplorerData);
+        _dataFileExplorer = new(_editorConfiguration, _editorControllerData,
+            _editorControllerData.DataFileExplorerData);
 
         _shaderCodeWindow = new(_editorConfiguration,
             _editorControllerData);
@@ -127,7 +130,8 @@ class EditorController
 
     private void DiscoverBackgrounds()
     {
-        var files = Directory.GetFiles(Path.GetFullPath(Resources.ResourceSkyBoxesFolderPath), "*.*", SearchOption.AllDirectories)
+        var files = Directory.GetFiles(Path.GetFullPath(Resources.ResourceSkyBoxesFolderPath), "*.*",
+                SearchOption.AllDirectories)
             .Where(file => _supportedImagesExtensions.Contains(Path.GetExtension(file)))
             .ToList();
 
@@ -148,7 +152,8 @@ class EditorController
 
     private void DiscoverBuiltInModels()
     {
-        _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(Resources.ResourceModelsPath), "*.*", SearchOption.AllDirectories)
+        _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(Resources.ResourceModelsPath), "*.*",
+                SearchOption.AllDirectories)
             .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
             .ToList();
     }
@@ -195,7 +200,8 @@ class EditorController
 
         LoadUiResources();
 
-        _defaultShader = Raylib.LoadShader($"{Resources.ResourceShaderFolderPath}\\base.vert", $"{Resources.ResourceShaderFolderPath}\\base.frag");
+        _defaultShader = Raylib.LoadShader($"{Resources.ResourceShaderFolderPath}\\base.vert",
+            $"{Resources.ResourceShaderFolderPath}\\base.frag");
 
         _editorControllerData.ViewTexture = Raylib.LoadRenderTexture(400, 300);
 
@@ -214,7 +220,7 @@ class EditorController
             Raylib.SetTraceLogCallback(&CustomLog);
         }
 
-        var prevMousePos = Raylib.GetMousePosition();
+       _previousMousePosition = Raylib.GetMousePosition();
 
         Logger.Info("all is set");
 
@@ -231,8 +237,7 @@ class EditorController
 
             HandleWindowResize();
 
-            if (_outputWindow.IsWindowHovered)
-                prevMousePos = HandleMouseMovement(prevMousePos);
+            HandleMouseMovement();
 
             HandleFileDrop();
 
@@ -252,7 +257,7 @@ class EditorController
             RenderMessageDialog();
 
 
-            var codeIsModified = _shaderCodeWindow.Render( _shaderCode);
+            var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
             if (codeIsModified)
             {
                 foreach (var (key, value) in _shaderCode)
@@ -275,7 +280,7 @@ class EditorController
             rlImGui.End();
             Raylib.EndDrawing();
 
-            if(_editorControllerData.WorkspaceLayoutResetRequested)
+            if (_editorControllerData.WorkspaceLayoutResetRequested)
             {
                 Logger.Trace("WorkspaceLayoutReset done");
                 _editorControllerData.WorkspaceLayoutResetRequested = false;
@@ -363,6 +368,7 @@ class EditorController
 
                 ImGui.EndMenu();
             }
+
             if (ImGui.BeginMenu("Display"))
             {
                 if (ImGui.MenuItem("Reset workspace layout"))
@@ -383,6 +389,7 @@ class EditorController
                 ImGui.EndMenu();
             }
         }
+
         ImGui.EndMainMenuBar();
     }
 
@@ -395,7 +402,6 @@ class EditorController
 
         if (_processingRequestToClose)
             return false;
-
 
 
         if (_editorControllerData.MaterialPackage.IsModified)
@@ -501,8 +507,8 @@ class EditorController
             FileName = "",
             Extensions =
             [
-                new Tuple<string, string>("*"+MaterialFileExtension, "Materials"),
-                new Tuple<string, string>("*"+MaterialBackupFileExtension, "Material backups")
+                new Tuple<string, string>("*" + MaterialFileExtension, "Materials"),
+                new Tuple<string, string>("*" + MaterialBackupFileExtension, "Material backups")
             ]
         };
 
@@ -592,27 +598,30 @@ class EditorController
         Raylib.EndTextureMode();
     }
 
-    private Vector2 HandleMouseMovement(Vector2 prevMousePos)
+    private void HandleMouseMovement()
     {
-        var thisPos = Raylib.GetMousePosition();
+        var currentPosition = Raylib.GetMousePosition();
         var mouseDelta = Raylib.GetMouseWheelMove();
 
         var cameraSettings = _editorConfiguration.CameraSettings;
 
-        cameraSettings.Distance = Math.Max(CameraSettings.MinDistance,
-            cameraSettings.Distance + mouseDelta * 0.1f);
-
-        var delta = Raymath.Vector2Subtract(prevMousePos, thisPos);
-
-        if (Raylib.IsMouseButtonDown(MouseButton.Middle))
+        if (_outputWindow.IsWindowHovered)
         {
-            cameraSettings.Target.Y += delta.Y / 100;
-        }
+            cameraSettings.Distance = Math.Max(CameraSettings.MinDistance,
+                cameraSettings.Distance + mouseDelta * 0.1f);
 
-        if (Raylib.IsMouseButtonDown(MouseButton.Right))
-        {
-            cameraSettings.Angles.X -= delta.Y / 100;
-            cameraSettings.Angles.Y += delta.X / 100;
+            var delta = Raymath.Vector2Subtract(_previousMousePosition, currentPosition);
+
+            if (Raylib.IsMouseButtonDown(MouseButton.Middle))
+            {
+                cameraSettings.Target.Y += delta.Y / 100;
+            }
+
+            if (Raylib.IsMouseButtonDown(MouseButton.Right))
+            {
+                cameraSettings.Angles.X -= delta.Y / 100;
+                cameraSettings.Angles.Y += delta.X / 100;
+            }
         }
 
         var q = Raymath.QuaternionFromEuler(cameraSettings.Angles.X, cameraSettings.Angles.Y, cameraSettings.Angles.Z);
@@ -623,7 +632,7 @@ class EditorController
         _camera.Target = cameraSettings.Target;
         _camera.Position = v;
 
-        return thisPos;
+        _previousMousePosition = currentPosition;
     }
 
     private void SelectModel(EditorConfiguration.ModelType modelType, string modelFilePath)
@@ -666,7 +675,7 @@ class EditorController
         {
             modelFilePath = _editorControllerData.BuiltInModels.First();
         }
-        
+
         Logger.Trace($"Loading {modelFilePath}");
         var model = Raylib.LoadModel(modelFilePath);
 
@@ -721,7 +730,7 @@ class EditorController
             FileName = Path.GetFileName(_outputFilePath),
             Extensions =
             [
-                new Tuple<string, string>("*"+MaterialFileExtension, "Materials")
+                new Tuple<string, string>("*" + MaterialFileExtension, "Materials")
             ]
         };
 
@@ -780,7 +789,6 @@ class EditorController
 
     private void RenderMessageDialog()
     {
-
         var buttonPressed = MessageDialog.Run(_messageDialogConfiguration);
 
         if (buttonPressed != null)
@@ -792,7 +800,6 @@ class EditorController
 
             buttonPressed.OnPressed?.Invoke(buttonPressed);
         }
-
     }
 
     private void SelectBackground(string? name)
@@ -1031,7 +1038,6 @@ class EditorController
             _editorConfiguration.WindowSize = new Size(width, height);
 
 
-
             EditorConfigurationStorage.Save(_editorConfiguration,
                 ".");
         }
@@ -1053,7 +1059,7 @@ class EditorController
         _lights.Clear();
 
         List<Shader> shaders;
-        
+
         unsafe
         {
             shaders =
