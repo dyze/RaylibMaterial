@@ -18,10 +18,11 @@ It is based on RayLib-cs project.
 0.1 is still under developer. You can play with it and give feedbacks but the library and editor are not fully operational.
 
 The remaining tasks for this first release are:
+* [ ] make easy to edit and compile shaders
 * [ ] support of models with multiple materials
 * [ ] handle all kinds of uniform types (vec2, vec3...)
-* [ ] preview material using a 3D model stored on disk (today only primitives are properly supported)
-* [ ] use a sky box instead of a plane for background
+* [x] preview material using a 3D model stored on disk (today only primitives are properly supported)
+* [x] use a sky box instead of a plane for background
 * [ ] handle versioning of packages
 * [ ] produce nuget package for library
 * [ ] Cover 100% of code of the library with tests

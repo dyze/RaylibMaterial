@@ -7,7 +7,7 @@ namespace Editor;
 [Target("MessageQueue")]
 public sealed class MessageQueueTarget : TargetWithLayout
 {
-    private Dictionary<NLog.LogLevel, LogLevel> _logLevels = new()
+    private readonly Dictionary<NLog.LogLevel, LogLevel> _logLevels = new()
     {
         { NLog.LogLevel.Debug, LogLevel.Debug },
         { NLog.LogLevel.Trace, LogLevel.Trace },
@@ -22,7 +22,6 @@ public sealed class MessageQueueTarget : TargetWithLayout
         MessageQueue = messageQueue;
     }
 
-    // [RequiredParameter]
     public MessageQueue? MessageQueue { get; set; }
 
     protected override void Write(LogEventInfo logEvent)

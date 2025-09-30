@@ -59,9 +59,9 @@ internal class MessageWindow(EditorControllerData editorControllerData)
 
                 foreach (var message in messages)
                 {
-                    var color = LogLevelColors[message.logLevel];
+                    var color = LogLevelColors[message.LogLevel];
                     ImGui.TextColored(TypeConverters.ColorToVector4(color),
-                        message.text);
+                        message.Text);
                 }
 
                 if (_autoScroll && ImGui.GetScrollY() >= ImGui.GetScrollMaxY())

@@ -45,7 +45,7 @@ namespace Editor.Windows
 
                 ImGui.SameLine();
                 if (isValid == false)
-                    ImGui.TextColored(TypeConverters.ColorToVector4(Color.Red), "not valid");
+                    ImGui.TextColored(TypeConverters.ColorToVector4(Color.Red), "not valid, check messages");
                 else
                 if (needsRebuild)
                     ImGui.TextColored(TypeConverters.ColorToVector4(Color.Orange), "needs rebuild");
