@@ -280,6 +280,8 @@ namespace Editor.Windows
 
                         ImGui.Checkbox("Enabled", ref light.Enabled);
 
+                        ImGui.LabelText("Type", light.Type.ToString());
+
                         ImGui.InputFloat3("Position", ref light.Position);
 
                         ImGui.InputFloat3("Target", ref light.Target);
@@ -287,7 +289,7 @@ namespace Editor.Windows
                         var currentValue = TypeConvertors.ColorToVector4(light.Color);
                         ImGui.ColorEdit4("Color", ref currentValue);
 
-                        ImGui.LabelText("Type", light.Type.ToString());
+                        ImGui.InputFloat("Intensity", ref light.Intensity);
 
                         ImGui.EndDisabled();
                         ImGui.TreePop();

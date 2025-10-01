@@ -51,12 +51,21 @@ namespace Editor.Windows
                 ImGui.EndDragDropTarget();
             }
 
-           // ImGui.SameLine();
-            var index = currentIndex == null ? -1 : (int)currentIndex.Value;
-            if (ImGui.Combo("Index", ref index, EnumTools.EnumValuesToString(typeof(MaterialMapIndex), '\0')))
+            //var index = currentIndex == null ? -1 : (int)currentIndex.Value;
+
+            var enumNames = EnumTools.EnumNamesToString(typeof(MaterialMapIndex), '\0');
+            var enumValues = Enum.GetValues<MaterialMapIndex>().ToList();
+
+            var index = -1;
+            if (currentIndex != null)
+            {
+                index = enumValues.FindIndex(0, v => v == currentIndex);
+            }
+
+            if (ImGui.Combo("Index", ref index, enumNames))
             {
                 variableChanged = true;
-                (variable as CodeVariableTexture).MaterialMapIndex = (MaterialMapIndex)index;
+                (variable as CodeVariableTexture).MaterialMapIndex = enumValues[index];
             }
 
             ImGui.EndDisabled();

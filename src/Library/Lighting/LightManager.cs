@@ -49,6 +49,7 @@ public static class LightManager
         light.Position = position;
         light.Target = target;
         light.Color = color;
+        light.Intensity = intensity;
 
         // names below must match those defined in shader fs files
 

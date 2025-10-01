@@ -456,14 +456,14 @@ public class MaterialPackage : IDisposable
         Raylib.SetMaterialTexture(ref model, 0, materialMapIndex, ref texture);
         Logger.Trace($"{variableName}={fileName}");
 
-        unsafe
-        {
-            var currentValue = model.Materials[0].Maps[(int)materialMapIndex].Value;
-            Logger.Trace($"{variableName}: currentValue={currentValue}");
-            model.Materials[0].Maps[(int)materialMapIndex].Value = 1f;
+        //unsafe
+        //{
+        //    var currentValue = model.Materials[0].Maps[(int)materialMapIndex].Value;
+        //    Logger.Trace($"{variableName}: currentValue={currentValue}");
+        //    model.Materials[0].Maps[(int)materialMapIndex].Value = 1f;
 
-            model.Materials[0].Maps[(int)materialMapIndex].Color = new Color(1, 1, 1, 1);
-        }
+        //    model.Materials[0].Maps[(int)materialMapIndex].Color = new Color(1, 1, 1, 1);
+        //}
 
         //if (Type.TryGetValue(variableName, out var index))
         //{

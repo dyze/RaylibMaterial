@@ -1,12 +1,14 @@
 using System.Numerics;
-using Library.Packaging;
 using Raylib_cs;
+
+namespace Library.Lighting;
 
 // Must match values in fs shader file
 public enum LightType
 {
     Directional = 0,
-    Point = 1
+    Point = 1,
+    Spot
 }
 
 public class Light

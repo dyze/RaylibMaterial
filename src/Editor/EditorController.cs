@@ -1162,7 +1162,7 @@ class EditorController
                     new Vector3(2, 1, 2),
                     Vector3.Zero,
                     Color.Red,
-                    4.0f,
+                    8.0f,
                     shaders
                 ));
                 _editorControllerData.Lights.Add(LightManager.CreateLight(

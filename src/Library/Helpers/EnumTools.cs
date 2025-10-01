@@ -3,7 +3,7 @@ namespace Library.Helpers;
 
 public static class EnumTools
 {
-    public static string EnumValuesToString(Type type, 
+    public static string EnumNamesToString(Type type, 
         char separator = ';')
     {
         var output = "";

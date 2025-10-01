@@ -5,6 +5,7 @@ using Library.Packaging;
 using NLog;
 using Raylib_cs;
 using System.Numerics;
+using Library.Lighting;
 
 namespace Editor;
 
