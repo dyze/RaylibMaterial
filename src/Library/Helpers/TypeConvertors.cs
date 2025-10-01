@@ -45,6 +45,26 @@ public static class TypeConvertors
         return StringToMaterialMapIndexTable.GetValueOrDefault(input);
     }
 
+    public static Dictionary<MaterialMapIndex, ShaderLocationIndex> MaterialMapIndexToShaderLocationIndexTable = new()
+    {
+        { MaterialMapIndex.Albedo, ShaderLocationIndex.MapAlbedo }, // Also called diffuse
+        { MaterialMapIndex.Metalness, ShaderLocationIndex.MapMetalness }, // Also called Specular
+        { MaterialMapIndex.Normal, ShaderLocationIndex.MapNormal },
+        { MaterialMapIndex.Roughness, ShaderLocationIndex.MapRoughness },
+        { MaterialMapIndex.Occlusion, ShaderLocationIndex.MapOcclusion },
+        { MaterialMapIndex.Emission, ShaderLocationIndex.MapEmission },
+        { MaterialMapIndex.Height, ShaderLocationIndex.MapHeight },
+        { MaterialMapIndex.Cubemap, ShaderLocationIndex.MapCubemap },
+        { MaterialMapIndex.Irradiance, ShaderLocationIndex.MapIrradiance },
+        { MaterialMapIndex.Prefilter, ShaderLocationIndex.MapPrefilter },
+        {  MaterialMapIndex.Brdf, ShaderLocationIndex.MapBrdf },
+    };
+
+    public static ShaderLocationIndex? MaterialMapIndexToShaderLocationIndex(MaterialMapIndex materialMapIndex)
+    {
+        return MaterialMapIndexToShaderLocationIndexTable.GetValueOrDefault(materialMapIndex);
+    }
+
     public class UniformDescription
     {
         public UniformDescription(bool internalHandled, string description)

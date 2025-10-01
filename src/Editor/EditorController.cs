@@ -598,6 +598,7 @@ class EditorController
 
     private void ShaderCodeWindow_OnBuildPressed()
     {
+        LoadCurrentModel();     // to clean Materials
         LoadShaderCode();
         LoadShaders();
     }

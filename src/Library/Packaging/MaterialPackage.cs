@@ -7,6 +7,7 @@ using ImGuiNET;
 using Newtonsoft.Json;
 using System.Xml.Linq;
 using System;
+using Library.Helpers;
 
 namespace Library.Packaging;
 
@@ -344,6 +345,12 @@ public class MaterialPackage : IDisposable
         if (Shader.HasValue == false)
             return;
 
+
+        //unsafe
+        //{
+        //    Raylib.UnloadMaterial(model.Materials[0]);
+        //}
+
         foreach (var (name, variable) in Variables)
         {
             if (force == false)
@@ -452,9 +459,19 @@ public class MaterialPackage : IDisposable
             return;
         }
 
+        unsafe
+        {
+            var index = TypeConvertors.MaterialMapIndexToShaderLocationIndex(materialMapIndex);
+            if (index == null)
+            {
+                Logger.Error($"ShaderLocationIndex for {materialMapIndex} not found");
+                return;
+            }
+            Shader.Value.Locs[(int)index] = Raylib.GetShaderLocation(Shader.Value, variableName);
+        }
 
         Raylib.SetMaterialTexture(ref model, 0, materialMapIndex, ref texture);
-        Logger.Trace($"{variableName}={fileName}");
+        Logger.Trace($"{variableName}={fileName}, materialMapIndex={materialMapIndex}");
 
         //unsafe
         //{

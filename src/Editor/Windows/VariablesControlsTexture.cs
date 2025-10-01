@@ -51,7 +51,6 @@ namespace Editor.Windows
                 ImGui.EndDragDropTarget();
             }
 
-            //var index = currentIndex == null ? -1 : (int)currentIndex.Value;
 
             var enumNames = EnumTools.EnumNamesToString(typeof(MaterialMapIndex), '\0');
             var enumValues = Enum.GetValues<MaterialMapIndex>().ToList();
