@@ -16,7 +16,7 @@ class MaterialWindow(
 
     public event Action? OnSave;
 
-    private readonly VariablesControl _variablesControl = new(editorControllerData);
+    private readonly VariablesControls _variablesControls = new(editorControllerData);
 
     public void Render()
     {
@@ -30,7 +30,7 @@ class MaterialWindow(
             RenderFiles();
 
             var material = editorControllerData.MaterialPackage;
-            if (_variablesControl.Render(material.Variables))
+            if (_variablesControls.Render(material.Variables))
             {
                 material.SetModified();
                 material.TriggerVariablesChanged();

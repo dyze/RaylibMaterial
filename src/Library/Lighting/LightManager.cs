@@ -7,6 +7,8 @@
 // Author: dyze@dlabs.eu
 
 using System.Numerics;
+using ImGuiNET;
+using Library.Helpers;
 using Library.Packaging;
 using Raylib_cs;
 
@@ -35,7 +37,7 @@ public static class LightManager
     /// <param name="materials"></param>
     /// <returns></returns>
     /// <exception cref="IndexOutOfRangeException"></exception>
-    public static Light CreateLight(LightType type, Vector3 position, Vector3 target, Color color, List<Shader> shaders)
+    public static Light CreateLight(LightType type, Vector3 position, Vector3 target, Color color, float intensity, List<Shader> shaders)
     {
         Light light = new();
 
@@ -55,6 +57,7 @@ public static class LightManager
         var posName = $"lights[{_lightsCount}].position";
         var targetName = $"lights[{_lightsCount}].target";
         var colorName = $"lights[{_lightsCount}].color";
+        var intensityName = $"lights[{_lightsCount}].intensity";
 
         foreach (var material in shaders)
         {
@@ -63,6 +66,7 @@ public static class LightManager
             light.PosLoc.Add(Raylib.GetShaderLocation(material, posName));
             light.TargetLoc.Add(Raylib.GetShaderLocation(material, targetName));
             light.ColorLoc.Add(Raylib.GetShaderLocation(material, colorName));
+            light.IntensityLoc.Add(Raylib.GetShaderLocation(material, intensityName));
         }
 
         light.Shaders = shaders;
@@ -85,18 +89,16 @@ public static class LightManager
         {
             var shader = light.Shaders[i];
 
-
-            // Send to shader light enabled state, type, position and target
             var enabled = light.Enabled ? 1 : 0;
             Raylib.SetShaderValue(shader, light.EnabledLoc[i], enabled, ShaderUniformDataType.Int);
             Raylib.SetShaderValue(shader, light.TypeLoc[i], light.Type, ShaderUniformDataType.Int);
             Raylib.SetShaderValue(shader, light.PosLoc[i], light.Position, ShaderUniformDataType.Vec3);
             Raylib.SetShaderValue(shader, light.TargetLoc[i], light.Target, ShaderUniformDataType.Vec3);
 
-            // Send to shader light color values
-            var color = new Vector4(light.Color.R / (float)255, light.Color.G / (float)255,
-                light.Color.B / (float)255, light.Color.A / (float)255);
+            var color = TypeConvertors.ColorToVector4(light.Color);
             Raylib.SetShaderValue(shader, light.ColorLoc[i], color, ShaderUniformDataType.Vec4);
+
+            Raylib.SetShaderValue(shader, light.IntensityLoc[i], light.Intensity, ShaderUniformDataType.Float);
         }
     }
 

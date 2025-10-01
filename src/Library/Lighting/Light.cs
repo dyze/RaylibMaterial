@@ -11,11 +11,13 @@ public enum LightType
 
 public class Light
 {
+    public bool Enabled;
     public LightType Type;
     public Vector3 Position;
     public Vector3 Target;
     public Color Color;
-    public bool Enabled;
+    public float Intensity;
+
 
     // Shader locations
     public List<int> EnabledLoc = [];
@@ -23,6 +25,7 @@ public class Light
     public List<int> PosLoc = [];
     public List<int> TargetLoc = [];
     public List<int> ColorLoc = [];
+    public List<int> IntensityLoc = [];
 
     // Shaders that use light
     public List<Shader> Shaders;

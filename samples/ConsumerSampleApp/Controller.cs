@@ -97,7 +97,7 @@ internal class Controller
         _currentShader = shader;
         Raylib.SetMaterialShader(ref _currentModel, 0, ref shader);
 
-        _materialPackage.SendVariablesToModel(_currentModel);
+        _materialPackage.SendVariablesToModel(_currentModel, true);
 
         CreateLights();
     }
@@ -125,6 +125,7 @@ internal class Controller
             new Vector3(-2, 1, -2),
             Vector3.Zero,
             Color.Yellow,
+            4.0f,
             [_currentShader.Value]
         ));
         _lights.Add(LightManager.CreateLight(
@@ -132,6 +133,7 @@ internal class Controller
             new Vector3(2, 1, 2),
             Vector3.Zero,
             Color.Red,
+            4.0f,
             [_currentShader.Value]
         ));
         _lights.Add(LightManager.CreateLight(
@@ -139,6 +141,7 @@ internal class Controller
             new Vector3(-2, 1, 2),
             Vector3.Zero,
             Color.Green,
+            4.0f,
             [_currentShader.Value]
         ));
         _lights.Add(LightManager.CreateLight(
@@ -146,6 +149,7 @@ internal class Controller
             new Vector3(2, 1, -2),
             Vector3.Zero,
             Color.Blue,
+            4.0f,
             [_currentShader.Value]
         ));
     }

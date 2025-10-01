@@ -5,6 +5,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 using ImGuiNET;
 using Newtonsoft.Json;
+using System.Xml.Linq;
+using System;
 
 namespace Library.Packaging;
 
@@ -91,7 +93,6 @@ public class MaterialPackage : IDisposable
         { ".vert", FileType.VertexShader },
         { ".frag", FileType.FragmentShader }
     };
-
 
 
     public static MaterialPackage Load(string packageFilePath)
@@ -317,6 +318,8 @@ public class MaterialPackage : IDisposable
         {
             Shader.Value.Locs[(int)ShaderLocationIndex.VectorView] =
                 Raylib.GetShaderLocation(Shader.Value, "viewPos");
+            //Shader.Value.Locs[(int)ShaderLocationIndex.MapAlbedo] =
+            //    Raylib.GetShaderLocation(Shader.Value, "albedoMap");
         }
 
         return Shader.Value;
@@ -343,12 +346,11 @@ public class MaterialPackage : IDisposable
 
         foreach (var (name, variable) in Variables)
         {
-            if(force == false)
-                if(variable.SendToShader == false)
-                {
-                    Logger.Trace($"{name} didn't change");
+            if (force == false)
+                if (variable.SendToShader == false)
                     continue;
-                }
+                else
+                    Logger.Trace($"{name} changed");
 
             variable.SendToShader = false;
 
@@ -359,7 +361,19 @@ public class MaterialPackage : IDisposable
                 continue;
             }
 
-            if (variable.GetType() == typeof(CodeVariableVector3))
+            if (variable.GetType() == typeof(CodeVariableInt))
+            {
+                var currentValue = (variable as CodeVariableInt).Value;
+                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Int);
+                Logger.Trace($"{name}={currentValue}");
+            }
+            else if (variable.GetType() == typeof(CodeVariableVector2))
+            {
+                var currentValue = (variable as CodeVariableVector2).Value;
+                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec2);
+                Logger.Trace($"{name}={currentValue}");
+            }
+            else if (variable.GetType() == typeof(CodeVariableVector3))
             {
                 var currentValue = (variable as CodeVariableVector3).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec3);
@@ -385,7 +399,15 @@ public class MaterialPackage : IDisposable
             }
             else if (variable.GetType() == typeof(CodeVariableTexture))
             {
-                SetUniformTexture(name, (variable as CodeVariableTexture).Value, model);
+                var materialMapIndex = (variable as CodeVariableTexture).MaterialMapIndex;
+
+                if(materialMapIndex==null)
+                    Logger.Error($"{name}: materialMapIndex not set ");
+                else
+                    SetUniformTexture(name, 
+                        (variable as CodeVariableTexture).Value, 
+                        model,
+                        materialMapIndex.Value);
             }
             else
                 Logger.Error($"{variable.GetType()} not supported");
@@ -393,7 +415,9 @@ public class MaterialPackage : IDisposable
     }
 
     private void SetUniformTexture(string variableName,
-        string fileName, Model model)
+        string fileName,
+        Model model,
+        MaterialMapIndex materialMapIndex)
     {
         Logger.Info("SetUniformTexture...");
 
@@ -428,29 +452,37 @@ public class MaterialPackage : IDisposable
             return;
         }
 
-        Dictionary<string, MaterialMapIndex> table = new()
-        {
-            { "texture0", MaterialMapIndex.Albedo },                // Also called diffuse
-            { "texture1", MaterialMapIndex.Metalness },             // Also called Specular
-            { "texture2", MaterialMapIndex.Normal },
-            { "texture3", MaterialMapIndex.Roughness },
-            { "texture4", MaterialMapIndex.Occlusion },
-            { "texture5", MaterialMapIndex.Emission },
-            { "texture6", MaterialMapIndex.Height },
-            { "texture7", MaterialMapIndex.Cubemap },
-            { "texture8", MaterialMapIndex.Irradiance },
-            { "texture9", MaterialMapIndex.Prefilter },
-            { "texture10", MaterialMapIndex.Brdf },
-        };
 
-        if (table.TryGetValue(variableName, out var index))
-        {
-            Raylib.SetMaterialTexture(ref model, 0, index, ref texture);
-        }
-        else
-            Logger.Error($"texture index for {variableName} can't be found");
-
+        Raylib.SetMaterialTexture(ref model, 0, materialMapIndex, ref texture);
         Logger.Trace($"{variableName}={fileName}");
+
+        unsafe
+        {
+            var currentValue = model.Materials[0].Maps[(int)materialMapIndex].Value;
+            Logger.Trace($"{variableName}: currentValue={currentValue}");
+            model.Materials[0].Maps[(int)materialMapIndex].Value = 1f;
+
+            model.Materials[0].Maps[(int)materialMapIndex].Color = new Color(1, 1, 1, 1);
+        }
+
+        //if (Type.TryGetValue(variableName, out var index))
+        //{
+        //    Raylib.SetMaterialTexture(ref model, 0, index, ref texture);
+        //    Logger.Error($"{variableName}={fileName}");
+        //}
+        //else
+        //{
+        //    Logger.Warn($"MaterialMapIndex for {variableName} can't be found");
+
+        //    var location = Raylib.GetShaderLocation(Shader.Value, variableName);
+        //    if (location < 0)
+        //        Logger.Error($"location for {variableName} not found in shader. maybe because unused in code");
+        //    else
+        //    {
+        //        Raylib.SetShaderValue(Shader.Value, location, texture, ShaderUniformDataType.Sampler2D);
+        //        Logger.Trace($"{variableName}={fileName}");
+        //    }
+        //}
     }
 
     public void UpdateFileReferences()

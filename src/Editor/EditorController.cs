@@ -77,12 +77,17 @@ class EditorController
 
     private readonly SettingsWindow _settingsWindow;
 
-    public EditorController()
+    private string _startupFilePath;
+
+    public EditorController(string? filePath)
     {
+        _startupFilePath = filePath;
+
         LoadEditorConfiguration();
 
+
         if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
-            _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = "./resources";
+            _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = Path.GetFullPath($"{Resources.ResourcesPath}\\");
 
         _editorControllerData = new(_editorConfiguration);
 
@@ -107,6 +112,8 @@ class EditorController
 
         if (_editorConfiguration.OutputDirectoryPath == "")
             _editorConfiguration.OutputDirectoryPath = Path.GetFullPath($"{MaterialsPath}\\");
+
+
 
         _outputFilePath = _editorConfiguration.OutputDirectoryPath;
         Directory.CreateDirectory(_editorConfiguration.OutputDirectoryPath);
@@ -229,6 +236,11 @@ class EditorController
         }
 
         _previousMousePosition = Raylib.GetMousePosition();
+
+        if (_startupFilePath != null)
+        {
+            LoadMaterial(_startupFilePath);
+        }
 
         Logger.Info("all is set");
 
@@ -586,6 +598,7 @@ class EditorController
 
     private void ShaderCodeWindow_OnBuildPressed()
     {
+        LoadShaderCode();
         LoadShaders();
     }
 
@@ -602,7 +615,7 @@ class EditorController
         Rlgl.EnableBackfaceCulling();
         Rlgl.EnableDepthMask();
 
-        Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
+        Raylib.DrawModel(_currentModel, Vector3.Zero, _editorConfiguration.ModelScale, Color.White);
 
         if (_outputWindow.IsInDebugMode)
         {
@@ -847,7 +860,7 @@ class EditorController
 
         var shader = _currentShader.Value;
 
-        for (int i = 0; i < _currentModel.MaterialCount; i++)
+        for (var i = 0; i < _currentModel.MaterialCount; i++)
         {
             Raylib.SetMaterialShader(ref _currentModel, i, ref shader);
         }
@@ -1095,9 +1108,45 @@ class EditorController
                     new Vector3(-2, 1, -2),
                     Vector3.Zero,
                     Color.White,
+                    4.0f,
                     shaders
                 ));
                 break;
+
+            //case EditorConfiguration.LightingPreset.YellowRedGreenBlue:
+            //    _editorControllerData.Lights.Add(LightManager.CreateLight(
+            //        LightType.Point,
+            //        new Vector3(-1.0f, 1.0f, -2.0f),
+            //        Vector3.Zero,
+            //        Color.Yellow,
+            //        4.0f,
+            //        shaders
+            //    ));
+            //    _editorControllerData.Lights.Add(LightManager.CreateLight(
+            //        LightType.Point,
+            //        new Vector3(2.0f, 1.0f, 1.0f),
+            //        Vector3.Zero,
+            //        Color.Red,
+            //        4.0f,
+            //        shaders
+            //    ));
+            //    _editorControllerData.Lights.Add(LightManager.CreateLight(
+            //        LightType.Point,
+            //        new Vector3(-2.0f, 1.0f, 1.0f),
+            //        Vector3.Zero,
+            //        Color.Green,
+            //        4.0f,
+            //        shaders
+            //    ));
+            //    _editorControllerData.Lights.Add(LightManager.CreateLight(
+            //        LightType.Point,
+            //        new Vector3(1.0f, 1.0f, -2.0f),
+            //        Vector3.Zero,
+            //        Color.Blue,
+            //        4.0f,
+            //        shaders
+            //    ));
+            //    break;
 
             case EditorConfiguration.LightingPreset.YellowRedGreenBlue:
                 _editorControllerData.Lights.Add(LightManager.CreateLight(
@@ -1105,6 +1154,7 @@ class EditorController
                     new Vector3(-2, 1, -2),
                     Vector3.Zero,
                     Color.Yellow,
+                    4.0f,
                     shaders
                 ));
                 _editorControllerData.Lights.Add(LightManager.CreateLight(
@@ -1112,6 +1162,7 @@ class EditorController
                     new Vector3(2, 1, 2),
                     Vector3.Zero,
                     Color.Red,
+                    4.0f,
                     shaders
                 ));
                 _editorControllerData.Lights.Add(LightManager.CreateLight(
@@ -1119,6 +1170,7 @@ class EditorController
                     new Vector3(-2, 1, 2),
                     Vector3.Zero,
                     Color.Green,
+                    4.0f,
                     shaders
                 ));
                 _editorControllerData.Lights.Add(LightManager.CreateLight(
@@ -1126,6 +1178,7 @@ class EditorController
                     new Vector3(2, 1, -2),
                     Vector3.Zero,
                     Color.Blue,
+                    4.0f,
                     shaders
                 ));
                 break;

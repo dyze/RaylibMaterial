@@ -135,6 +135,8 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
             ImGui.EndDisabled();
 
+            ImGui.InputFloat("Model scale", ref editorConfiguration.ModelScale, 0.1f, 1f);
+
 
             if (ImGui.BeginCombo("lighting", editorConfiguration.CurrentLightingPreset.ToString()))
             {

@@ -5,7 +5,7 @@ namespace Editor;
 
 class Program
 {
-    public static void Main()
+    public static void Main(string[] args)
     {
         var messageQueueTarget = new MessageQueueTarget();
 
@@ -15,7 +15,11 @@ class Program
             builder.ForLogger().Targets.Add(messageQueueTarget);
         });
 
-        var app = new EditorController();
+        string filePath = null;
+        if(args.Length > 0)
+            filePath = args[0];
+
+        var app = new EditorController(filePath);
         messageQueueTarget.MessageQueue = EditorController.MessageQueue;
         
         app.Run();

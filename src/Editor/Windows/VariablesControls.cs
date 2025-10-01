@@ -1,24 +1,24 @@
 ﻿using System.Numerics;
-using System.Xml.Linq;
 using Editor.Helpers;
 using ImGuiNET;
 using Library.CodeVariable;
 using Library.Helpers;
-using Library.Lighting;
 using NLog;
 
 namespace Editor.Windows
 {
-    class VariablesControl
+    partial class VariablesControls
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly EditorControllerData _editorControllerData;
         private readonly Dictionary<Type, Func<CodeVariableBase, string, bool>> _handlers;
 
-        public VariablesControl(EditorControllerData editorControllerData)
+        public VariablesControls(EditorControllerData editorControllerData)
         {
             _handlers = new()
             {
+                { typeof(CodeVariableInt), HandleInt },
+                { typeof(CodeVariableVector2), HandleVector2 },
                 { typeof(CodeVariableVector3), HandleVector3 },
                 { typeof(CodeVariableVector4), HandleVector4 },
                 { typeof(CodeVariableMatrix4x4), HandleMatrix4x4 },
@@ -30,6 +30,7 @@ namespace Editor.Windows
             };
             this._editorControllerData = editorControllerData;
         }
+
 
         /// <summary>
         /// Render variables
@@ -46,6 +47,8 @@ namespace Editor.Windows
             else
                 foreach (var (name, variable) in variables)
                 {
+                    ImGui.PushID(name);
+
                     ImGui.BeginGroup();
 
                     if (_handlers.TryGetValue(variable.GetType(), out var handler))
@@ -60,9 +63,38 @@ namespace Editor.Windows
                     }
 
                     ImGui.EndGroup();
+
+                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.DelayShort | ImGuiHoveredFlags.NoSharedDelay))
+                    {
+                        var description = TypeConvertors.GetUniformDescription(name);
+                        if (description != null)
+                            ImGui.SetTooltip(description.Description);
+                    }
+
+                    ImGui.PopID();
                 }
 
             return atLeastAVariableChanged;
+        }
+
+
+        private bool HandleInt(CodeVariableBase variable, string name)
+        {
+            var variableChanged = false;
+
+            ImGui.BeginDisabled(variable.Internal);
+
+            var currentValue = (variable as CodeVariableInt).Value;
+
+            if (ImGui.InputInt(name, ref currentValue))
+            {
+                (variable as CodeVariableInt).Value = currentValue;
+                variableChanged = true;
+            }
+
+            ImGui.EndDisabled();
+
+            return variableChanged;
         }
 
         private static bool HandleFloat(CodeVariableBase variable, string name)
@@ -76,6 +108,25 @@ namespace Editor.Windows
             if (ImGui.InputFloat(name, ref currentValue))
             {
                 (variable as CodeVariableFloat).Value = currentValue;
+                variableChanged = true;
+            }
+
+            ImGui.EndDisabled();
+
+            return variableChanged;
+        }
+
+        private bool HandleVector2(CodeVariableBase variable, string name)
+        {
+            var variableChanged = false;
+
+            ImGui.BeginDisabled(variable.Internal);
+
+            var currentValue = (variable as CodeVariableVector2).Value;
+
+            if (ImGui.InputFloat2(name, ref currentValue))
+            {
+                (variable as CodeVariableVector2).Value = currentValue;
                 variableChanged = true;
             }
 
@@ -124,7 +175,6 @@ namespace Editor.Windows
         private static bool HandleMatrix4x4(CodeVariableBase variable, string name)
         {
             var variableChanged = false;
-
 
             var matrix4X4 = (variable as CodeVariableMatrix4x4).Value;
 
@@ -213,53 +263,7 @@ namespace Editor.Windows
 
             return variableChanged;
         }
-
-        private bool HandleTexture(CodeVariableBase variable, string name)
-        {
-            var variableChanged = false;
-
-            ImGui.BeginDisabled(variable.Internal);
-
-            var currentValue = (variable as CodeVariableTexture).Value;
-
-            ImGui.LabelText(name, currentValue);
-
-            if (ImGui.BeginDragDropTarget())
-            {
-                var payload = ImGui.AcceptDragDropPayload(DragDropItemIdentifiers.ImageFile);
-
-                bool isDropping;
-                unsafe //TODO avoid setting unsafe to entire project
-                {
-                    isDropping = payload.NativePtr != null;
-                }
-
-                if (isDropping)
-                {
-                    var draggedRelativeFilePath = _editorControllerData.DataFileExplorerData
-                        .DraggedRelativeFilePath;
-                    Logger.Trace($"dropped {draggedRelativeFilePath}");
-
-                    var draggedFileName = _editorControllerData.DataFileExplorerData.DraggedFileName;
-                    _editorControllerData.MaterialPackage.AddFile(draggedFileName,
-                        _editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(
-                            draggedRelativeFilePath));
-
-                    (variable as CodeVariableTexture).Value = draggedFileName;
-                    variableChanged = true;
-
-                    _editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
-                    _editorControllerData.DataFileExplorerData.DraggedFileName = "";
-                }
-
-                ImGui.EndDragDropTarget();
-            }
-
-            ImGui.EndDisabled();
-
-            return variableChanged;
-        }
-
+        
         private bool HandleLight(CodeVariableBase variable, string name)
         {
             var variableChanged = false;

@@ -5,3 +5,4 @@
 **/r*.sln.DotSettings.user
 /artifacts/*
 **/*.bck
+**/launchSettings.json

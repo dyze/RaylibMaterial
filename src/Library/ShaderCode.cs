@@ -81,11 +81,11 @@ public class ShaderCode
                 nameLower.StartsWith("col"))
                 type = typeof(CodeVariableColor);
 
-            var uniformDescription = GetUniformDescription(item.Name);
+            var uniformDescription = TypeConvertors.GetUniformDescription(item.Name);
             var internallyHandled = false;
             if (uniformDescription != null)
             {
-                internallyHandled = true;
+                internallyHandled = uniformDescription.InternalHandled;
                 Logger.Error($"{item.Name} is internally handled");
             }
 
@@ -136,20 +136,5 @@ public class ShaderCode
         return new TypeName(typeString, name);
     }
 
-    private string? GetUniformDescription(string name)
-    {
-        Dictionary<string, string> internalUniforms = new()
-        {
-            { "mvp", "model-view-projection matrix" },
-            { "matView", "view matrix" },
-            { "matProjection", "projection matrix" },
-            { "matModel", "model matrix" },
-            { "matNormal", "normal matrix (transpose(inverse(matModelView))" },
-            { "colDiffuse", "color diffuse (base tint color, multiplied by texture color)" },
-            { "viewPos", "Location of camera" },
-            { "lights", "Lights in our scene"}
-        };
 
-        return internalUniforms.GetValueOrDefault(name);
-    }
 }

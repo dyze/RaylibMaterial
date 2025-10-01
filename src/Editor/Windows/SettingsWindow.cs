@@ -13,16 +13,20 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
     private bool _isVisible;
 
     private string OutputDirectoryPath;
+    private string ResourceDirectoryPath;
 
     private string ErrorMessage = "";
     private bool _selectFolderDialogIsOpen;
 
     private FileDialogInfo? _fileDialogInfo;
 
+    private Func<string>? _actionOnSelect;
+
     public void Show()
     {
         ErrorMessage = "";
         OutputDirectoryPath = editorConfiguration.OutputDirectoryPath;
+        ResourceDirectoryPath = editorConfiguration.DataFileExplorerConfiguration.DataFolderPath;
         _isVisible = true;
     }
 
@@ -34,23 +38,33 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
         ImGui.SetNextWindowSize(new Vector2(600, 200), ImGuiCond.Always);
         if (ImGui.BeginPopupModal("Settings", ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoCollapse))
         {
-            if (ImGui.InputText("Output directory", ref OutputDirectoryPath, 200))
+            ImGui.PushID("Output directory");
             {
-            }
+                ImGui.InputText("Output directory", ref OutputDirectoryPath, 200);
 
-            ImGui.SameLine();
+                ImGui.SameLine();
 
-            if (ImGui.Button("Select"))
-            {
-                _fileDialogInfo = new()
+                if (ImGui.Button("Select"))
                 {
-                    Title = "Please select a folder",
-                    Type = ImGuiFileDialogType.SelectFolder,
-                    DirectoryPath = new DirectoryInfo(Directory.GetCurrentDirectory()),
-                    DirectoryName = ""
-                };
-                _selectFolderDialogIsOpen = true;
+                    TriggerSelectFolder(OutputDirectoryPath ,
+                        () => OutputDirectoryPath = _fileDialogInfo.ResultPath);
+                }
             }
+            ImGui.PopID();
+
+            ImGui.PushID("Resource directory");
+            {
+                ImGui.InputText("Resource directory", ref ResourceDirectoryPath, 200);
+
+                ImGui.SameLine();
+
+                if (ImGui.Button("Select"))
+                {
+                    TriggerSelectFolder(ResourceDirectoryPath,
+                        () => ResourceDirectoryPath = _fileDialogInfo.ResultPath);
+                }
+            }
+            ImGui.PopID();
 
             ImGui.Separator();
 
@@ -71,15 +85,26 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
 
             if (FileDialog.Run(ref _selectFolderDialogIsOpen, _fileDialogInfo))
             {
-                OutputDirectoryPath = _fileDialogInfo.ResultPath;
+                _actionOnSelect?.Invoke();
                 _fileDialogInfo = null;
             }
 
             ImGui.EndPopup();
         }
+    }
 
+    private void TriggerSelectFolder(string startingPath, Func<string> actionOnSelect)
+    {
+        _fileDialogInfo = new()
+        {
+            Title = "Please select a folder",
+            Type = ImGuiFileDialogType.SelectFolder,
+            DirectoryPath = new DirectoryInfo(startingPath),
+            DirectoryName = ""
+        };
 
-
+        _actionOnSelect = actionOnSelect;
+        _selectFolderDialogIsOpen = true;
     }
 
     private void OnSave()
@@ -91,6 +116,14 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
         }
 
         editorConfiguration.OutputDirectoryPath = OutputDirectoryPath;
+
+        if (Directory.Exists(ResourceDirectoryPath) == false)
+        {
+            ErrorMessage = $"{ResourceDirectoryPath} doesn't exist";
+            return;
+        }
+
+        editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = ResourceDirectoryPath;
 
         ErrorMessage = "";
         SavePressed?.Invoke();
