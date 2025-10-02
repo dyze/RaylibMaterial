@@ -1,25 +1,16 @@
 ﻿using ImGuiNET;
-using Library.Packaging;
 using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
-using Library.Lighting;
 
 namespace ConsumerSampleApp;
 
 internal class Controller
 {
     private readonly Vector2 _screenSize = new(1600, 900);
-    private Model _currentModel;
-    private readonly List<Light> _lights = [];
-    private Camera3D _camera;
-    private FileInfo[] _files = [];
-    private MaterialPackage? _materialPackage;
 
-    private readonly string _materialDirectoryPath = "../../../../../materials";
-
-
-    private Shader? _currentShader;
+    private readonly List<Type> _examples = [typeof(OneModelOneMaterial), typeof(OneModelTwoMaterials)];     //TODO use reflection
+    private ExampleBase? _currentExample;
 
     internal void Run()
     {
@@ -32,57 +23,57 @@ internal class Controller
         Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
         Raylib.SetTraceLogLevel(TraceLogLevel.None); // disable logging from now on
 
-        // Define our custom camera to look into our 3d world
-        _camera = new Camera3D(new Vector3(5f, 5f, -5),
-            new Vector3(0.0f, 0.0f, 0.0f),
-            new Vector3(0.0f, 1.0f, 0.0f),
-            45f,
-            CameraProjection.Perspective);
-
-        var mesh = Raylib.GenMeshCube(2, 2, 2);
-        _currentModel = Raylib.LoadModelFromMesh(mesh);
-
-        EnumerateMaterials();
-
         while (!Raylib.WindowShouldClose())
         {
-            if (_currentShader.HasValue)
-                UpdateLights();
-
             Raylib.BeginDrawing();
             rlImGui.Begin();
 
-            Raylib.ClearBackground(Color.Black);
+            _currentExample?.Run();
 
-            RenderModels();
-
-            RenderUi();
+            RenderSampleUi();
 
             rlImGui.End();
             Raylib.EndDrawing();
         }
 
-        _materialPackage?.Dispose();
+        _currentExample?.Close();
+        _currentExample = null;
+
         rlImGui.Shutdown();
     }
 
-    private void EnumerateMaterials()
+    private void RenderSampleUi()
     {
-        var di = new DirectoryInfo(_materialDirectoryPath);
 
-        _files = di.GetFiles("*.mat", SearchOption.AllDirectories);
-    }
-
-    private void RenderUi()
-    {
-        ImGui.SetNextWindowSize(new Vector2(200, 400));
-        if (ImGui.Begin("Materials"))
+        ImGui.SetNextWindowPos(new Vector2(200, 20), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(new Vector2(400, 200), ImGuiCond.Always);
+        if (ImGui.Begin("Welcome"))
         {
-            foreach (var file in _files)
+            ImGui.Text("""
+                        This sample embeds several examples
+                        Select below the one your want
+                        """);
+
+            foreach (var type in _examples)
             {
-                if (ImGui.Button(file.Name))
+                if (ImGui.Button(type.ToString()))
                 {
-                    OnMaterialSelected(file.FullName);
+                    _currentExample?.Close();
+                    _currentExample = null;
+
+                    if (type.IsSubclassOf(typeof(ExampleBase)) == false)
+                        throw new TypeAccessException($"{type} can't be used");
+
+                    var ctor = type.GetConstructor(Type.EmptyTypes);
+                    var instance = ctor.Invoke(null);
+                    if (instance == null)
+                        throw new TypeAccessException($"{type} ctor failed");
+
+                    _currentExample = instance as ExampleBase ?? throw new InvalidOperationException();
+                    _currentExample.Init();
+
+
+                    break;
                 }
             }
 
@@ -90,88 +81,5 @@ internal class Controller
         }
     }
 
-    private void OnMaterialSelected(string filePath)
-    {
-        _materialPackage = MaterialPackage.Load(filePath);
 
-        var shader = _materialPackage.LoadShader();
-        _currentShader = shader;
-        Raylib.SetMaterialShader(ref _currentModel, 0, ref shader);
-
-        var material = Raylib.GetMaterial(ref _currentModel, 0);
-        _materialPackage.SendVariablesToModel(material, true);
-
-        CreateLights();
-    }
-
-    private void RenderModels()
-    {
-        Raylib.BeginMode3D(_camera);
-
-        Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
-        RenderLights();
-
-        Raylib.EndMode3D();
-    }
-
-    private void CreateLights()
-    {
-        if (_currentShader.HasValue == false)
-            throw new NullReferenceException("_currentShader is null");
-
-        LightManager.Clear();
-        _lights.Clear();
-
-        _lights.Add(LightManager.CreateLight(
-            LightType.Point,
-            new Vector3(-2, 1, -2),
-            Vector3.Zero,
-            Color.Yellow,
-            4.0f,
-            [_currentShader.Value]
-        ));
-        _lights.Add(LightManager.CreateLight(
-            LightType.Point,
-            new Vector3(2, 1, 2),
-            Vector3.Zero,
-            Color.Red,
-            4.0f,
-            [_currentShader.Value]
-        ));
-        _lights.Add(LightManager.CreateLight(
-            LightType.Point,
-            new Vector3(-2, 1, 2),
-            Vector3.Zero,
-            Color.Green,
-            4.0f,
-            [_currentShader.Value]
-        ));
-        _lights.Add(LightManager.CreateLight(
-            LightType.Point,
-            new Vector3(2, 1, -2),
-            Vector3.Zero,
-            Color.Blue,
-            4.0f,
-            [_currentShader.Value]
-        ));
-    }
-
-    public void RenderLights()
-    {
-        foreach (var light in _lights)
-        {
-            Raylib.DrawSphereEx(light.Position, 0.2f, 8, 8, light.Color);
-        }
-    }
-
-    private void UpdateLights()
-    {
-        if (_currentShader.HasValue == false)
-            throw new NullReferenceException("_currentShader is null");
-
-        foreach (var light in _lights)
-        {
-            LightManager.UpdateLightValues(light);
-        }
-    }
 }

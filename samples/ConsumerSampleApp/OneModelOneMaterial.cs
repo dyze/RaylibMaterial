@@ -1,0 +1,161 @@
+﻿using ImGuiNET;
+using Library.Lighting;
+using Library.Packaging;
+using Raylib_cs;
+using System.Numerics;
+
+namespace ConsumerSampleApp;
+
+internal class OneModelOneMaterial : ExampleBase
+{
+    private Model _currentModel;
+    private readonly List<Light> _lights = [];
+    private Camera3D _camera;
+    private FileInfo[] _files = [];
+    private MaterialPackage? _materialPackage;
+
+    private Shader? _currentShader;
+
+    public override void Init()
+    {
+        // Define our custom camera to look into our 3d world
+        _camera = new Camera3D(new Vector3(5f, 5f, -5),
+            new Vector3(0.0f, 0.0f, 0.0f),
+            new Vector3(0.0f, 1.0f, 0.0f),
+            45f,
+            CameraProjection.Perspective);
+
+        var mesh = Raylib.GenMeshCube(2, 2, 2);
+        _currentModel = Raylib.LoadModelFromMesh(mesh);
+
+        EnumerateMaterials();
+    }
+
+    private void EnumerateMaterials()
+    {
+        var di = new DirectoryInfo(_materialDirectoryPath);
+
+        _files = di.GetFiles("*.mat", SearchOption.AllDirectories);
+    }
+
+    public override void Run()
+    {
+        Raylib.UpdateCamera(ref _camera, CameraMode.Orbital);
+
+        if (_currentShader.HasValue)
+            UpdateLights();
+
+        Raylib.ClearBackground(Color.Black);
+
+        RenderModels();
+
+        RenderUi();
+    }
+
+    public override void Close()
+    {
+        _materialPackage?.Dispose();
+    }
+
+    private void RenderUi()
+    {
+        ImGui.SetNextWindowSize(new Vector2(200, 400));
+        if (ImGui.Begin("Materials"))
+        {
+            foreach (var file in _files)
+            {
+                if (ImGui.Button(file.Name))
+                {
+                    OnMaterialSelected(file.FullName);
+                }
+            }
+
+            ImGui.End();
+        }
+    }
+
+    private void OnMaterialSelected(string filePath)
+    {
+        _materialPackage = MaterialPackage.Load(filePath);
+
+        var shader = _materialPackage.LoadShader();
+        _currentShader = shader;
+        Raylib.SetMaterialShader(ref _currentModel, 0, ref shader);
+
+        var material = Raylib.GetMaterial(ref _currentModel, 0);
+        _materialPackage.SendVariablesToModel(material, true);
+
+        CreateLights();
+    }
+
+    private void RenderModels()
+    {
+        Raylib.BeginMode3D(_camera);
+
+        Raylib.DrawModel(_currentModel, Vector3.Zero, 1f, Color.White);
+        RenderLights();
+
+        Raylib.EndMode3D();
+    }
+
+    private void CreateLights()
+    {
+        if (_currentShader.HasValue == false)
+            throw new NullReferenceException("_currentShader is null");
+
+        LightManager.Clear();
+        _lights.Clear();
+
+        _lights.Add(LightManager.CreateLight(
+            LightType.Point,
+            new Vector3(-2, 1, -2),
+            Vector3.Zero,
+            Color.Yellow,
+            4.0f,
+            [_currentShader.Value]
+        ));
+        _lights.Add(LightManager.CreateLight(
+            LightType.Point,
+            new Vector3(2, 1, 2),
+            Vector3.Zero,
+            Color.Red,
+            4.0f,
+            [_currentShader.Value]
+        ));
+        _lights.Add(LightManager.CreateLight(
+            LightType.Point,
+            new Vector3(-2, 1, 2),
+            Vector3.Zero,
+            Color.Green,
+            4.0f,
+            [_currentShader.Value]
+        ));
+        _lights.Add(LightManager.CreateLight(
+            LightType.Point,
+            new Vector3(2, 1, -2),
+            Vector3.Zero,
+            Color.Blue,
+            4.0f,
+            [_currentShader.Value]
+        ));
+    }
+
+    public void RenderLights()
+    {
+        foreach (var light in _lights)
+        {
+            Raylib.DrawSphereEx(light.Position, 0.2f, 8, 8, light.Color);
+        }
+    }
+
+    private void UpdateLights()
+    {
+        if (_currentShader.HasValue == false)
+            throw new NullReferenceException("_currentShader is null");
+
+        foreach (var light in _lights)
+        {
+            LightManager.UpdateLightValues(light);
+        }
+    }
+}
