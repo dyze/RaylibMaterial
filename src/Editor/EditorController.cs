@@ -180,7 +180,7 @@ class EditorController
         OnSave();
     }
 
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
     private static unsafe void CustomLog(int logLevel, sbyte* text, sbyte* args)
     {
         Dictionary<TraceLogLevel, NLog.LogLevel> levels = new()

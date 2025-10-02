@@ -16,9 +16,10 @@ internal class Controller
     private FileInfo[] _files = [];
     private MaterialPackage? _materialPackage;
 
+    private string _materialDirectoryPath = "../../../../../materials";
+
 
     private Shader? _currentShader;
-    private const string MaterialsPath = "materials";
 
     internal void Run()
     {
@@ -67,7 +68,7 @@ internal class Controller
 
     private void EnumerateMaterials()
     {
-        var di = new DirectoryInfo(MaterialsPath);
+        var di = new DirectoryInfo(_materialDirectoryPath);
 
         _files = di.GetFiles("*.mat", SearchOption.AllDirectories);
     }

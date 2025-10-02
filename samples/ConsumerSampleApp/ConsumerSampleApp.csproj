@@ -17,10 +17,4 @@
     <ProjectReference Include="..\..\src\Library\Library.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="materials\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
 </Project>
