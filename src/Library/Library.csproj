@@ -13,7 +13,34 @@
 		<FileVersion>$(AssemblyVersion)</FileVersion>
 		<Version>$(AssemblyVersion)</Version>
 		<Company>dlabs</Company>
+		<PackageId>RaylibMaterial</PackageId>
+		<Title>RaylibMaterial</Title>
+		<Authors>dyze</Authors>
+		<Product>RaylibMaterial</Product>
+		<Description>In Raylib, applying materials to models require numerous actions: load shaders, load images, set shader uniform values, apply shader to model...
+
+The goal of this project is to simplify the applying materials to our models. For that purpose, I propose to generate "material packages" using an easy to use editor.
+And then to apply such created packages to any of your models.</Description>
+		<Copyright>dlabs 2025</Copyright>
+		<PackageProjectUrl>https://github.com/dyze/RaylibMaterial</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/dyze/RaylibMaterial</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>raylib, material, texture, shader</PackageTags>
+		<PackageReleaseNotes>first version</PackageReleaseNotes>
+		<PackageOutputPath>../../artifacts</PackageOutputPath>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Include="..\..\LICENSE">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ImGUI.NET.ToolBox" Version="0.1.0" />
