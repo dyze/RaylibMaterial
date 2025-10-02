@@ -132,6 +132,8 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                 ImGui.EndCombo();
             }
 
+            ImGui.InputInt("Material index", ref editorControllerData.materialIndexToEdit);
+
             ImGui.EndDisabled();
 
             ImGui.InputFloat("Model scale", ref editorConfiguration.ModelScale, 0.1f, 1f);

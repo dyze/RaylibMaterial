@@ -341,7 +341,7 @@ public class MaterialPackage : IDisposable
         UnloadShader();
     }
 
-    public void SendVariablesToModel(Model model, bool force)
+    public void SendVariablesToModel(Material raylibMaterial, bool force)
     {
         Logger.Info("SendVariablesToModel...");
 
@@ -411,7 +411,7 @@ public class MaterialPackage : IDisposable
                 else
                     SetUniformTexture(name,
                         (variable as CodeVariableTexture).Value,
-                        model,
+                        raylibMaterial,
                         materialMapIndex.Value);
             }
             else
@@ -421,7 +421,7 @@ public class MaterialPackage : IDisposable
 
     private void SetUniformTexture(string variableName,
         string fileName,
-        Model model,
+        Material raylibMaterial,
         MaterialMapIndex materialMapIndex)
     {
         Logger.Info("SetUniformTexture...");
@@ -469,7 +469,7 @@ public class MaterialPackage : IDisposable
             Shader.Value.Locs[(int)index] = Raylib.GetShaderLocation(Shader.Value, variableName);
         }
 
-        Raylib.SetMaterialTexture(ref model, 0, materialMapIndex, ref texture);
+        Raylib.SetMaterialTexture(ref raylibMaterial, materialMapIndex, texture);
         Logger.Trace($"{variableName}={fileName}, materialMapIndex={materialMapIndex}");
     }
 

@@ -66,6 +66,8 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
         Output
     }
 
+    public int materialIndexToEdit = 0;
+
     public Vector2 UpdateWindowPosAndSize(WindowId windowId)
     {
         var manWindowSize = new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());

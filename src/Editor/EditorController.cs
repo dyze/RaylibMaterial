@@ -341,14 +341,17 @@ class EditorController
             {
                 var modelPath = droppedFiles.First();
 
-
-                if (_supportedModelExtensions.Contains(Path.GetExtension(modelPath)))
+                var extension = Path.GetExtension(modelPath);
+                if (_supportedModelExtensions.Contains(extension))
                 {
                     _editorConfiguration.CurrentModelFilePath = modelPath;
                     _editorConfiguration.CurrentModelType = EditorConfiguration.ModelType.Model;
                     SelectModel(modelPath);
                 }
+                else
+                    Logger.Error($"extension {extension} is not supported, only {string.Join(",", _supportedModelExtensions)} are");
             }
+
         }
     }
 
@@ -880,12 +883,18 @@ class EditorController
 
         var shader = _currentShader.Value;
 
-        for (var i = 0; i < _currentModel.MaterialCount; i++)
+        var materialIndex = Math.Clamp(_editorControllerData.materialIndexToEdit, 0, _currentModel.MaterialCount - 1);
+        if (materialIndex != _editorControllerData.materialIndexToEdit)
         {
-            Raylib.SetMaterialShader(ref _currentModel, i, ref shader);
+            Logger.Error($"wrong materialIndex, max is {_currentModel.MaterialCount - 1}");
+            _editorControllerData.materialIndexToEdit = materialIndex;
         }
 
-        _editorControllerData.MaterialPackage.SendVariablesToModel(_currentModel, true);
+        Raylib.SetMaterialShader(ref _currentModel, materialIndex, ref shader);
+
+        var material = Raylib.GetMaterial(ref _currentModel, materialIndex);
+
+        _editorControllerData.MaterialPackage.SendVariablesToModel(material, true);
     }
 
     private void LoadShaders()

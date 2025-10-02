@@ -16,7 +16,7 @@ internal class Controller
     private FileInfo[] _files = [];
     private MaterialPackage? _materialPackage;
 
-    private string _materialDirectoryPath = "../../../../../materials";
+    private readonly string _materialDirectoryPath = "../../../../../materials";
 
 
     private Shader? _currentShader;
@@ -98,7 +98,8 @@ internal class Controller
         _currentShader = shader;
         Raylib.SetMaterialShader(ref _currentModel, 0, ref shader);
 
-        _materialPackage.SendVariablesToModel(_currentModel, true);
+        var material = Raylib.GetMaterial(ref _currentModel, 0);
+        _materialPackage.SendVariablesToModel(material, true);
 
         CreateLights();
     }
