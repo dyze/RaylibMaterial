@@ -8,7 +8,7 @@ And then to apply such created packages to any of your models.
 Such editor looks like:
 ![image info](./docs/Shader-Editor.png)
 
-The produce package are simple zip files that contains whatever is needed for Raylib:
+The produced packages are simple zip files that contain whatever is needed for Raylib to work:
 ![image info](./docs/package-content.png)
 
 It is based on RayLib-cs project.
@@ -49,6 +49,7 @@ The remaining tasks for this first release are:
 * [Raylib-cs](https://github.com/raylib-cs/raylib-cs): C# bindings for raylib
 * [rlImgui-cs](https://github.com/raylib-extras/rlImGui-cs): Glue to render ImGui using Raylib
 * [NLog](https://github.com/NLog/NLog): NLog is a free logging platform for .NET
+* [ImGui.NET.ToolBox](https://github.com/dyze/ImGui.NET.ToolBox): ImGui.NET.ToolBox a set of controls and helpers for ImGui.NET.
 
 Other ones:
 * [ImGuiFileDialog](https://github.com/japajoe/ImGuiFileDialog): File dialog for ImGui.NET by japajoe
