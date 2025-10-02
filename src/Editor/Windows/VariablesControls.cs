@@ -105,7 +105,7 @@ namespace Editor.Windows
 
             var currentValue = (variable as CodeVariableFloat).Value;
 
-            if (ImGui.InputFloat(name, ref currentValue))
+            if (ImGui.InputFloat(name, ref currentValue, 0.01f, 0.1f))
             {
                 (variable as CodeVariableFloat).Value = currentValue;
                 variableChanged = true;

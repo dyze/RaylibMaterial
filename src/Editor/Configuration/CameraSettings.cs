@@ -5,9 +5,21 @@ namespace Editor.Configuration;
 
 public class CameraSettings
 {
-    public const float MinDistance = 5;
+
 
     [JsonProperty("Angles")] public Vector3 Angles = Vector3.Zero;
     [JsonProperty("Target")] public Vector3 Target = Vector3.Zero;
-    [JsonProperty("Distance")] public float Distance = 5;
+
+    public const float MinDistance = 1f;
+    public const float MaxDistance = 10f;
+
+    [JsonProperty("Distance")] private float _distance = 5;
+
+    [JsonIgnore]
+    public float Distance
+    {
+        get => _distance;
+
+        set => _distance = Math.Clamp(value, MinDistance, MaxDistance);
+    }
 }

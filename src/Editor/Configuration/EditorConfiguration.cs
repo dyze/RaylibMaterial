@@ -28,14 +28,6 @@ public class EditorConfiguration
     /// </summary>
     public string CurrentModelFilePath = "";
 
-    //public readonly Vector2 DefaultOutputSize = new(1600 / 2, 900 / 2);
-
-    public enum BackgroundType
-    {
-        Cloud = 0,
-        NightSky,
-        ThatchChapel
-    }
 
     [JsonProperty("Background")] public string Background { get; set; }
     [JsonProperty("WindowPosition")] public Point WindowPosition { get; set; } = new(40, 40);
