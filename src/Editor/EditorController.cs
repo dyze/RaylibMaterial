@@ -923,6 +923,8 @@ class EditorController
 
     private void LoadShaderCode()
     {
+        Logger.Trace("LoadShaderCode...");
+
         // Load shader codes
         _shaderCode = new Dictionary<FileId, ShaderCode>();
 
@@ -960,15 +962,13 @@ class EditorController
             var result = material.Variables.TryGetValue(key, out var materialVariable);
             if (result == false)
             {
-                Logger.Trace($"{key}: doesn't exist in materialMeta -> create it");
+                Logger.Trace($"{key}: doesn't exist in materialVariable -> create it");
 
                 var newVariable = CodeVariableFactory.Build(variable.GetType());
 
-                //TODO avoid trick
-                if (variable.GetType() == typeof(CodeVariableColor))
-                    // Set pink as default color
-                    (newVariable as CodeVariableColor).Value = System.Drawing.Color.FromArgb(255, 255, 0, 255);
-
+                //todo use Clone instead to avoid some properties?
+                newVariable.Internal = variable.Internal;
+                
                 material.Variables.Add(key, newVariable);
             }
             else

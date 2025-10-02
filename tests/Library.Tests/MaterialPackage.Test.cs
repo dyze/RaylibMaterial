@@ -9,7 +9,7 @@ public sealed class MaterialPackageTest
     public void SaveLoad()
     {
         var materialPackage = new MaterialPackage();
-        materialPackage.Meta.Author = "author";
+        materialPackage.Description.Author = "author";
         materialPackage.AddFile("image1.png", [1, 2, 3]);
         materialPackage.AddFile("shader1.frag", [4, 5, 6]);
 
@@ -17,7 +17,7 @@ public sealed class MaterialPackageTest
 
         materialPackage = MaterialPackage.Load("MaterialPackageTest/test.mat");
 
-        Assert.AreEqual("author", materialPackage.Meta.Author);
+        Assert.AreEqual("author", materialPackage.Description.Author);
         Assert.AreEqual(2, materialPackage.Files.Count);
         CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, materialPackage.Files[new FileId(FileType.Image, "image1.png")]);
         CollectionAssert.AreEqual(new byte[] { 4, 5, 6 }, materialPackage.Files[new FileId(FileType.FragmentShader, "shader1.frag")]);

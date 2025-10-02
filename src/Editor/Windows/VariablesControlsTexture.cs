@@ -13,34 +13,18 @@ namespace Editor.Windows
         {
             var variableChanged = false;
 
-            ImGui.BeginDisabled(variable.Internal);
-
             var currentValue = (variable as CodeVariableTexture).Value;
-            {
-                if ((variable as CodeVariableTexture).Value != "")
-                {
-                    if (ImGui.Button("x"))
-                    {
-                        (variable as CodeVariableTexture).Value = "";
-                        (variable as CodeVariableTexture).MaterialMapIndex = null;
-                        variableChanged = true;
-                    }
-
-                    ImGui.SameLine();
-                }
-            }
 
             {
                 var files = _editorControllerData.MaterialPackage.GetFilesMatchingType(FileType.Image);
                 var currentIndex = files.FindIndex(i => i == currentValue);
                 
-                if (ImGui.Combo(name, ref currentIndex, files.ToArray(), files.Count))
+                if (ImGui.Combo("Image", ref currentIndex, files.ToArray(), files.Count))
                 {
                     (variable as CodeVariableTexture).Value = files[currentIndex];
                     variableChanged = true;
                 }
             }
-
 
             if (ImGui.BeginDragDropTarget())
             {
@@ -86,14 +70,24 @@ namespace Editor.Windows
                     index = enumValues.FindIndex(0, v => v == materialMapIndex);
                 }
 
-                if (ImGui.Combo("Index", ref index, enumNames))
+                if (ImGui.Combo("MaterialMapIndex", ref index, enumNames))
                 {
                     variableChanged = true;
                     (variable as CodeVariableTexture).MaterialMapIndex = enumValues[index];
                 }
-            }
 
-            ImGui.EndDisabled();
+                {
+                    if ((variable as CodeVariableTexture).Value != "")
+                    {
+                        if (ImGui.Button("unassign"))
+                        {
+                            (variable as CodeVariableTexture).Value = "";
+                            (variable as CodeVariableTexture).MaterialMapIndex = null;
+                            variableChanged = true;
+                        }
+                    }
+                }
+            }
 
             return variableChanged;
         }

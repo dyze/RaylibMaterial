@@ -40,7 +40,7 @@ namespace Editor.Windows
                 //ImGui.BeginDisabled(needsRebuild == false);
                 if (ImGui.Button("Build"))
                     BuildPressed?.Invoke();
-               // ImGui.EndDisabled();
+                // ImGui.EndDisabled();
 
 
                 ImGui.SameLine();

@@ -9,17 +9,13 @@ namespace Editor.Windows
         {
             var variableChanged = false;
 
-            ImGui.BeginDisabled(variable.Internal);
-
             var currentValue = (variable as CodeVariableVector2).Value;
 
-            if (ImGui.InputFloat2(name, ref currentValue))
+            if (ImGui.InputFloat2($"##{name}", ref currentValue))
             {
                 (variable as CodeVariableVector2).Value = currentValue;
                 variableChanged = true;
             }
-
-            ImGui.EndDisabled();
 
             return variableChanged;
         }
@@ -28,17 +24,13 @@ namespace Editor.Windows
         {
             var variableChanged = false;
 
-            ImGui.BeginDisabled(variable.Internal);
-
             var currentValue = (variable as CodeVariableVector3).Value;
 
-            if (ImGui.InputFloat3(name, ref currentValue))
+            if (ImGui.InputFloat3($"##{name}", ref currentValue))
             {
                 (variable as CodeVariableVector3).Value = currentValue;
                 variableChanged = true;
             }
-
-            ImGui.EndDisabled();
 
             return variableChanged;
         }
@@ -47,16 +39,12 @@ namespace Editor.Windows
         {
             var variableChanged = false;
 
-            ImGui.BeginDisabled(variable.Internal);
-
             var currentValue = (variable as CodeVariableVector4).Value;
-            if (ImGui.InputFloat4(name, ref currentValue))
+            if (ImGui.InputFloat4($"##{name}", ref currentValue))
             {
                 (variable as CodeVariableVector4).Value = currentValue;
                 variableChanged = true;
             }
-
-            ImGui.EndDisabled();
 
             return variableChanged;
         }

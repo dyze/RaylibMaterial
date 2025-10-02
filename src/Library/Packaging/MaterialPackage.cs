@@ -33,7 +33,7 @@ public class MaterialPackage : IDisposable
 
     public const string MetaFileName = "material.meta";
 
-    public MaterialDescription Meta = new();
+    public MaterialDescription Description = new();
     private Dictionary<FileId, byte[]> _files = [];
     private Dictionary<FileId, uint> _fileReferences = [];
 
@@ -75,7 +75,7 @@ public class MaterialPackage : IDisposable
 
     public void Clear()
     {
-        Meta = new();
+        Description = new();
         _files = [];
         _fileReferences = [];
     }
@@ -116,16 +116,17 @@ public class MaterialPackage : IDisposable
         catch (JsonSerializationException e)
         {
             Logger.Error(e);
+            inputDataAccess.Close();
             throw new FileLoadException($"{packageFilePath} can't be read. Serialization issue.");
         }
 
         var materialPackage = new MaterialPackage();
 
         // Copy fields
-        materialPackage.Meta.Author = metaFileObject.Author;
-        materialPackage.Meta.Description = metaFileObject.Description;
-        materialPackage.Meta.Tags = metaFileObject.Tags;
-        materialPackage.Meta.ShaderNames = metaFileObject.ShaderNames;
+        materialPackage.Description.Author = metaFileObject.Author;
+        materialPackage.Description.Description = metaFileObject.Description;
+        materialPackage.Description.Tags = metaFileObject.Tags;
+        materialPackage.Description.ShaderNames = metaFileObject.ShaderNames;
         materialPackage.Variables = metaFileObject.Variables;
 
         // Reading files
@@ -137,7 +138,6 @@ public class MaterialPackage : IDisposable
             materialPackage.AddFile(fileName,
                 inputDataAccess.ReadBinaryFile(fileName));
         }
-
 
         inputDataAccess.Close();
 
@@ -170,10 +170,10 @@ public class MaterialPackage : IDisposable
         // Copy fields
         var metaFileObject = new MaterialMetaFile
         {
-            Author = Meta.Author,
-            Description = Meta.Description,
-            Tags = Meta.Tags,
-            ShaderNames = Meta.ShaderNames,
+            Author = Description.Author,
+            Description = Description.Description,
+            Tags = Description.Tags,
+            ShaderNames = Description.ShaderNames,
 
             Variables = Variables
         };
@@ -244,17 +244,17 @@ public class MaterialPackage : IDisposable
 
     public void SetShaderName(FileType shaderType, string shaderName)
     {
-        Meta.SetShaderName(shaderType, shaderName);
+        Description.SetShaderName(shaderType, shaderName);
 
         OnShaderChanged?.Invoke();
     }
 
-    public string? GetShaderName(FileType shaderType) => Meta.GetShaderName(shaderType);
+    public string? GetShaderName(FileType shaderType) => Description.GetShaderName(shaderType);
 
 
     public KeyValuePair<FileId, byte[]>? GetShaderCode(FileType shaderType)
     {
-        var shaderName = Meta.GetShaderName(shaderType);
+        var shaderName = Description.GetShaderName(shaderType);
         if (shaderName == null)
             return null;
 
@@ -265,8 +265,7 @@ public class MaterialPackage : IDisposable
 
     public void CreateFileReferences(FileId key)
     {
-        if (_fileReferences.ContainsKey(key) == false)
-            _fileReferences.Add(key, 0);
+        _fileReferences.TryAdd(key, 0);
     }
 
     public void IncFileReferences(FileId key,
@@ -295,7 +294,7 @@ public class MaterialPackage : IDisposable
     /// <summary>
     /// Loads the main shader defined inside the package
     /// </summary>
-    /// <returns>A raylib Shader object</returns>
+    /// <returns>A Raylib Shader object</returns>
     /// <exception cref="InvalidDataException">If the Shader is not valid</exception>
     public Shader LoadShader()
     {
@@ -325,8 +324,6 @@ public class MaterialPackage : IDisposable
         {
             Shader.Value.Locs[(int)ShaderLocationIndex.VectorView] =
                 Raylib.GetShaderLocation(Shader.Value, "viewPos");
-            //Shader.Value.Locs[(int)ShaderLocationIndex.MapAlbedo] =
-            //    Raylib.GetShaderLocation(Shader.Value, "albedoMap");
         }
 
         return Shader.Value;
@@ -351,11 +348,6 @@ public class MaterialPackage : IDisposable
         if (Shader.HasValue == false)
             return;
 
-
-        //unsafe
-        //{
-        //    Raylib.UnloadMaterial(model.Materials[0]);
-        //}
 
         foreach (var (name, variable) in Variables)
         {

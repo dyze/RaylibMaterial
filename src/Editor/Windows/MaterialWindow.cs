@@ -4,8 +4,10 @@ using ImGuiNET;
 using Library.CodeVariable;
 using Library.Packaging;
 using NLog;
+using System.Data.Common;
 using System.Text;
 using System.Xml.Linq;
+using Library.Helpers;
 
 namespace Editor.Windows;
 
@@ -131,9 +133,9 @@ class MaterialWindow(
             ImGui.SameLine();
             HelpMarker.Run("Description of the material");
 
-            if (ImGui.InputText("Description", ref editorControllerData.MaterialPackage.Meta.Description, 200))
+            if (ImGui.InputText("Description", ref editorControllerData.MaterialPackage.Description.Description, 200))
                 editorControllerData.MaterialPackage.SetModified();
-            if (ImGui.InputText("Author", ref editorControllerData.MaterialPackage.Meta.Author, 200))
+            if (ImGui.InputText("Author", ref editorControllerData.MaterialPackage.Description.Author, 200))
                 editorControllerData.MaterialPackage.SetModified();
 
             RenderShaderField(FileType.VertexShader);
@@ -153,16 +155,45 @@ class MaterialWindow(
             if (editorControllerData.MaterialPackage.FilesCount == 0)
                 ImGui.TextDisabled("Empty");
             else
+            {
+                ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders
+                    | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable;
+
+                if (ImGui.BeginTable("files", 4, flags))
+                {
+                    ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
+                    ImGui.TableSetupColumn("size", ImGuiTableColumnFlags.WidthFixed);
+                    ImGui.TableSetupColumn("references", ImGuiTableColumnFlags.WidthFixed);
+                    ImGui.TableSetupColumn("action", ImGuiTableColumnFlags.WidthFixed);
+                    ImGui.TableHeadersRow();
+                }
+
+                var totalSize = 0;
+
                 foreach (var file in editorControllerData.MaterialPackage.Files)
                 {
+                    ImGui.TableNextRow();
+
                     var fileReferences = editorControllerData.MaterialPackage.FileReferences[file.Key];
+
+                    ImGui.TableSetColumnIndex(0);
                     ImGui.Text(file.Key.FileName);
+
+                    ImGui.TableSetColumnIndex(1);
+                    var sizeText = StringTools.GetReadableFileSize((ulong)file.Value.Length);
+                    ImGui.Text(sizeText);
+                     
+                    ImGui.SetItemTooltip($"size={file.Value.Length} B");
+
+                    totalSize += file.Value.Length;
+
 
                     if (fileReferences == 0)
                     {
-                        ImGui.SameLine();
+                        ImGui.TableSetColumnIndex(2);
                         ImGui.TextColored(TypeConverters.ColorToVector4(System.Drawing.Color.Orange), "unused!");
-                        ImGui.SameLine();
+
+                        ImGui.TableSetColumnIndex(3);
                         ImGui.PushID("delete" + file.ToString());
                         if (ImGui.Button("delete"))
                         {
@@ -171,20 +202,28 @@ class MaterialWindow(
 
                         ImGui.PopID();
                     }
-
-                    if (file.Key.FileType == FileType.FragmentShader ||
-                        file.Key.FileType == FileType.VertexShader)
+                    else
                     {
-                        ImGui.SameLine();
-                        ImGui.PushID("activate" + file.ToString());
-                        if (ImGui.Button("activate"))
-                        {
-                            editorControllerData.MaterialPackage.ActivateShader(file.Key);
-                        }
-
-                        ImGui.PopID();
+                        ImGui.TableSetColumnIndex(2);
+                        ImGui.Text($"{fileReferences}");
                     }
                 }
+
+                {
+                    ImGui.TableNextRow();
+
+                    ImGui.TableSetColumnIndex(0);
+                    ImGui.Text("Total");
+
+                    ImGui.TableSetColumnIndex(1);
+                    var sizeText = StringTools.GetReadableFileSize((ulong)totalSize);
+                    ImGui.Text(sizeText);
+
+                    ImGui.SetItemTooltip($"size={totalSize} B");
+                }
+
+                ImGui.EndTable();
+            }
         }
     }
 }

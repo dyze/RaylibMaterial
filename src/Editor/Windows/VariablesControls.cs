@@ -48,14 +48,18 @@ namespace Editor.Windows
                     ImGui.TextDisabled("Empty");
                 else
                 {
-                    var sortedVariables = variables.OrderBy(e => e.Key); 
+                    var sortedVariables = variables.OrderBy(e => e.Key);
                     foreach (var (name, variable) in sortedVariables)
                     {
                         ImGui.PushID(name);
 
-                        ImGuiTreeNodeFlags flags = variable.Internal == false ? ImGuiTreeNodeFlags.DefaultOpen;
+                        ImGuiTreeNodeFlags flags = variable.Internal == false
+                            ? ImGuiTreeNodeFlags.DefaultOpen
+                            : ImGuiTreeNodeFlags.None;
+
                         if (ImGui.TreeNodeEx(name, flags))
                         {
+                            ImGui.BeginDisabled(variable.Internal);
                             ImGui.BeginGroup();
 
                             if (_handlers.TryGetValue(variable.GetType(), out var handler))
@@ -75,6 +79,7 @@ namespace Editor.Windows
                                 ImGui.LabelText(name, variable.GetType().ToString());
                             }
 
+                            ImGui.EndDisabled();
                             ImGui.EndGroup();
 
                             if (ImGui.IsItemHovered(ImGuiHoveredFlags.DelayShort | ImGuiHoveredFlags.NoSharedDelay))
@@ -83,9 +88,10 @@ namespace Editor.Windows
                                 if (description != null)
                                     ImGui.SetTooltip(description.Description);
                             }
+
+                            ImGui.TreePop();
                         }
 
-                        ImGui.TreePop();
                         ImGui.PopID();
                     }
                 }
@@ -99,17 +105,13 @@ namespace Editor.Windows
         {
             var variableChanged = false;
 
-            ImGui.BeginDisabled(variable.Internal);
-
             var currentValue = (variable as CodeVariableInt).Value;
 
-            if (ImGui.InputInt(name, ref currentValue))
+            if (ImGui.InputInt($"##{name}", ref currentValue))
             {
                 (variable as CodeVariableInt).Value = currentValue;
                 variableChanged = true;
             }
-
-            ImGui.EndDisabled();
 
             return variableChanged;
         }
@@ -118,17 +120,13 @@ namespace Editor.Windows
         {
             var variableChanged = false;
 
-            ImGui.BeginDisabled(variable.Internal);
-
             var currentValue = (variable as CodeVariableFloat).Value;
 
-            if (ImGui.InputFloat(name, ref currentValue, 0.01f, 0.1f))
+            if (ImGui.InputFloat($"##{name}", ref currentValue, 0.01f, 0.1f))
             {
                 (variable as CodeVariableFloat).Value = currentValue;
                 variableChanged = true;
             }
-
-            ImGui.EndDisabled();
 
             return variableChanged;
         }
@@ -141,66 +139,61 @@ namespace Editor.Windows
 
             var currentValue = matrix4X4;
 
-            if (ImGui.TreeNode(name))
+
             {
-                ImGui.BeginDisabled(variable.Internal);
+                var row1 = new Vector4(currentValue.M11, currentValue.M12, currentValue.M13,
+                    currentValue.M14);
+
+                if (ImGui.InputFloat4($"{name} row1", ref row1))
                 {
-                    var row1 = new Vector4(currentValue.M11, currentValue.M12, currentValue.M13,
-                        currentValue.M14);
-
-                    if (ImGui.InputFloat4($"{name} row1", ref row1))
-                    {
-                        matrix4X4.M11 = row1.X;
-                        matrix4X4.M12 = row1.Y;
-                        matrix4X4.M13 = row1.Z;
-                        matrix4X4.M14 = row1.W;
-                        variableChanged = true;
-                    }
+                    matrix4X4.M11 = row1.X;
+                    matrix4X4.M12 = row1.Y;
+                    matrix4X4.M13 = row1.Z;
+                    matrix4X4.M14 = row1.W;
+                    variableChanged = true;
                 }
+            }
 
+            {
+                var row2 = new Vector4(currentValue.M21, currentValue.M22, currentValue.M23,
+                    currentValue.M24);
+
+                if (ImGui.InputFloat4($"{name} row2", ref row2))
                 {
-                    var row2 = new Vector4(currentValue.M21, currentValue.M22, currentValue.M23,
-                        currentValue.M24);
-
-                    if (ImGui.InputFloat4($"{name} row2", ref row2))
-                    {
-                        matrix4X4.M21 = row2.X;
-                        matrix4X4.M22 = row2.Y;
-                        matrix4X4.M23 = row2.Z;
-                        matrix4X4.M24 = row2.W;
-                        variableChanged = true;
-                    }
+                    matrix4X4.M21 = row2.X;
+                    matrix4X4.M22 = row2.Y;
+                    matrix4X4.M23 = row2.Z;
+                    matrix4X4.M24 = row2.W;
+                    variableChanged = true;
                 }
+            }
 
+            {
+                var row3 = new Vector4(currentValue.M31, currentValue.M32, currentValue.M33,
+                    currentValue.M34);
+
+                if (ImGui.InputFloat4($"{name} row3", ref row3))
                 {
-                    var row3 = new Vector4(currentValue.M31, currentValue.M32, currentValue.M33,
-                        currentValue.M34);
-
-                    if (ImGui.InputFloat4($"{name} row3", ref row3))
-                    {
-                        matrix4X4.M31 = row3.X;
-                        matrix4X4.M32 = row3.Y;
-                        matrix4X4.M33 = row3.Z;
-                        matrix4X4.M34 = row3.W;
-                        variableChanged = true;
-                    }
+                    matrix4X4.M31 = row3.X;
+                    matrix4X4.M32 = row3.Y;
+                    matrix4X4.M33 = row3.Z;
+                    matrix4X4.M34 = row3.W;
+                    variableChanged = true;
                 }
+            }
 
+            {
+                var row4 = new Vector4(currentValue.M41, currentValue.M42, currentValue.M43,
+                    currentValue.M44);
+
+                if (ImGui.InputFloat4($"{name} row4", ref row4))
                 {
-                    var row4 = new Vector4(currentValue.M41, currentValue.M42, currentValue.M43,
-                        currentValue.M44);
-
-                    if (ImGui.InputFloat4($"{name} row4", ref row4))
-                    {
-                        matrix4X4.M41 = row4.X;
-                        matrix4X4.M42 = row4.Y;
-                        matrix4X4.M43 = row4.Z;
-                        matrix4X4.M44 = row4.W;
-                        variableChanged = true;
-                    }
+                    matrix4X4.M41 = row4.X;
+                    matrix4X4.M42 = row4.Y;
+                    matrix4X4.M43 = row4.Z;
+                    matrix4X4.M44 = row4.W;
+                    variableChanged = true;
                 }
-                ImGui.EndDisabled();
-                ImGui.TreePop();
             }
 
             return variableChanged;
@@ -210,17 +203,13 @@ namespace Editor.Windows
         {
             var variableChanged = false;
 
-            ImGui.BeginDisabled(variable.Internal);
-
             var currentValue = TypeConverters.ColorToVector4((variable as CodeVariableColor).Value);
 
-            if (ImGui.ColorEdit4(name, ref currentValue))
+            if (ImGui.ColorEdit4($"##{name}", ref currentValue))
             {
                 (variable as CodeVariableColor).Value = TypeConverters.Vector4ToColor(currentValue);
                 variableChanged = true;
             }
-
-            ImGui.EndDisabled();
 
             return variableChanged;
         }
@@ -229,49 +218,38 @@ namespace Editor.Windows
         {
             const bool variableChanged = false;
 
-
-                var i = 0;
-                foreach (var light in _editorControllerData.Lights)
+            var i = 0;
+            foreach (var light in _editorControllerData.Lights)
+            {
+                if (ImGui.TreeNodeEx($"light[{i}]", ImGuiTreeNodeFlags.DefaultOpen))
                 {
-                    if (ImGui.TreeNode($"light[{i}]"))
-                    {
-                        ImGui.BeginDisabled(variable.Internal);
+                    ImGui.Checkbox("Enabled", ref light.Enabled);
 
-                        ImGui.Checkbox("Enabled", ref light.Enabled);
+                    ImGui.LabelText("Type", light.Type.ToString());
 
-                        ImGui.LabelText("Type", light.Type.ToString());
+                    ImGui.InputFloat3("Position", ref light.Position);
 
-                        ImGui.InputFloat3("Position", ref light.Position);
+                    ImGui.InputFloat3("Target", ref light.Target);
 
-                        ImGui.InputFloat3("Target", ref light.Target);
+                    var currentValue = TypeConvertors.ColorToVector4(light.Color);
+                    ImGui.ColorEdit4("Color", ref currentValue);
 
-                        var currentValue = TypeConvertors.ColorToVector4(light.Color);
-                        ImGui.ColorEdit4("Color", ref currentValue);
+                    ImGui.InputFloat("Intensity", ref light.Intensity);
 
-                        ImGui.InputFloat("Intensity", ref light.Intensity);
-
-                        ImGui.EndDisabled();
-                        ImGui.TreePop();
-                    }
-
-                    i++;
+                    ImGui.TreePop();
                 }
+
+                i++;
+            }
 
 
             return variableChanged;
         }
 
         private bool HandleUnsupported(CodeVariableBase variable, string name)
-        {
-            var variableChanged = false;
-
-            ImGui.BeginDisabled(variable.Internal);
-
-            ImGui.LabelText(name, "unsupported");
-
-            ImGui.EndDisabled();
-
-            return variableChanged;
+        { 
+            ImGui.LabelText($"##{name}", "unsupported");
+            return false;
         }
     }
 }
