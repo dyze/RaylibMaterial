@@ -5,8 +5,6 @@ using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 using ImGuiNET;
 using Newtonsoft.Json;
-using System.Xml.Linq;
-using System;
 using Library.Helpers;
 
 namespace Library.Packaging;
@@ -236,6 +234,14 @@ public class MaterialPackage : IDisposable
             .FirstOrDefault();
     }
 
+    public List<string> GetFilesMatchingType(FileType fileType)
+    {
+        var files = Files.Where(f => f.Key.FileType == fileType)
+            .Select(e => e.Key.FileName);
+
+        return files.ToList();
+    }
+
     public void SetShaderName(FileType shaderType, string shaderName)
     {
         Meta.SetShaderName(shaderType, shaderName);
@@ -372,47 +378,47 @@ public class MaterialPackage : IDisposable
             {
                 var currentValue = (variable as CodeVariableInt).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Int);
-                Logger.Trace($"{name}={currentValue}");
+                //Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableVector2))
             {
                 var currentValue = (variable as CodeVariableVector2).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec2);
-                Logger.Trace($"{name}={currentValue}");
+               // Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableVector3))
             {
                 var currentValue = (variable as CodeVariableVector3).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec3);
-                Logger.Trace($"{name}={currentValue}");
+                //Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableVector4))
             {
                 var currentValue = (variable as CodeVariableVector4).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
-                Logger.Trace($"{name}={currentValue}");
+               // Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableColor))
             {
                 var currentValue = TypeConverters.ColorToVector4((variable as CodeVariableColor).Value);
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
-                Logger.Trace($"{name}={currentValue}");
+                //Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableFloat))
             {
                 var currentValue = (variable as CodeVariableFloat).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Float);
-                Logger.Trace($"{name}={currentValue}");
+                //Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableTexture))
             {
                 var materialMapIndex = (variable as CodeVariableTexture).MaterialMapIndex;
 
-                if(materialMapIndex==null)
-                    Logger.Error($"{name}: materialMapIndex not set ");
+                if (materialMapIndex == null)
+                    Logger.Error($"{name}: materialMapIndex not set");
                 else
-                    SetUniformTexture(name, 
-                        (variable as CodeVariableTexture).Value, 
+                    SetUniformTexture(name,
+                        (variable as CodeVariableTexture).Value,
                         model,
                         materialMapIndex.Value);
             }
@@ -467,39 +473,12 @@ public class MaterialPackage : IDisposable
                 Logger.Error($"ShaderLocationIndex for {materialMapIndex} not found");
                 return;
             }
+
             Shader.Value.Locs[(int)index] = Raylib.GetShaderLocation(Shader.Value, variableName);
         }
 
         Raylib.SetMaterialTexture(ref model, 0, materialMapIndex, ref texture);
         Logger.Trace($"{variableName}={fileName}, materialMapIndex={materialMapIndex}");
-
-        //unsafe
-        //{
-        //    var currentValue = model.Materials[0].Maps[(int)materialMapIndex].Value;
-        //    Logger.Trace($"{variableName}: currentValue={currentValue}");
-        //    model.Materials[0].Maps[(int)materialMapIndex].Value = 1f;
-
-        //    model.Materials[0].Maps[(int)materialMapIndex].Color = new Color(1, 1, 1, 1);
-        //}
-
-        //if (Type.TryGetValue(variableName, out var index))
-        //{
-        //    Raylib.SetMaterialTexture(ref model, 0, index, ref texture);
-        //    Logger.Error($"{variableName}={fileName}");
-        //}
-        //else
-        //{
-        //    Logger.Warn($"MaterialMapIndex for {variableName} can't be found");
-
-        //    var location = Raylib.GetShaderLocation(Shader.Value, variableName);
-        //    if (location < 0)
-        //        Logger.Error($"location for {variableName} not found in shader. maybe because unused in code");
-        //    else
-        //    {
-        //        Raylib.SetShaderValue(Shader.Value, location, texture, ShaderUniformDataType.Sampler2D);
-        //        Logger.Trace($"{variableName}={fileName}");
-        //    }
-        //}
     }
 
     public void UpdateFileReferences()
@@ -542,14 +521,17 @@ public class MaterialPackage : IDisposable
             v.Value = cameraPosition;
         }
 
+        int loc;
         unsafe
         {
-            Raylib.SetShaderValue(
-                Shader.Value,
-                Shader.Value.Locs[(int)ShaderLocationIndex.VectorView],
-                cameraPosition,
-                ShaderUniformDataType.Vec3
-            );
+            loc = Shader.Value.Locs[(int)ShaderLocationIndex.VectorView];
         }
+
+        Raylib.SetShaderValue(
+            Shader.Value,
+            loc,
+            cameraPosition,
+            ShaderUniformDataType.Vec3
+        );
     }
 }

@@ -33,6 +33,7 @@ public class EditorConfiguration
     [JsonProperty("WindowPosition")] public Point WindowPosition { get; set; } = new(40, 40);
     [JsonProperty("WindowSize")] public Size WindowSize = new(1600, 900);
     [JsonProperty("MonitorIndex")] public int MonitorIndex { get; set; } = 0;
+    [JsonProperty("IsInDebugMode")] public bool IsInDebugMode { get; set; }
 
     public enum ModelType
     {

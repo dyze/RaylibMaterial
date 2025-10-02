@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using Editor.Helpers;
 using ImGuiNET;
 using Library.CodeVariable;
 using Library.Helpers;
@@ -40,39 +39,57 @@ namespace Editor.Windows
         {
             var atLeastAVariableChanged = false;
 
-            ImGui.SeparatorText("Variables");
+            if (ImGui.CollapsingHeader("Variables", ImGuiTreeNodeFlags.DefaultOpen))
+            {
+                ImGui.SameLine();
+                HelpMarker.Run("Variables that are necessary for the shader to run");
 
-            if (variables.Count == 0)
-                ImGui.TextDisabled("Empty");
-            else
-                foreach (var (name, variable) in variables)
+                if (variables.Count == 0)
+                    ImGui.TextDisabled("Empty");
+                else
                 {
-                    ImGui.PushID(name);
-
-                    ImGui.BeginGroup();
-
-                    if (_handlers.TryGetValue(variable.GetType(), out var handler))
+                    var sortedVariables = variables.OrderBy(e => e.Key); 
+                    foreach (var (name, variable) in sortedVariables)
                     {
-                        variable.SendToShader = handler(variable, name);
+                        ImGui.PushID(name);
 
-                        atLeastAVariableChanged |= variable.SendToShader;
+                        ImGuiTreeNodeFlags flags = variable.Internal == false ? ImGuiTreeNodeFlags.DefaultOpen;
+                        if (ImGui.TreeNodeEx(name, flags))
+                        {
+                            ImGui.BeginGroup();
+
+                            if (_handlers.TryGetValue(variable.GetType(), out var handler))
+                            {
+                                var sendToShader = handler(variable, name);
+                                if (sendToShader)
+                                {
+                                    // Don't delete previous value because maybe not yet applied by controller
+                                    Logger.Trace($"{name}: SendToShader");
+                                    variable.SendToShader = sendToShader;
+                                }
+
+                                atLeastAVariableChanged |= sendToShader;
+                            }
+                            else
+                            {
+                                ImGui.LabelText(name, variable.GetType().ToString());
+                            }
+
+                            ImGui.EndGroup();
+
+                            if (ImGui.IsItemHovered(ImGuiHoveredFlags.DelayShort | ImGuiHoveredFlags.NoSharedDelay))
+                            {
+                                var description = TypeConvertors.GetUniformDescription(name);
+                                if (description != null)
+                                    ImGui.SetTooltip(description.Description);
+                            }
+                        }
+
+                        ImGui.TreePop();
+                        ImGui.PopID();
                     }
-                    else
-                    {
-                        ImGui.LabelText(name, variable.GetType().ToString());
-                    }
-
-                    ImGui.EndGroup();
-
-                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.DelayShort | ImGuiHoveredFlags.NoSharedDelay))
-                    {
-                        var description = TypeConvertors.GetUniformDescription(name);
-                        if (description != null)
-                            ImGui.SetTooltip(description.Description);
-                    }
-
-                    ImGui.PopID();
                 }
+            }
 
             return atLeastAVariableChanged;
         }
@@ -108,62 +125,6 @@ namespace Editor.Windows
             if (ImGui.InputFloat(name, ref currentValue, 0.01f, 0.1f))
             {
                 (variable as CodeVariableFloat).Value = currentValue;
-                variableChanged = true;
-            }
-
-            ImGui.EndDisabled();
-
-            return variableChanged;
-        }
-
-        private bool HandleVector2(CodeVariableBase variable, string name)
-        {
-            var variableChanged = false;
-
-            ImGui.BeginDisabled(variable.Internal);
-
-            var currentValue = (variable as CodeVariableVector2).Value;
-
-            if (ImGui.InputFloat2(name, ref currentValue))
-            {
-                (variable as CodeVariableVector2).Value = currentValue;
-                variableChanged = true;
-            }
-
-            ImGui.EndDisabled();
-
-            return variableChanged;
-        }
-
-        private bool HandleVector3(CodeVariableBase variable, string name)
-        {
-            var variableChanged = false;
-
-            ImGui.BeginDisabled(variable.Internal);
-
-            var currentValue = (variable as CodeVariableVector3).Value;
-
-            if (ImGui.InputFloat3(name, ref currentValue))
-            {
-                (variable as CodeVariableVector3).Value = currentValue;
-                variableChanged = true;
-            }
-
-            ImGui.EndDisabled();
-
-            return variableChanged;
-        }
-
-        private static bool HandleVector4(CodeVariableBase variable, string name)
-        {
-            var variableChanged = false;
-
-            ImGui.BeginDisabled(variable.Internal);
-
-            var currentValue = (variable as CodeVariableVector4).Value;
-            if (ImGui.InputFloat4(name, ref currentValue))
-            {
-                (variable as CodeVariableVector4).Value = currentValue;
                 variableChanged = true;
             }
 
@@ -263,14 +224,12 @@ namespace Editor.Windows
 
             return variableChanged;
         }
-        
+
         private bool HandleLight(CodeVariableBase variable, string name)
         {
-            var variableChanged = false;
+            const bool variableChanged = false;
 
 
-            if (ImGui.TreeNode(name))
-            {
                 var i = 0;
                 foreach (var light in _editorControllerData.Lights)
                 {
@@ -298,8 +257,6 @@ namespace Editor.Windows
                     i++;
                 }
 
-                ImGui.TreePop();
-            }
 
             return variableChanged;
         }

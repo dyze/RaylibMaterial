@@ -7,9 +7,7 @@
 // Author: dyze@dlabs.eu
 
 using System.Numerics;
-using ImGuiNET;
 using Library.Helpers;
-using Library.Packaging;
 using Raylib_cs;
 
 namespace Library.Lighting;
@@ -102,14 +100,4 @@ public static class LightManager
             Raylib.SetShaderValue(shader, light.IntensityLoc[i], light.Intensity, ShaderUniformDataType.Float);
         }
     }
-
-    //public static void SetAmbientColor(Shader shader, System.Drawing.Color ambientColor)
-    //{
-    //    var ambientLoc = Raylib.GetShaderLocation(shader, "ambient");
-
-    //    var color = new Vector4(ambientColor.R / (float)255, ambientColor.G / (float)255,
-    //        ambientColor.B / (float)255, ambientColor.A / (float)255);
-
-    //    Raylib.SetShaderValue(shader, ambientLoc, color, ShaderUniformDataType.Vec4);
-    //}
 }

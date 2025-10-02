@@ -1,10 +1,11 @@
 ﻿using Editor.Configuration;
 using Editor.Helpers;
 using ImGuiNET;
-using Library.Helpers;
+using Library.CodeVariable;
 using Library.Packaging;
 using NLog;
 using System.Text;
+using System.Xml.Linq;
 
 namespace Editor.Windows;
 
@@ -25,8 +26,7 @@ class MaterialWindow(
         if (ImGui.Begin("Material"))
         {
             RenderToolBar();
-            RenderMeta();
-            RenderShaders();
+            RenderProperties();
             RenderFiles();
 
             var material = editorControllerData.MaterialPackage;
@@ -40,19 +40,32 @@ class MaterialWindow(
         ImGui.End();
     }
 
-
-    private void RenderShaders()
-    {
-        RenderShaderField(FileType.VertexShader);
-
-        RenderShaderField(FileType.FragmentShader);
-    }
-
     private void RenderShaderField(FileType fileType)
     {
+        ImGui.PushID(fileType.ToString());
+
         var material = editorControllerData.MaterialPackage;
         var file = material.GetShaderName(fileType);
-        ImGui.LabelText(fileType.ToString(), file ?? "");
+
+        if (file != "")
+        {
+            if (ImGui.Button("x"))
+            {
+                material.SetShaderName(fileType, "");
+            }
+
+            ImGui.SameLine();
+        }
+
+        {
+            var files = editorControllerData.MaterialPackage.GetFilesMatchingType(fileType);
+            var currentIndex = files.FindIndex(i => i == file);
+
+            if (ImGui.Combo(fileType.ToString(), ref currentIndex, files.ToArray(), files.Count))
+            {
+                material.SetShaderName(fileType, files[currentIndex]);
+            }
+        }
 
         if (ImGui.BeginDragDropTarget())
         {
@@ -87,6 +100,8 @@ class MaterialWindow(
 
             ImGui.EndDragDropTarget();
         }
+
+        ImGui.PopID();
     }
 
     private void RenderToolBar()
@@ -109,55 +124,67 @@ class MaterialWindow(
             OnSave?.Invoke();
     }
 
-    private void RenderMeta()
+    private void RenderProperties()
     {
-        ImGui.SeparatorText("Properties");
+        if(ImGui.CollapsingHeader("Properties", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.SameLine();
+            HelpMarker.Run("Description of the material");
 
-        if (ImGui.InputText("Description", ref editorControllerData.MaterialPackage.Meta.Description, 200))
-            editorControllerData.MaterialPackage.SetModified();
-        if (ImGui.InputText("Author", ref editorControllerData.MaterialPackage.Meta.Author, 200))
-            editorControllerData.MaterialPackage.SetModified();
+            if (ImGui.InputText("Description", ref editorControllerData.MaterialPackage.Meta.Description, 200))
+                editorControllerData.MaterialPackage.SetModified();
+            if (ImGui.InputText("Author", ref editorControllerData.MaterialPackage.Meta.Author, 200))
+                editorControllerData.MaterialPackage.SetModified();
+
+            RenderShaderField(FileType.VertexShader);
+
+            RenderShaderField(FileType.FragmentShader);
+        }
     }
 
 
     private void RenderFiles()
     {
-        ImGui.SeparatorText("Files");
-        HelpMarker.Run("Files that will be part of final package");
-        if (editorControllerData.MaterialPackage.FilesCount == 0)
-            ImGui.TextDisabled("Empty");
-        else
-            foreach (var file in editorControllerData.MaterialPackage.Files)
-            {
-                var fileReferences = editorControllerData.MaterialPackage.FileReferences[file.Key];
-                ImGui.Text(file.Key.FileName);
+        if (ImGui.CollapsingHeader("Files", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.SameLine();
+            HelpMarker.Run("Files that will be part of final package");
 
-                if (fileReferences == 0)
+            if (editorControllerData.MaterialPackage.FilesCount == 0)
+                ImGui.TextDisabled("Empty");
+            else
+                foreach (var file in editorControllerData.MaterialPackage.Files)
                 {
-                    ImGui.SameLine();
-                    ImGui.TextColored(TypeConverters.ColorToVector4(System.Drawing.Color.Orange), "unused!");
-                    ImGui.SameLine();
-                    ImGui.PushID("delete"+file.ToString());
-                    if (ImGui.Button("delete"))
+                    var fileReferences = editorControllerData.MaterialPackage.FileReferences[file.Key];
+                    ImGui.Text(file.Key.FileName);
+
+                    if (fileReferences == 0)
                     {
-                        editorControllerData.MaterialPackage.DeleteFile(file.Key);
+                        ImGui.SameLine();
+                        ImGui.TextColored(TypeConverters.ColorToVector4(System.Drawing.Color.Orange), "unused!");
+                        ImGui.SameLine();
+                        ImGui.PushID("delete" + file.ToString());
+                        if (ImGui.Button("delete"))
+                        {
+                            editorControllerData.MaterialPackage.DeleteFile(file.Key);
+                        }
+
+                        ImGui.PopID();
                     }
 
-                    ImGui.PopID();
-                }
-
-                if (file.Key.FileType == FileType.FragmentShader ||
-                    file.Key.FileType == FileType.VertexShader)
-                {
-                    ImGui.SameLine();
-                    ImGui.PushID("activate" + file.ToString());
-                    if (ImGui.Button("activate"))
+                    if (file.Key.FileType == FileType.FragmentShader ||
+                        file.Key.FileType == FileType.VertexShader)
                     {
-                        editorControllerData.MaterialPackage.ActivateShader(file.Key);
-                    }
+                        ImGui.SameLine();
+                        ImGui.PushID("activate" + file.ToString());
+                        if (ImGui.Button("activate"))
+                        {
+                            editorControllerData.MaterialPackage.ActivateShader(file.Key);
+                        }
 
-                    ImGui.PopID();
+                        ImGui.PopID();
+                    }
                 }
-            }
+        }
     }
 }

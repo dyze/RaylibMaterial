@@ -5,8 +5,6 @@ namespace Editor.Configuration;
 
 public class CameraSettings
 {
-
-
     [JsonProperty("Angles")] public Vector3 Angles = Vector3.Zero;
     [JsonProperty("Target")] public Vector3 Target = Vector3.Zero;
 

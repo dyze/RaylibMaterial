@@ -21,7 +21,6 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
     public bool IsWindowFocus { get; private set; }
     public bool IsWindowHovered { get; private set; }
-    public bool IsInDebugMode = false;
 
     public void RenderOutputWindow()
     {
@@ -159,7 +158,11 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                 ImGui.EndCombo();
             }
 
-            ImGui.Checkbox("debug mode", ref IsInDebugMode);
+            var editorConfigurationIsInDebugMode = editorConfiguration.IsInDebugMode;
+            if (ImGui.Checkbox("debug mode", ref editorConfigurationIsInDebugMode))
+            {
+                editorConfiguration.IsInDebugMode = editorConfigurationIsInDebugMode;
+            }
 
             ImGui.Separator();
             rlImGui.ImageRenderTexture(editorControllerData.ViewTexture);

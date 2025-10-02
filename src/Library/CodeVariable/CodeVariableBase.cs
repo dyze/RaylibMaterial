@@ -13,4 +13,9 @@ public abstract class CodeVariableBase
     /// is true when value needs to be sent to shader
     /// </summary>
     public bool SendToShader = true;
+
+    public override string ToString()
+    {
+        return $"Internal={Internal}, SendToShader={SendToShader}";
+    }
 }

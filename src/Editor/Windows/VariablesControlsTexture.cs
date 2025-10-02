@@ -2,7 +2,7 @@
 using ImGuiNET;
 using Library.CodeVariable;
 using Library.Helpers;
-using NLog;
+using Library.Packaging;
 using Raylib_cs;
 
 namespace Editor.Windows
@@ -16,9 +16,31 @@ namespace Editor.Windows
             ImGui.BeginDisabled(variable.Internal);
 
             var currentValue = (variable as CodeVariableTexture).Value;
-            var currentIndex = (variable as CodeVariableTexture).MaterialMapIndex;
+            {
+                if ((variable as CodeVariableTexture).Value != "")
+                {
+                    if (ImGui.Button("x"))
+                    {
+                        (variable as CodeVariableTexture).Value = "";
+                        (variable as CodeVariableTexture).MaterialMapIndex = null;
+                        variableChanged = true;
+                    }
 
-            ImGui.LabelText(name, currentValue);
+                    ImGui.SameLine();
+                }
+            }
+
+            {
+                var files = _editorControllerData.MaterialPackage.GetFilesMatchingType(FileType.Image);
+                var currentIndex = files.FindIndex(i => i == currentValue);
+                
+                if (ImGui.Combo(name, ref currentIndex, files.ToArray(), files.Count))
+                {
+                    (variable as CodeVariableTexture).Value = files[currentIndex];
+                    variableChanged = true;
+                }
+            }
+
 
             if (ImGui.BeginDragDropTarget())
             {
@@ -37,9 +59,10 @@ namespace Editor.Windows
                     Logger.Trace($"dropped {draggedRelativeFilePath}");
 
                     var draggedFileName = _editorControllerData.DataFileExplorerData.DraggedFileName;
+                    var readBinaryFile =
+                        _editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath);
                     _editorControllerData.MaterialPackage.AddFile(draggedFileName,
-                        _editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(
-                            draggedRelativeFilePath));
+                        readBinaryFile);
 
                     (variable as CodeVariableTexture).Value = draggedFileName;
                     variableChanged = true;
@@ -52,19 +75,22 @@ namespace Editor.Windows
             }
 
 
-            var enumNames = EnumTools.EnumNamesToString(typeof(MaterialMapIndex), '\0');
-            var enumValues = Enum.GetValues<MaterialMapIndex>().ToList();
-
-            var index = -1;
-            if (currentIndex != null)
             {
-                index = enumValues.FindIndex(0, v => v == currentIndex);
-            }
+                var enumNames = EnumTools.EnumNamesToString(typeof(MaterialMapIndex), '\0');
+                var enumValues = Enum.GetValues<MaterialMapIndex>().ToList();
 
-            if (ImGui.Combo("Index", ref index, enumNames))
-            {
-                variableChanged = true;
-                (variable as CodeVariableTexture).MaterialMapIndex = enumValues[index];
+                var index = -1;
+                var materialMapIndex = (variable as CodeVariableTexture).MaterialMapIndex;
+                if (materialMapIndex != null)
+                {
+                    index = enumValues.FindIndex(0, v => v == materialMapIndex);
+                }
+
+                if (ImGui.Combo("Index", ref index, enumNames))
+                {
+                    variableChanged = true;
+                    (variable as CodeVariableTexture).MaterialMapIndex = enumValues[index];
+                }
             }
 
             ImGui.EndDisabled();
