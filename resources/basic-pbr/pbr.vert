@@ -1,3 +1,6 @@
+// Original from https://www.raylib.com/examples/shaders/loader.html?name=shaders_basic_pbr
+// reworked by dyze@dlabs.eu: removed useless variables, renamed some
+
 #version 330
 
 // Input vertex attributes
@@ -10,9 +13,7 @@ in vec4 vertexColor;
 // Input uniform values
 uniform mat4 mvp;
 uniform mat4 matModel;
-uniform mat4 matNormal;
-uniform vec3 lightPos;
-uniform vec4 difColor;
+//uniform mat4 matNormal;
 
 // Output vertex attributes (to fragment shader)
 out vec3 fragPosition;
@@ -21,7 +22,7 @@ out vec4 fragColor;
 out vec3 fragNormal;
 out mat3 TBN;
 
-const float normalOffset = 0.1;
+//const float normalOffset = 0.1;
 
 void main()
 {
@@ -34,7 +35,9 @@ void main()
     // Compute fragment position based on model transformations
     fragPosition = vec3(matModel*vec4(vertexPosition, 1.0f));
 
-    fragTexCoord = vertexTexCoord*2.0;
+//    fragTexCoord = vertexTexCoord*2.0;
+    fragTexCoord = vertexTexCoord;
+
     fragNormal = normalize(normalMatrix*vertexNormal);
     vec3 fragTangent = normalize(normalMatrix*vertexTangent);
     fragTangent = normalize(fragTangent - dot(fragTangent, fragNormal)*fragNormal);

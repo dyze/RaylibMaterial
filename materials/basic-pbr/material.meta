@@ -1,0 +1,210 @@
+{
+  "$type": "Library.Packaging.MaterialMetaFile, Library",
+  "Version": "0.1",
+  "Description": "basic-pbr",
+  "Author": "dyze based on Afan OLOVCIC work",
+  "Tags": {
+    "$type": "System.Collections.Generic.List`1[[System.String, System.Private.CoreLib]], System.Private.CoreLib",
+    "$values": []
+  },
+  "Variables": {
+    "$type": "System.Collections.Generic.Dictionary`2[[System.String, System.Private.CoreLib],[Library.CodeVariable.CodeVariableBase, Library]], System.Private.CoreLib",
+    "matModel": {
+      "$type": "Library.CodeVariable.CodeVariableMatrix4x4, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": {
+        "$type": "System.Numerics.Matrix4x4, System.Private.CoreLib",
+        "M11": 0.0,
+        "M12": 0.0,
+        "M13": 0.0,
+        "M14": 0.0,
+        "M21": 0.0,
+        "M22": 0.0,
+        "M23": 0.0,
+        "M24": 0.0,
+        "M31": 0.0,
+        "M32": 0.0,
+        "M33": 0.0,
+        "M34": 0.0,
+        "M41": 0.0,
+        "M42": 0.0,
+        "M43": 0.0,
+        "M44": 0.0,
+        "IsIdentity": false,
+        "Translation": {
+          "$type": "System.Numerics.Vector3, System.Private.CoreLib",
+          "X": 0.0,
+          "Y": 0.0,
+          "Z": 0.0
+        }
+      }
+    },
+    "mvp": {
+      "$type": "Library.CodeVariable.CodeVariableMatrix4x4, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": {
+        "$type": "System.Numerics.Matrix4x4, System.Private.CoreLib",
+        "M11": 0.0,
+        "M12": 0.0,
+        "M13": 0.0,
+        "M14": 0.0,
+        "M21": 0.0,
+        "M22": 0.0,
+        "M23": 0.0,
+        "M24": 0.0,
+        "M31": 0.0,
+        "M32": 0.0,
+        "M33": 0.0,
+        "M34": 0.0,
+        "M41": 0.0,
+        "M42": 0.0,
+        "M43": 0.0,
+        "M44": 0.0,
+        "IsIdentity": false,
+        "Translation": {
+          "$type": "System.Numerics.Vector3, System.Private.CoreLib",
+          "X": 0.0,
+          "Y": 0.0,
+          "Z": 0.0
+        }
+      }
+    },
+    "numOfLights": {
+      "$type": "Library.CodeVariable.CodeVariableInt, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 4
+    },
+    "albedoMap": {
+      "$type": "Library.CodeVariable.CodeVariableTexture, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": "old_car_d.png",
+      "MaterialMapIndex": 0
+    },
+    "mraMap": {
+      "$type": "Library.CodeVariable.CodeVariableTexture, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": "old_car_mra.png",
+      "MaterialMapIndex": 1
+    },
+    "normalMap": {
+      "$type": "Library.CodeVariable.CodeVariableTexture, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": "old_car_n.png",
+      "MaterialMapIndex": 2
+    },
+    "emissiveMap": {
+      "$type": "Library.CodeVariable.CodeVariableTexture, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": "old_car_e.png",
+      "MaterialMapIndex": 5
+    },
+    "tiling": {
+      "$type": "Library.CodeVariable.CodeVariableVector2, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": {
+        "$type": "System.Numerics.Vector2, System.Private.CoreLib",
+        "X": 1.0,
+        "Y": 1.0
+      }
+    },
+    "offset": {
+      "$type": "Library.CodeVariable.CodeVariableVector2, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": {
+        "$type": "System.Numerics.Vector2, System.Private.CoreLib",
+        "X": 0.0,
+        "Y": 0.0
+      }
+    },
+    "useTexNormal": {
+      "$type": "Library.CodeVariable.CodeVariableInt, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 1
+    },
+    "useTexMRA": {
+      "$type": "Library.CodeVariable.CodeVariableInt, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 1
+    },
+    "useTexEmissive": {
+      "$type": "Library.CodeVariable.CodeVariableInt, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 1
+    },
+    "emissiveColor": {
+      "$type": "Library.CodeVariable.CodeVariableColor, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": "243, 250, 77"
+    },
+    "roughnessValue": {
+      "$type": "Library.CodeVariable.CodeVariableFloat, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 0.1
+    },
+    "aoValue": {
+      "$type": "Library.CodeVariable.CodeVariableFloat, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 0.20000002
+    },
+    "emissivePower": {
+      "$type": "Library.CodeVariable.CodeVariableFloat, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 1.0
+    },
+    "lights": {
+      "$type": "Library.CodeVariable.CodeVariableLight, Library",
+      "Internal": true,
+      "SendToShader": false
+    },
+    "viewPos": {
+      "$type": "Library.CodeVariable.CodeVariableVector3, Library",
+      "Internal": true,
+      "SendToShader": false,
+      "Value": {
+        "$type": "System.Numerics.Vector3, System.Private.CoreLib",
+        "X": 2.7754571,
+        "Y": 2.0443323,
+        "Z": 3.1949224
+      }
+    },
+    "ambientColor": {
+      "$type": "Library.CodeVariable.CodeVariableColor, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": "0, 26, 32, 135"
+    },
+    "ambient": {
+      "$type": "Library.CodeVariable.CodeVariableFloat, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 0.02
+    },
+    "metalnessValue": {
+      "$type": "Library.CodeVariable.CodeVariableFloat, Library",
+      "Internal": false,
+      "SendToShader": false,
+      "Value": 0.8000001
+    }
+  },
+  "ShaderNames": {
+    "$type": "System.Collections.Generic.Dictionary`2[[Library.Packaging.FileType, Library],[System.String, System.Private.CoreLib]], System.Private.CoreLib",
+    "VertexShader": "pbr.vert",
+    "FragmentShader": "pbr.frag"
+  }
+}
