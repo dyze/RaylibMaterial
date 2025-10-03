@@ -604,7 +604,7 @@ class EditorController
 
         // LoadShaders();
 
-        //_editorControllerData.MaterialPackage.SendVariablesToModel(_currentModel, false);
+        //_editorControllerData.MaterialPackage.SendVariablesToMaterial(_currentModel, false);
     }
 
 
@@ -894,7 +894,7 @@ class EditorController
 
         var material = Raylib.GetMaterial(ref _currentModel, materialIndex);
 
-        _editorControllerData.MaterialPackage.SendVariablesToModel(material, true);
+        _editorControllerData.MaterialPackage.SendVariablesToMaterial(material, true);
     }
 
     private void LoadShaders()

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
+    <PackageReference Include="NLog" Version="6.0.4" />
     <PackageReference Include="Raylib-cs" Version="7.0.1" />
     <PackageReference Include="rlImgui-cs" Version="3.2.0" />
   </ItemGroup>
@@ -16,5 +17,15 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Library\Library.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DataFiles\" />
+  </ItemGroup>
+
+	<Target Name="CopyCustomContent" AfterTargets="AfterBuild">
+		<Copy SourceFiles="DataFiles\ConsumerSampleApp.cfg" 
+		      DestinationFolder="$(OutDir)" 
+		      Condition="!Exists('$(OutDir)\ConsumerSampleApp.cfg')"/>
+	</Target>
 
 </Project>

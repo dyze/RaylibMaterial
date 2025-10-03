@@ -94,6 +94,7 @@ public class MaterialPackage : IDisposable
     };
 
 
+    //TODO add a way to load a package from memory or any stream
     public static MaterialPackage Load(string packageFilePath)
     {
         Logger Logger = LogManager.GetCurrentClassLogger();
@@ -341,9 +342,9 @@ public class MaterialPackage : IDisposable
         UnloadShader();
     }
 
-    public void SendVariablesToModel(Material raylibMaterial, bool force)
+    public void SendVariablesToMaterial(Material raylibMaterial, bool force)
     {
-        Logger.Info("SendVariablesToModel...");
+        Logger.Trace("SendVariablesToMaterial...");
 
         if (Shader.HasValue == false)
             return;
@@ -362,7 +363,7 @@ public class MaterialPackage : IDisposable
             var location = Raylib.GetShaderLocation(Shader.Value, name);
             if (location < 0)
             {
-                Logger.Error($"location for {name} not found in shader. maybe because unused in code");
+                Logger.Debug($"location for {name} not found in shader. maybe because unused in code");
                 continue;
             }
 
@@ -407,7 +408,7 @@ public class MaterialPackage : IDisposable
                 var materialMapIndex = (variable as CodeVariableTexture).MaterialMapIndex;
 
                 if (materialMapIndex == null)
-                    Logger.Error($"{name}: materialMapIndex not set");
+                    Logger.Debug($"{name}: materialMapIndex not set");
                 else
                     SetUniformTexture(name,
                         (variable as CodeVariableTexture).Value,
@@ -415,7 +416,7 @@ public class MaterialPackage : IDisposable
                         materialMapIndex.Value);
             }
             else
-                Logger.Error($"{variable.GetType()} not supported");
+                Logger.Debug($"{variable.GetType()} not supported");
         }
     }
 
@@ -424,7 +425,7 @@ public class MaterialPackage : IDisposable
         Material raylibMaterial,
         MaterialMapIndex materialMapIndex)
     {
-        Logger.Info("SetUniformTexture...");
+        Logger.Trace("SetUniformTexture...");
 
         if (fileName == "")
         {
@@ -443,7 +444,7 @@ public class MaterialPackage : IDisposable
         var image = Raylib.LoadImageFromMemory(extension, file); // ignore period
         if (Raylib.IsImageValid(image) == false)
         {
-            Logger.Error($"image {fileName} is not valid");
+            Logger.Debug($"image {fileName} is not valid");
             return;
         }
 
@@ -453,7 +454,7 @@ public class MaterialPackage : IDisposable
 
         if (Raylib.IsTextureValid(texture) == false)
         {
-            Logger.Error($"texture {variableName} is not valid");
+            Logger.Debug($"texture {variableName} is not valid");
             return;
         }
 
@@ -462,7 +463,7 @@ public class MaterialPackage : IDisposable
             var index = TypeConvertors.MaterialMapIndexToShaderLocationIndex(materialMapIndex);
             if (index == null)
             {
-                Logger.Error($"ShaderLocationIndex for {materialMapIndex} not found");
+                Logger.Debug($"ShaderLocationIndex for {materialMapIndex} not found");
                 return;
             }
 

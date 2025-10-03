@@ -2,25 +2,40 @@
 using Raylib_cs;
 using System.Numerics;
 
-namespace ConsumerSampleApp;
+namespace ConsumerSampleApp.Examples;
 
-abstract class ExampleBase
+abstract class ExampleBase(Configuration.Configuration configuration)
 {
-    public readonly string _materialDirectoryPath = "../../../../../materials";
-    public readonly string _modelDirectoryPath = "../../../../../src/Editor/resources/models/glb";      //TODO move to a better shared place
+    protected readonly Configuration.Configuration Configuration = configuration;
 
     private readonly List<Light> _lights = [];
-    public Shader? CurrentShader;
+
+    public FileInfo[] Files = [];
+
+    /// <summary>
+    /// Get the name of example
+    /// </summary>
+    /// <returns>the name</returns>
+    public abstract string GetName();
+
+    /// <summary>
+    /// Get a summary of the example
+    /// </summary>
+    /// <returns>the summary</returns>
+    public abstract string GetSummary();
+
+    /// <summary>
+    /// Get a detailed description of the example
+    /// </summary>
+    /// <returns>the detailed description</returns>
+    public abstract string GetDescription();
 
     public abstract void Init();
     public abstract void Run();
     public abstract void Close();
 
-    public void CreateLights()
+    public void CreateLights(List<Shader> shaders)
     {
-        if (CurrentShader.HasValue == false)
-            throw new NullReferenceException("_currentShader is null");
-
         LightManager.Clear();
         _lights.Clear();
 
@@ -30,7 +45,7 @@ abstract class ExampleBase
             Vector3.Zero,
             Color.Yellow,
         4.0f,
-            [CurrentShader.Value]
+            shaders
         ));
         _lights.Add(LightManager.CreateLight(
             LightType.Point,
@@ -38,7 +53,7 @@ abstract class ExampleBase
             Vector3.Zero,
             Color.Red,
         4.0f,
-            [CurrentShader.Value]
+            shaders
         ));
         _lights.Add(LightManager.CreateLight(
             LightType.Point,
@@ -46,7 +61,7 @@ abstract class ExampleBase
             Vector3.Zero,
             Color.Green,
         4.0f,
-            [CurrentShader.Value]
+            shaders
         ));
         _lights.Add(LightManager.CreateLight(
             LightType.Point,
@@ -54,7 +69,7 @@ abstract class ExampleBase
             Vector3.Zero,
             Color.Blue,
             4.0f,
-            [CurrentShader.Value]
+            shaders
         ));
     }
 
@@ -68,12 +83,16 @@ abstract class ExampleBase
 
     public void UpdateLights()
     {
-        if (CurrentShader.HasValue == false)
-            throw new NullReferenceException("_currentShader is null");
-
         foreach (var light in _lights)
         {
             LightManager.UpdateLightValues(light);
         }
+    }
+
+    public void EnumerateMaterials()
+    {
+        var di = new DirectoryInfo(Configuration.MaterialFolderPath);
+
+        Files = di.GetFiles("*.mat", SearchOption.AllDirectories);
     }
 }
