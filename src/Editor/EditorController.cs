@@ -44,7 +44,7 @@ class EditorController
     private readonly MessageWindow _messageWindow;
     public static MessageQueue MessageQueue { get; set; } = new();
 
-    private SkyBox _skyBox = new();
+    private SkyBox _skyBox;
 
     private readonly EditorControllerData _editorControllerData;
 
@@ -91,7 +91,7 @@ class EditorController
 
 
         if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
-            _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = Path.GetFullPath($"{Resources.ResourcesPath}\\");
+            throw new FileLoadException("DataFolderPath is not in cfg file");
 
         _editorControllerData = new(_editorConfiguration);
 
@@ -147,7 +147,7 @@ class EditorController
 
     private void DiscoverBackgrounds()
     {
-        var files = Directory.GetFiles(Path.GetFullPath(Resources.ResourceSkyBoxesFolderPath), "*.*",
+        var files = Directory.GetFiles(Path.GetFullPath(_editorConfiguration.ResourceSkyBoxesFolderPath), "*.*",
                 SearchOption.AllDirectories)
             .Where(file => _supportedImagesExtensions.Contains(Path.GetExtension(file)))
             .ToList();
@@ -169,7 +169,7 @@ class EditorController
 
     private void DiscoverBuiltInModels()
     {
-        _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(Resources.ResourceModelsPath), "*.*",
+        _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath), "*.*",
                 SearchOption.AllDirectories)
             .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
             .ToList();
@@ -217,8 +217,8 @@ class EditorController
 
         LoadUiResources();
 
-        _defaultShader = Raylib.LoadShader($"{Resources.ResourceShaderFolderPath}\\base.vert",
-            $"{Resources.ResourceShaderFolderPath}\\base.frag");
+        _defaultShader = Raylib.LoadShader($"{_editorConfiguration.ResourceShaderFolderPath}\\base.vert",
+            $"{_editorConfiguration.ResourceShaderFolderPath}\\base.frag");
 
         _editorControllerData.ViewTexture = Raylib.LoadRenderTexture(400, 300);
 
@@ -562,7 +562,7 @@ class EditorController
         }
         catch (Exception ex)
         {
-            if (ex is FileNotFoundException or FileLoadException)
+            if (ex is FileNotFoundException or FileLoadException or DirectoryNotFoundException)
             {
                 Logger.Error(ex);
                 return;
@@ -747,7 +747,7 @@ class EditorController
     {
         foreach (var (_, tool) in _editorControllerData.Tools)
         {
-            var image = Raylib.LoadImage($"{Resources.ResourceToolBoarFolderPath}/{tool.ImageFileName}");
+            var image = Raylib.LoadImage($"{_editorConfiguration.ResourceToolBoarFolderPath}/{tool.ImageFileName}");
             tool.Texture = Raylib.LoadTextureFromImage(image);
             Raylib.UnloadImage(image);
         }
@@ -868,9 +868,9 @@ class EditorController
         _editorConfiguration.Background = name;
         var background = _editorControllerData.Backgrounds[name];
 
-        _skyBox = new SkyBox();
+        _skyBox = new SkyBox(_editorConfiguration);
 
-        var filePath = Path.GetFullPath($"{Resources.ResourceSkyBoxesFolderPath}/{background.ImageFileName}");
+        var filePath = Path.GetFullPath($"{_editorConfiguration.ResourceSkyBoxesFolderPath}/{background.ImageFileName}");
         _skyBox.GenerateModel(filePath);
     }
 

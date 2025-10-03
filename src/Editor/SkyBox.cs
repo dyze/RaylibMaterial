@@ -1,11 +1,12 @@
-﻿using Raylib_cs;
+﻿using Editor.Configuration;
+using Raylib_cs;
 
 namespace Editor;
 
 /// <summary>
 /// This class prepares and holds a sky box model
 /// </summary>
-internal class SkyBox
+internal class SkyBox(EditorConfiguration editorConfiguration)
 {
     public Model Model;
 
@@ -16,8 +17,8 @@ internal class SkyBox
         var meshCube = Raylib.GenMeshCube(1.0f, 1.0f, 1.0f);
         Model = Raylib.LoadModelFromMesh(meshCube);
 
-        var shader = Raylib.LoadShader($"{Resources.ResourceSkyBoxesFolderPath}/skybox.vert",
-            $"{Resources.ResourceSkyBoxesFolderPath}/skybox.frag");
+        var shader = Raylib.LoadShader($"{editorConfiguration.ResourceSkyBoxesFolderPath}/skybox.vert",
+            $"{editorConfiguration.ResourceSkyBoxesFolderPath}/skybox.frag");
 
         Raylib.SetShaderValue(shader,
             Raylib.GetShaderLocation(shader, "environmentMap"),

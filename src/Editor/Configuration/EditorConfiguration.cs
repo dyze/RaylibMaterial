@@ -9,6 +9,17 @@ public class EditorConfiguration
 {
     [JsonProperty("DataFileExplorer")] public DataFileExplorerConfiguration DataFileExplorerConfiguration = new();
 
+    public string ResourcesPath => DataFileExplorerConfiguration.DataFolderPath;
+
+    public string ResourceUiPath => $"{ResourcesPath}/ui";
+    public string ResourceSkyBoxesFolderPath => $"{ResourceUiPath}/skybox";
+    public string ResourceToolBoarFolderPath => $"{ResourceUiPath}/toolbar";
+
+
+    public string ResourceModelsPath => $"{ResourcesPath}/models";
+    public string ResourceShaderFolderPath => $"{ResourcesPath}/shaders";
+    private string ResourceImageFolderPath => $"{ResourcesPath}/images";
+
     [JsonProperty("WorkspaceConfiguration")] public WorkspaceConfiguration WorkspaceConfiguration = new();
 
     [JsonProperty("RecentFiles")] public List<string> RecentFiles = [];
