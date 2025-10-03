@@ -59,7 +59,7 @@ internal class OneModelMultipleMaterials : ExampleBase
                
                // Update once uniform values and texture
                var material = Raylib.GetMaterial(ref _currentModel, materialIndex);
-               _materialPackage.SendVariablesToMaterial(material, true);
+               _materialPackage.SendVariablesToMaterial(material);
 
                Then for each tick:
 
@@ -68,7 +68,7 @@ internal class OneModelMultipleMaterials : ExampleBase
 
                // Update uniform values and texture
                var material = Raylib.GetMaterial(ref _currentModel, materialIndex);
-               _materialPackage.SendVariablesToMaterial(material, true);
+               _materialPackage.SendVariablesToMaterial(material);
 
                """;
     }
@@ -107,7 +107,7 @@ internal class OneModelMultipleMaterials : ExampleBase
             {
                 // Update uniform values and texture
                 var material = Raylib.GetMaterial(ref _currentModel, key);
-                materialPackage.SendVariablesToMaterial(material, true);
+                materialPackage.SendVariablesToMaterial(material);
             }
         }
 
@@ -175,7 +175,7 @@ internal class OneModelMultipleMaterials : ExampleBase
 
         // Update once uniform values and texture
         var material = Raylib.GetMaterial(ref _currentModel, materialIndex);
-        materialPackage.SendVariablesToMaterial(material, true);
+        materialPackage.SendVariablesToMaterial(material);
     }
 
     private void RenderModels()

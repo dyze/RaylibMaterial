@@ -50,7 +50,7 @@ internal class OneModelOneMaterial : ExampleBase
                
                // Update once uniform values and texture
                var material = Raylib.GetMaterial(ref _currentModel, 0);
-               _materialPackage.SendVariablesToMaterial(material, true);
+               _materialPackage.SendVariablesToMaterial(material);
                
                
                Then for each tick:
@@ -60,7 +60,7 @@ internal class OneModelOneMaterial : ExampleBase
                
                // Update uniform values and texture
                var material = Raylib.GetMaterial(ref _currentModel, 0);
-               _materialPackage.SendVariablesToMaterial(material, true);
+               _materialPackage.SendVariablesToMaterial(material);
 
                """;
     }
@@ -92,7 +92,7 @@ internal class OneModelOneMaterial : ExampleBase
 
             // Update uniform values and texture
             var material = Raylib.GetMaterial(ref _currentModel, 0);
-            _materialPackage.SendVariablesToMaterial(material, true);
+            _materialPackage.SendVariablesToMaterial(material, false);
         }
 
         RenderModels();
@@ -108,7 +108,7 @@ internal class OneModelOneMaterial : ExampleBase
     private void RenderUi()
     {
         ImGui.SetNextWindowPos(new Vector2(20, 100), ImGuiCond.Once);
-        ImGui.SetNextWindowSize(new Vector2(200, 400), ImGuiCond.Once);
+        ImGui.SetNextWindowSize(new Vector2(200, 700), ImGuiCond.Once);
         if (ImGui.Begin("Materials"))
         {
             foreach (var file in Files)

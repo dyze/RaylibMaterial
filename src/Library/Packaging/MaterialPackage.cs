@@ -130,6 +130,8 @@ public class MaterialPackage : IDisposable
         materialPackage.Description.ShaderNames = metaFileObject.ShaderNames;
         materialPackage.Variables = metaFileObject.Variables;
 
+        SetSendToShader(materialPackage);
+
         // Reading files
         foreach (var fileName in inputDataAccess.GetAllFiles())
         {
@@ -145,6 +147,14 @@ public class MaterialPackage : IDisposable
         Logger.Info($"MaterialPackage.Load OK: files read={1 + materialPackage.Files.Count}");
 
         return materialPackage;
+    }
+
+    private static void SetSendToShader(MaterialPackage materialPackage)
+    {
+        foreach (var materialPackageVariable in materialPackage.Variables)
+        {
+            materialPackageVariable.Value.SendToShader = true;
+        }
     }
 
 
@@ -342,7 +352,7 @@ public class MaterialPackage : IDisposable
         UnloadShader();
     }
 
-    public void SendVariablesToMaterial(Material raylibMaterial, bool force)
+    public void SendVariablesToMaterial(Material raylibMaterial, bool force=false)
     {
         Logger.Trace("SendVariablesToMaterial...");
 
@@ -356,7 +366,7 @@ public class MaterialPackage : IDisposable
                 if (variable.SendToShader == false)
                     continue;
                 else
-                    Logger.Trace($"{name} changed");
+                    Logger.Trace($"{name} SendToShader set");
 
             variable.SendToShader = false;
 
@@ -371,37 +381,31 @@ public class MaterialPackage : IDisposable
             {
                 var currentValue = (variable as CodeVariableInt).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Int);
-                //Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableVector2))
             {
                 var currentValue = (variable as CodeVariableVector2).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec2);
-               // Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableVector3))
             {
                 var currentValue = (variable as CodeVariableVector3).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec3);
-                //Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableVector4))
             {
                 var currentValue = (variable as CodeVariableVector4).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
-               // Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableColor))
             {
                 var currentValue = TypeConverters.ColorToVector4((variable as CodeVariableColor).Value);
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
-                //Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableFloat))
             {
                 var currentValue = (variable as CodeVariableFloat).Value;
                 Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Float);
-                //Logger.Trace($"{name}={currentValue}");
             }
             else if (variable.GetType() == typeof(CodeVariableTexture))
             {
