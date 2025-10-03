@@ -83,6 +83,11 @@ class EditorController
     // Used to avoid too frequent updates. e.g. when continuously selecting a color in a ImGui Color widget
     private Timer? _timerOnVariablesChanged;
 
+    private readonly Dictionary<string, ImageWindow> _imageWindows = [];
+
+    // We can remove windows while rendering, we postpone
+    private readonly List<string> _imageWindowsToRemove = [];
+
     public EditorController(string? filePath)
     {
         _startupFilePath = filePath;
@@ -90,7 +95,7 @@ class EditorController
         LoadEditorConfiguration();
 
 
-        if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
+        if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)  
             throw new FileLoadException("DataFolderPath is not in cfg file");
 
         _editorControllerData = new(_editorConfiguration);
@@ -101,9 +106,10 @@ class EditorController
 
         _messageWindow = new(_editorControllerData);
 
-
         _dataFileExplorer = new(_editorConfiguration, _editorControllerData,
             _editorControllerData.DataFileExplorerData);
+
+        _dataFileExplorer.ImageOpenRequest += DateFileExplorer_ImageOpenRequest;
 
         _shaderCodeWindow = new(_editorConfiguration,
             _editorControllerData);
@@ -112,11 +118,13 @@ class EditorController
             _editorControllerData);
         _materialWindow.OnSave += _materialWindow_OnSave;
 
+        _materialWindow._variablesControls.ImageOpenRequest += ImageOpenRequest;
+
         _shaderCodeWindow.BuildPressed += CodeWindow_OnBuildPressed;
 
         if (_editorConfiguration.OutputDirectoryPath == "")
             _editorConfiguration.OutputDirectoryPath = Path.GetFullPath($"{MaterialsPath}\\");
-        
+
         _outputFilePath = _editorConfiguration.OutputDirectoryPath;
         Directory.CreateDirectory(_editorConfiguration.OutputDirectoryPath);
 
@@ -139,7 +147,39 @@ class EditorController
         _settingsWindow = new(_editorConfiguration);
         _settingsWindow.SavePressed += SaveEditorConfiguration;
     }
-    
+
+    private void ImageOpenRequest(string imageName, byte[] imageData)
+    {
+        PopImageWindow(imageName, imageData);
+    }
+
+    private void DateFileExplorer_ImageOpenRequest(string imageFilePath)
+    {
+        var imageData = File.ReadAllBytes(imageFilePath);
+
+        PopImageWindow(imageFilePath, imageData);
+    }
+
+    private void PopImageWindow(string imageFilePath, byte[] imageData)
+    {
+        var imageWindow = new ImageWindow(imageFilePath, imageData);
+
+        imageWindow.CloseRequest += CloseRequest;
+
+        void CloseRequest(ImageWindow imageWindow)
+        {
+            var found = _imageWindows.ContainsKey(imageFilePath);
+            if (found == false)
+                throw new NullReferenceException($"Window {imageFilePath} not found");
+
+            _imageWindowsToRemove.Add(imageFilePath);
+        }
+
+        _imageWindows.Add(imageFilePath, imageWindow);
+    }
+
+
+
     private void ResetCamera()
     {
         _editorConfiguration.CameraSettings = new CameraSettings();
@@ -169,7 +209,8 @@ class EditorController
 
     private void DiscoverBuiltInModels()
     {
-        _editorControllerData.BuiltInModels = Directory.GetFiles(Path.GetFullPath(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath), "*.*",
+        _editorControllerData.BuiltInModels = Directory.GetFiles(
+                Path.GetFullPath(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath), "*.*",
                 SearchOption.AllDirectories)
             .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
             .ToList();
@@ -282,6 +323,8 @@ class EditorController
             RenderMessageDialog();
             _settingsWindow.Render();
 
+            HandleImageWindows();
+
 
             var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
             if (codeIsModified)
@@ -323,6 +366,22 @@ class EditorController
         SaveEditorConfiguration();
     }
 
+    private void HandleImageWindows()
+    {
+        while (_imageWindowsToRemove.Count > 0)
+        {
+            var filePath = _imageWindowsToRemove.First(); 
+            _imageWindowsToRemove.Remove(filePath);
+            _imageWindows.Remove(filePath);
+            break;
+        }
+        
+        foreach (var (_, imageWindow) in _imageWindows)
+        {
+            imageWindow.Render();
+        }
+    }
+
     private void HandleWindowResize()
     {
         if (Raylib.IsWindowResized() == false
@@ -349,9 +408,9 @@ class EditorController
                     SelectModel(modelPath);
                 }
                 else
-                    Logger.Error($"extension {extension} is not supported, only {string.Join(",", _supportedModelExtensions)} are");
+                    Logger.Error(
+                        $"extension {extension} is not supported, only {string.Join(",", _supportedModelExtensions)} are");
             }
-
         }
     }
 
@@ -600,7 +659,7 @@ class EditorController
         _editorControllerData.MaterialPackage.UpdateFileReferences();
 
         //todo avoid doing that every time.
-        LoadCurrentModel();     // to clean Materials
+        LoadCurrentModel(); // to clean Materials
 
         // LoadShaders();
 
@@ -620,7 +679,7 @@ class EditorController
 
     private void CodeWindow_OnBuildPressed()
     {
-        LoadCurrentModel();     // to clean Materials
+        LoadCurrentModel(); // to clean Materials
         LoadShaderCode();
         LoadShaders();
     }
@@ -870,7 +929,8 @@ class EditorController
 
         _skyBox = new SkyBox(_editorConfiguration);
 
-        var filePath = Path.GetFullPath($"{_editorConfiguration.ResourceSkyBoxesFolderPath}/{background.ImageFileName}");
+        var filePath =
+            Path.GetFullPath($"{_editorConfiguration.ResourceSkyBoxesFolderPath}/{background.ImageFileName}");
         _skyBox.GenerateModel(filePath);
     }
 
@@ -977,7 +1037,7 @@ class EditorController
 
                 //todo use Clone instead to avoid some properties?
                 newVariable.Internal = variable.Internal;
-                
+
                 material.Variables.Add(key, newVariable);
             }
             else

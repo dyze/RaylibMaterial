@@ -1,12 +1,9 @@
 ﻿using Editor.Configuration;
 using Editor.Helpers;
 using ImGuiNET;
-using Library.CodeVariable;
 using Library.Packaging;
 using NLog;
-using System.Data.Common;
 using System.Text;
-using System.Xml.Linq;
 using Library.Helpers;
 
 namespace Editor.Windows;
@@ -19,7 +16,8 @@ class MaterialWindow(
 
     public event Action? OnSave;
 
-    private readonly VariablesControls _variablesControls = new(editorControllerData);
+    //todo avoid public
+    public readonly VariablesControls _variablesControls = new(editorControllerData);
 
     public void Render()
     {

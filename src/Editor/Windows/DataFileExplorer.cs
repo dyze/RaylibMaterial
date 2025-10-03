@@ -37,6 +37,8 @@ public class DataFileExplorer
 
     private readonly EditorControllerData _editorControllerData;
 
+    public Action<string>? ImageOpenRequest;
+
     public DataFileExplorer(EditorConfiguration editorConfiguration,
         EditorControllerData editorControllerData,
         DataFileExplorerData dataFileExplorerData)
@@ -75,6 +77,7 @@ public class DataFileExplorer
                 else
                     _dataFileExplorerData.SelectedFolder = "";
             }
+
             ImGui.EndChild();
 
             RenderActiveProcess();
@@ -117,7 +120,7 @@ public class DataFileExplorer
             foreach (var fileName in folderContent.Files)
             {
                 var open = ImGui.TreeNodeEx(fileName,
-                ImGuiTreeNodeFlags.Leaf);
+                    ImGuiTreeNodeFlags.Leaf);
 
                 var extension = Path.GetExtension(fileName);
                 FileType? fileType = MaterialPackage.ExtensionToFileType.GetValueOrDefault(extension);
@@ -129,6 +132,14 @@ public class DataFileExplorer
                     dragDropItemType = DragDropItemIdentifiers.ShaderFile;
                 else if (fileType == FileType.Image)
                     dragDropItemType = DragDropItemIdentifiers.ImageFile;
+                 
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None) &&
+                    ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && 
+                    fileType == FileType.Image)
+                {
+                    var imagePath = Path.GetFullPath(Path.Combine(folderContent.FullPath, fileName));
+                    ImageOpenRequest?.Invoke(imagePath);
+                }
 
                 if (dragDropItemType != "")
                 {
@@ -137,7 +148,8 @@ public class DataFileExplorer
                         if (_dataFileExplorerData.DraggedFullFilePath == "")
                             Logger.Trace("Begin drag");
 
-                        _dataFileExplorerData.DraggedRelativeFilePath = Path.Combine(folderContent.RelativePath, fileName);
+                        _dataFileExplorerData.DraggedRelativeFilePath =
+                            Path.Combine(folderContent.RelativePath, fileName);
 
                         _dataFileExplorerData.DraggedFullFilePath = Path.Combine(folderContent.FullPath, fileName);
                         _dataFileExplorerData.DraggedFileName = fileName;
@@ -221,5 +233,4 @@ public class DataFileExplorer
     {
         _dataFileExplorerData.RefreshDataRootFolder();
     }
-
 }

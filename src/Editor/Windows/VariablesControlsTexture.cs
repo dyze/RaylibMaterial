@@ -9,11 +9,14 @@ namespace Editor.Windows
 {
     partial class VariablesControls
     {
+        public Action<string, byte[]>? ImageOpenRequest;
+
         private bool HandleTexture(CodeVariableBase variable, string name)
         {
             var variableChanged = false;
 
             var currentValue = (variable as CodeVariableTexture).Value;
+
 
             {
                 var files = _editorControllerData.MaterialPackage.GetFilesMatchingType(FileType.Image);
@@ -84,6 +87,13 @@ namespace Editor.Windows
                             (variable as CodeVariableTexture).Value = "";
                             (variable as CodeVariableTexture).MaterialMapIndex = null;
                             variableChanged = true;
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.Button("view"))
+                        {
+                            var fileData = _editorControllerData.MaterialPackage.GetFile(FileType.Image, currentValue);
+
+                            ImageOpenRequest?.Invoke(currentValue, fileData);
                         }
                     }
                 }
