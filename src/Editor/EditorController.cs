@@ -555,6 +555,8 @@ class EditorController
         _outputFilePath = $"{_editorConfiguration.OutputDirectoryPath}\\{DefaultMaterialName}";
         Raylib.SetWindowTitle(WindowCaption);
 
+        _shaderCode = new();
+
         LoadCurrentModel();
         LoadShaders();
     }

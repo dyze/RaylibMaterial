@@ -50,6 +50,7 @@ The remaining tasks for this first release are:
 * [rlImgui-cs](https://github.com/raylib-extras/rlImGui-cs): Glue to render ImGui using Raylib
 * [NLog](https://github.com/NLog/NLog): NLog is a free logging platform for .NET
 * [ImGui.NET.ToolBox](https://github.com/dyze/ImGui.NET.ToolBox): ImGui.NET.ToolBox a set of controls and helpers for ImGui.NET.
+* [ImGuiColorTextEditNet](https://github.com/csinkers/ImGuiColorTextEditNet): C# port of syntax highlighting text editor for ImGui
 
 Other ones:
 * [ImGuiFileDialog](https://github.com/japajoe/ImGuiFileDialog): File dialog for ImGui.NET by japajoe
