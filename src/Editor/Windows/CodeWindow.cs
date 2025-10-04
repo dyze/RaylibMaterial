@@ -3,7 +3,6 @@ using ImGuiNET;
 using Editor.Configuration;
 using Library;
 using Library.Packaging;
-using ImGuiColorTextEditNet.Syntax;
 using ImGuiColorTextEditNet;
 
 namespace Editor.Windows
@@ -24,12 +23,6 @@ namespace Editor.Windows
             EditorControllerData editorControllerData)
         {
             _editorControllerData = editorControllerData;
-
-            //_textEditor = new TextEditor
-            //{
-            //    //AllText = demoText,
-            //    SyntaxHighlighter = new CStyleHighlighter(true),
-            //};
         }
 
         public event Action? BuildPressed;
@@ -47,9 +40,11 @@ namespace Editor.Windows
             {
                 if (_textEditors.ContainsKey(key) == false)
                 {
+                    var currentTextWithLineFeeds = code.Code.ReplaceLineEndings("\n");
+
                     var editor = new TextEditor()
                     {
-                        AllText = code.Code,
+                        AllText = currentTextWithLineFeeds,
                         SyntaxHighlighter = new GlSlStyleHighlighter()
                     };
                     _textEditors.Add(key, editor);
@@ -147,8 +142,8 @@ namespace Editor.Windows
                 );
 
                 // We force line endings to \n to be able to properly detect modifications on text
-                var currentTextWithLineFeeds = textEditor.AllText.ReplaceLineEndings("\n");
-                textEditor.AllText = currentTextWithLineFeeds;
+                var currentTextWithLineFeeds = code.Code.ReplaceLineEndings("\n");
+                //textEditor.AllText = currentTextWithLineFeeds;
 
                 //var demoErrors = new Dictionary<int, object>
                 //{
