@@ -58,9 +58,9 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
     /// <summary>Colorizes a line of text based on GlSl/GlSl++ syntax rules.</summary>
     public object Colorize(Span<Glyph> line, object? state)
     {
-        for (int i = 0; i < line.Length;)
+        for (var i = 0; i < line.Length;)
         {
-            int result = Tokenize(line[i..], ref state);
+            var result = Tokenize(line[i..], ref state);
             Util.Assert(result != 0);
 
             if (result == -1)
@@ -77,7 +77,7 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
 
     int Tokenize(Span<Glyph> span, ref object? state)
     {
-        int i = 0;
+        var i = 0;
 
         // Skip leading whitespace
         while (i < span.Length && span[i].Char is ' ' or '\t')
@@ -116,7 +116,7 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
 
     static int TokenizeMultiLineComment(Span<Glyph> span, ref object? state)
     {
-        int i = 0;
+        var i = 0;
         if (
             state != MultiLineCommentState
             && (span[i].Char != '/' || 1 >= span.Length || span[1].Char != '*')
@@ -146,7 +146,7 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
         if (span[0].Char != '/' || 1 >= span.Length || span[1].Char != '/')
             return -1;
 
-        for (int i = 0; i < span.Length; i++)
+        for (var i = 0; i < span.Length; i++)
             span[i] = new(span[i].Char, PaletteIndex.Comment);
 
         return span.Length;
@@ -157,7 +157,7 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
         if (span[0].Char != '#')
             return -1;
 
-        for (int i = 0; i < span.Length; i++)
+        for (var i = 0; i < span.Length; i++)
             span[i] = new(span[i].Char, PaletteIndex.Preprocessor);
 
         return span.Length;
@@ -303,14 +303,14 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
         if (input[0].Char != '"')
             return -1; // No opening quotes
 
-        for (int i = 1; i < input.Length; i++)
+        for (var i = 1; i < input.Length; i++)
         {
             var c = input[i].Char;
 
             // handle end of string
             if (c == '"')
             {
-                for (int j = 0; j < i; j++)
+                for (var j = 0; j < i; j++)
                     input[i] = new(c, PaletteIndex.String);
 
                 return i;
@@ -326,7 +326,7 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
 
     static int TokenizeCStyleCharacterLiteral(Span<Glyph> input)
     {
-        int i = 0;
+        var i = 0;
 
         if (input[i++].Char != '\'')
             return -1;
@@ -340,7 +340,7 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
         if (i >= input.Length || input[i].Char != '\'')
             return -1;
 
-        for (int j = 0; j < i; j++)
+        for (var j = 0; j < i; j++)
             input[j] = new(input[j].Char, PaletteIndex.CharLiteral);
 
         return i;
@@ -348,7 +348,7 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
 
     int TokenizeCStyleIdentifier(Span<Glyph> input)
     {
-        int i = 0;
+        var i = 0;
 
         var c = input[i].Char;
         if (!char.IsLetter(c) && c != '_')
@@ -365,7 +365,7 @@ public class GlSlStyleHighlighter : ISyntaxHighlighter
 
         var info = _identifiers.Get<Glyph>(input[..i], x => x.Char);
 
-        for (int j = 0; j < i; j++)
+        for (var j = 0; j < i; j++)
             input[j] = new(input[j].Char, info?.Color ?? PaletteIndex.Identifier);
 
         return i;

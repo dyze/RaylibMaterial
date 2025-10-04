@@ -4,6 +4,7 @@ using Editor.Configuration;
 using Library;
 using Library.Packaging;
 using ImGuiColorTextEditNet;
+using NLog;
 
 namespace Editor.Windows
 {
@@ -12,9 +13,10 @@ namespace Editor.Windows
     /// </summary>
     internal class CodeWindow
     {
+        private readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly EditorControllerData _editorControllerData;
 
-        private Dictionary<FileId, TextEditor> _textEditors = [];
+        private readonly Dictionary<FileId, TextEditor> _textEditors = [];
 
         /// <summary>
         /// Handles the display and the modification of code
@@ -152,43 +154,15 @@ namespace Editor.Windows
                 //};
                 //textEditor.ErrorMarkers.SetErrorMarkers(demoErrors);
 
-                textEditor.Render("EditWindow");
-
-                var newTextWithLineFeeds = textEditor.AllText.ReplaceLineEndings("\n");
-
-                if (newTextWithLineFeeds != currentTextWithLineFeeds)
+                if (textEditor.Render("EditWindow"))
                 {
-                    //var src = newTextWithLineFeeds.ToCharArray();
-                    //var dst = currentTextWithLineFeeds.ToCharArray();
-
-                    //for (int i = 0; i < src.Length; i++)
-                    //{
-                    //    var s = src[i];
-                    //    var d = dst[i];
-
-                    //    if (s != d)
-                    //    {
-                    //        code.NeedsRebuild = true;
-                    //    }
-                    //}
+                    Logger.Trace($"textEditor.Render -> v{textEditor.Version}");
 
                     code.NeedsRebuild = true;
                     codeChanged = true;
+
+                    code.Code = textEditor.AllText;
                 }
-
-                code.Code = textEditor.AllText;
-
-
-                //var inputFlags = ImGuiInputTextFlags.AllowTabInput;
-                //if (ImGui.InputTextMultiline("##source",
-                //        ref code.Code,
-                //        20000,
-                //        new Vector2(-1, -1),
-                //        inputFlags))
-                //{
-                //    code.NeedsRebuild = true;
-                //    codeChanged = true;
-                //}
 
                 ImGui.EndTabItem();
             }
