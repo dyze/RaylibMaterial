@@ -64,7 +64,7 @@ class EditorController
     private bool _requestToCloseAccepted;
     private bool _requestToClose;
     private readonly string[] _supportedModelExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
-    private readonly string[] _supportedImagesExtensions = [".png", ".jpg"];
+    private readonly string[] _supportedImagesExtensions = [".png", ".jpg", ".tga"];
 
     private const string DefaultMaterialName = "new.mat";
 
@@ -283,6 +283,8 @@ class EditorController
         {
             LoadMaterial(_startupFilePath);
         }
+
+        _dataFileExplorer.PrepareUi();
 
         Logger.Info("all is set");
 

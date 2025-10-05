@@ -7,6 +7,7 @@ using ImGuiNET;
 using Library.Packaging;
 using NLog;
 using Raylib_cs;
+using rlImGui_cs;
 
 namespace Editor.Windows;
 
@@ -19,6 +20,21 @@ public class DataFileExplorer
     private readonly DataFileExplorerConfiguration _dataFileExplorerConfiguration;
 
     private FolderContent? _selectedFolder;
+
+    private readonly Dictionary<string, Texture2D> _fileTypeTextures = [];
+
+    private readonly Dictionary<string, string> _textureNames = new()
+    {
+        { "folder", "64px-Icons8_flat_folder.png" },
+        { "?", "64px-Orange_question_mark.png" },
+        { ".vert", "shader-64px.png" },
+        { ".frag", "shader-64px.png" },
+        { ".png", "64px-Icons8_flat_picture.png" },
+        { ".jpg", "64px-Icons8_flat_picture.png" },
+        { ".txt", "64px-Text-txt.png" },
+        { ".md", "64px-Text-txt.png" }
+    };
+
 
     /// <summary>
     /// Active process. not null if the process is in progress 
@@ -49,6 +65,26 @@ public class DataFileExplorer
         _dataFileExplorerConfiguration = editorConfiguration.DataFileExplorerConfiguration;
     }
 
+    public void PrepareUi()
+    {
+        foreach (var (key, filename) in _textureNames)
+        {
+            var image = Raylib.LoadImage(
+                $"{_editorConfiguration.ResourceUiPath}/file-types/{filename}"); // ignore period
+            if (Raylib.IsImageValid(image) == false)
+            {
+                Logger.Debug($"image {filename} is not valid");
+                continue;
+            }
+
+            var textureImage = Raylib.LoadTextureFromImage(image);
+
+            _fileTypeTextures[key] = textureImage;
+
+            Raylib.UnloadImage(image);
+        }
+    }
+
     public void Render()
     {
         RenderInternal();
@@ -58,13 +94,21 @@ public class DataFileExplorer
     {
         _editorControllerData.UpdateWindowPosAndSize(EditorControllerData.WindowId.DataFileExplorer);
 
+        var windowFlags = ImGuiWindowFlags.None;
         if (ImGui.Begin("Data file explorer",
-                ref _editorConfiguration.WorkspaceConfiguration.DataFileExplorerIsVisible))
+                ref _editorConfiguration.WorkspaceConfiguration.DataFileExplorerIsVisible, windowFlags))
         {
             RenderMainActions();
 
-            if (ImGui.BeginChild("Folders"))
+            ImGui.Separator();
+
+            ImGui.BeginChild("folders/files");
+
             {
+                windowFlags = ImGuiWindowFlags.HorizontalScrollbar;
+                ImGui.BeginChild("Folders", new Vector2(ImGui.GetContentRegionAvail().X * 0.5f, 0),
+                    ImGuiChildFlags.None, windowFlags);
+
                 var rootFolder = _dataFileExplorerData.DataRootFolder;
                 if (rootFolder == null)
                     throw new NullReferenceException("rootFolder is null");
@@ -76,6 +120,19 @@ public class DataFileExplorer
                     _dataFileExplorerData.SelectedFolder = _selectedFolder.RelativePath;
                 else
                     _dataFileExplorerData.SelectedFolder = "";
+
+                ImGui.EndChild();
+            }
+
+            ImGui.SameLine();
+
+            {
+                var flags = ImGuiWindowFlags.HorizontalScrollbar;
+                ImGui.BeginChild("Files", new Vector2(0, 0), ImGuiChildFlags.None, flags);
+
+                RenderFiles();
+
+                ImGui.EndChild();
             }
 
             ImGui.EndChild();
@@ -84,6 +141,86 @@ public class DataFileExplorer
         }
 
         ImGui.End();
+    }
+
+    private void RenderFiles()
+    {
+        if (_selectedFolder == null)
+            return;
+
+        foreach (var fileName in _selectedFolder.Files)
+        {
+            var extension = Path.GetExtension(fileName);
+
+            var texture = _fileTypeTextures.GetValueOrDefault(extension, _fileTypeTextures["?"]);
+
+            rlImGui.ImageSize(texture, 16, 16);
+
+            ImGui.SameLine();
+
+
+            ImGui.Selectable(fileName);
+
+            FileType? fileType = MaterialPackage.ExtensionToFileType.GetValueOrDefault(extension);
+
+            var dragDropItemType = "";
+
+            if (fileType == FileType.VertexShader ||
+                fileType == FileType.FragmentShader)
+                dragDropItemType = DragDropItemIdentifiers.ShaderFile;
+            else if (fileType == FileType.Image)
+                dragDropItemType = DragDropItemIdentifiers.ImageFile;
+
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None) &&
+                ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) &&
+                fileType == FileType.Image)
+            {
+                var imagePath = Path.GetFullPath(Path.Combine(_selectedFolder.FullPath, fileName));
+                ImageOpenRequest?.Invoke(imagePath);
+            }
+
+            if (dragDropItemType != "")
+            {
+                if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
+                {
+                    if (_dataFileExplorerData.DraggedFullFilePath == "")
+                        Logger.Trace("Begin drag");
+
+                    _dataFileExplorerData.DraggedRelativeFilePath =
+                        Path.Combine(_selectedFolder.RelativePath, fileName);
+
+                    _dataFileExplorerData.DraggedFullFilePath = Path.Combine(_selectedFolder.FullPath, fileName);
+                    _dataFileExplorerData.DraggedFileName = fileName;
+
+                    unsafe
+                    {
+                        //TODO avoid giving a fake parameter
+                        var i = 1;
+                        int* tesnum = &i;
+                        ImGui.SetDragDropPayload(dragDropItemType, new IntPtr(tesnum), sizeof(int));
+                    }
+
+                    ImGui.Text($"{fileName}");
+
+                    ImGui.EndDragDropSource();
+                }
+            }
+
+            if (ImGui.BeginPopupContextItem())
+            {
+                //if (isAssetFile)
+                //{
+                //    var assetName = Path.GetFileNameWithoutExtension(file);
+                //    var asset = _engine.DataFiles.AssetContainer.GetAssetByName(assetName);
+
+                //    //if (asset == null)
+                //    //    Logger.Error($"no asset found with this name {assetName}");
+                //    RenderAssetActions(asset.Value.AssetFile.Id);
+                //}
+
+                ImGui.EndPopup();
+            }
+        }
     }
 
 
@@ -96,7 +233,7 @@ public class DataFileExplorer
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
 
         if (_selectedFolder == folderContent)
-            flags |= ImGuiTreeNodeFlags.Selected;
+            flags |= ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.SpanFullWidth;
 
         var openFolder = ImGui.TreeNodeEx(name.Length == 0 ? "\\" : name,
             flags);
@@ -117,76 +254,6 @@ public class DataFileExplorer
             foreach (var (subName, folder) in folderContent.Folders)
                 RenderFolderContent(subName, folder);
 
-            foreach (var fileName in folderContent.Files)
-            {
-                var open = ImGui.TreeNodeEx(fileName,
-                    ImGuiTreeNodeFlags.Leaf);
-
-                var extension = Path.GetExtension(fileName);
-                FileType? fileType = MaterialPackage.ExtensionToFileType.GetValueOrDefault(extension);
-
-                var dragDropItemType = "";
-
-                if (fileType == FileType.VertexShader ||
-                    fileType == FileType.FragmentShader)
-                    dragDropItemType = DragDropItemIdentifiers.ShaderFile;
-                else if (fileType == FileType.Image)
-                    dragDropItemType = DragDropItemIdentifiers.ImageFile;
-                 
-                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None) &&
-                    ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && 
-                    fileType == FileType.Image)
-                {
-                    var imagePath = Path.GetFullPath(Path.Combine(folderContent.FullPath, fileName));
-                    ImageOpenRequest?.Invoke(imagePath);
-                }
-
-                if (dragDropItemType != "")
-                {
-                    if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
-                    {
-                        if (_dataFileExplorerData.DraggedFullFilePath == "")
-                            Logger.Trace("Begin drag");
-
-                        _dataFileExplorerData.DraggedRelativeFilePath =
-                            Path.Combine(folderContent.RelativePath, fileName);
-
-                        _dataFileExplorerData.DraggedFullFilePath = Path.Combine(folderContent.FullPath, fileName);
-                        _dataFileExplorerData.DraggedFileName = fileName;
-
-                        unsafe
-                        {
-                            //TODO avoid giving a fake parameter
-                            var i = 1;
-                            int* tesnum = &i;
-                            ImGui.SetDragDropPayload(dragDropItemType, new IntPtr(tesnum), sizeof(int));
-                        }
-
-                        ImGui.Text($"{fileName}");
-
-                        ImGui.EndDragDropSource();
-                    }
-                }
-
-                if (ImGui.BeginPopupContextItem())
-                {
-                    //if (isAssetFile)
-                    //{
-                    //    var assetName = Path.GetFileNameWithoutExtension(file);
-                    //    var asset = _engine.DataFiles.AssetContainer.GetAssetByName(assetName);
-
-                    //    //if (asset == null)
-                    //    //    Logger.Error($"no asset found with this name {assetName}");
-                    //    RenderAssetActions(asset.Value.AssetFile.Id);
-                    //}
-
-                    ImGui.EndPopup();
-                }
-
-                if (open)
-                    ImGui.TreePop();
-            }
-
             ImGui.TreePop();
         }
     }
@@ -204,8 +271,6 @@ public class DataFileExplorer
 
             first = false;
         }
-
-        ImGui.Separator();
     }
 
     private void RenderFolderActions(FolderContent folder)

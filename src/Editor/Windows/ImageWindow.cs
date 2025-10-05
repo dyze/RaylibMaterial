@@ -11,7 +11,7 @@ class ImageWindow
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    private Texture2D _texture;
+    private Texture2D? _texture;
 
     public Action<ImageWindow>? CloseRequest;
     private readonly string _fileName;
@@ -20,9 +20,7 @@ class ImageWindow
         byte[] imageData)
     {
         _fileName = fileName;
-
-        _texture = new Texture2D();
-
+        
         var extension = Path.GetExtension(fileName);
         if (extension == null)
             throw new NullReferenceException($"No file extension found in {fileName}");
@@ -48,12 +46,20 @@ class ImageWindow
         var mainWindowSize = new Size(Raylib.GetScreenWidth(),
             Raylib.GetScreenHeight());
 
-        var windowSize = mainWindowSize * 0.9f;
-        var newSize = new Vector2(_texture.Width, _texture.Height);
+        var textureSize = new Size(200, 100);
+        var textureFormat = "invalid image";
+        if (_texture != null)
         {
-            var ratio = _texture.Width / _texture.Height;
+            textureSize = new Size(_texture.Value.Width, _texture.Value.Height);
+            textureFormat = _texture.Value.Format.ToString();
+        }
 
-            if (_texture.Width > windowSize.Width)
+        var windowSize = mainWindowSize * 0.9f;
+        var newSize = new Vector2(textureSize.Width, textureSize.Height);
+        {
+            var ratio = textureSize.Width / textureSize.Height;
+
+            if (textureSize.Width > windowSize.Width)
             {
                 newSize.X = windowSize.Width;
                 newSize.Y = newSize.X * ratio;
@@ -75,10 +81,10 @@ class ImageWindow
         if (ImGui.Begin(_fileName, ref open, flags))
         {
             ImGui.BeginDisabled();
-            var size = new Vector2(_texture.Width, _texture.Height);
+            var size = new Vector2(textureSize.Width, textureSize.Height);
             ImGui.InputFloat2("Size", ref size);
 
-            ImGui.LabelText("Format", _texture.Format.ToString());
+            ImGui.LabelText("Format", textureFormat);
             ImGui.EndDisabled();
 
             ImGui.BeginChild("## image");
@@ -86,13 +92,13 @@ class ImageWindow
             var available = ImGui.GetContentRegionAvail();
 
             // Preserve image ratio
-            var ratioX = (double)available.X / (double)_texture.Width;
-            var ratioY = (double)available.Y / (double)_texture.Height;
+            var ratioX = (double)available.X / (double)textureSize.Width;
+            var ratioY = (double)available.Y / (double)textureSize.Height;
 
             var ratio = ratioX < ratioY ? ratioX : ratioY;
 
-            var newWidth = Convert.ToInt32(_texture.Width * ratio);
-            var newHeight = Convert.ToInt32(_texture.Height * ratio);
+            var newWidth = Convert.ToInt32(textureSize.Width * ratio);
+            var newHeight = Convert.ToInt32(textureSize.Height * ratio);
 
             var offsetX = (available.X - newWidth) / 2;
             if (offsetX > 10) // 10 to avoid win size flickering
@@ -102,7 +108,8 @@ class ImageWindow
             if (offsetY > 10) // 10 to avoid win size flickering
                 ImGui.Dummy(new Vector2(0.0f, offsetY));
 
-            rlImGui.ImageSize(_texture, newWidth, newHeight);
+            if(_texture.HasValue)
+                rlImGui.ImageSize(_texture.Value, newWidth, newHeight);
 
             ImGui.EndChild();
         }

@@ -84,6 +84,9 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
         var outputWidth = availableArea.X * 0.4f - spacing.X / 2 - margin.X;
         var codeWidth = availableArea.X * 0.4f - spacing.X / 2 - spacing.X / 2;
 
+        var fileExplorerWindowWidth = availableArea.X * 0.4f - margin.X - spacing.X / 2;
+        var messageWindowWidth = availableArea.X * 0.6f - margin.X - spacing.X / 2;
+
         var heightRatioTop = 0.8f;
         var heightRatioBottom = 1f - heightRatioTop;
 
@@ -110,14 +113,14 @@ public class EditorControllerData(EditorConfiguration editorConfiguration)
                     menuSize.Y + margin.Y);
                 break;
             case WindowId.Message:
-                finalSize = new Vector2(availableArea.X - materialWindowWidth - margin.X*2 - spacing.X,
+                finalSize = new Vector2(availableArea.X - fileExplorerWindowWidth - margin.X*2 - spacing.X,
                     bottomHeight);
 
-                finalPosition = new Vector2(materialWindowWidth + margin.X + spacing.X,
+                finalPosition = new Vector2(fileExplorerWindowWidth + margin.X + spacing.X,
                     menuSize.Y + margin.Y + topHeight + spacing.Y);
                 break;
             case WindowId.DataFileExplorer:
-                finalSize = new Vector2(materialWindowWidth,
+                finalSize = new Vector2(fileExplorerWindowWidth,
                     bottomHeight);
 
                 finalPosition = new Vector2(margin.X,
