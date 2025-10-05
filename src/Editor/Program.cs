@@ -15,7 +15,7 @@ class Program
             builder.ForLogger().Targets.Add(messageQueueTarget);
         });
 
-        string filePath = null;
+        string? filePath = null;
         if(args.Length > 0)
             filePath = args[0];
 

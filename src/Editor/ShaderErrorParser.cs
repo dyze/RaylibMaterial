@@ -2,9 +2,23 @@
 using System.Text.RegularExpressions;
 using Library;
 using NLog;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Editor;
 
+/// <summary>
+/// This class parse the shader compilation error sent thru Raylib.
+///
+/// Example of messages:
+/// SHADER: [ID 8] Failed to compile vertex shader code
+/// Then:
+/// SHADER: [ID 8] Compile error: 0(22) : error C0000: syntax error, unexpected identifier, expecting ',' or ';' at token "Normal"
+/// 0(41) : error C1503: undefined variable "fragNormal"
+/// 0(43) : error C1503: undefined variable "fragNormal"
+/// 0(43) : error C1503: undefined variable "fragNormal"
+/// 0(45) : error C1503: undefined variable "fragNormal"
+/// 0(47) : error C1503: undefined variable "fragNormal"
+/// </summary>
 public static class ShaderErrorParser
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -76,13 +90,12 @@ public static class ShaderErrorParser
                 int posEndMessage;
                 match = Regex.Match(message, "\n");
                 if (match.Success == false)
-                {
                     posEndMessage = message.Length;
-                }
                 else
                     posEndMessage = match.Index + match.Length;
 
                 var errorMessage = message.Substring(posStartMessage, posEndMessage-posStartMessage);
+                errorMessage = errorMessage.ReplaceLineEndings("");
 
                 // TryAdd because I already saw duplicated messages.
                 shaderCode.Value.Errors.TryAdd(lineNumber, errorMessage);

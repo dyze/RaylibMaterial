@@ -47,7 +47,7 @@ namespace Editor.Windows
                     var editor = new TextEditor()
                     {
                         AllText = currentTextWithLineFeeds,
-                        SyntaxHighlighter = new GlSlStyleHighlighter()
+                        SyntaxHighlighter = new GlSlStyleHighlighter(),
                     };
                     _textEditors.Add(key, editor);
                 }
@@ -139,9 +139,22 @@ namespace Editor.Windows
             if (ImGui.BeginTabItem(name))
             {
                 var textEditor = _textEditors[fileId];
+
+                if (ImGui.Button("undo"))
+                {
+                    textEditor.Undo();
+                }
+                ImGui.SameLine();
+                if (ImGui.Button("redo"))
+                {
+                    textEditor.Redo();
+                }
+
+                ImGui.Separator();
+
                 ImGui.Text(
-                    $"Cur:{textEditor.CursorPosition} SEL: {textEditor.Selection.Start} - {textEditor.Selection.End}"
-                );
+                        $"Cur:{textEditor.CursorPosition} SEL: {textEditor.Selection.Start} - {textEditor.Selection.End}"
+                    );
                 
                 textEditor.ErrorMarkers.SetErrorMarkers(code.Errors);
 
