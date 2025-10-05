@@ -11,23 +11,27 @@ Such editor looks like:
 The produced packages are simple zip files that contain whatever is needed for Raylib to work:
 ![image info](./docs/package-content.png)
 
-It is based on RayLib-cs project.
+It is based on [Raylib-cs](https://github.com/raylib-cs/raylib-cs) project.
+
+The provided **ConsumerSampleApp** project shows how to use those materials:
+
+![image info](./docs/ConsumerSampleApp.png)
 
 ## Status of the project
 
 0.1 is still under developer. You can play with it and give feedbacks but the library and editor are not fully operational.
 
 The remaining tasks for this first release are:
-* [ ] make easy to edit and compile shaders
-* [ ] support of models with multiple materials
+* [x] make easy to edit and compile shaders
+* [x] support of models with multiple materials
 * [ ] handle all kinds of uniform types (vec2, vec3...)
 * [x] preview material using a 3D model stored on disk (today only primitives are properly supported)
 * [x] use a sky box instead of a plane for background
 * [ ] handle versioning of packages
-* [ ] produce nuget package for library
+* [x] produce nuget package for library
 * [ ] Cover 100% of code of the library with tests
 * [ ] Add documentation of the editor and the library
-* [ ] Improve existing sample and how to apply produced packages to your projects
+* [x] Improve existing sample and how to apply produced packages to your projects
 
 ## How to build and use
 

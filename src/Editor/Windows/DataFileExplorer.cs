@@ -233,7 +233,7 @@ public class DataFileExplorer
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
 
         if (_selectedFolder == folderContent)
-            flags |= ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.SpanFullWidth;
+            flags |= ImGuiTreeNodeFlags.Selected;
 
         var openFolder = ImGui.TreeNodeEx(name.Length == 0 ? "\\" : name,
             flags);
