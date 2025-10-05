@@ -1,0 +1,126 @@
+﻿using Library.Packaging;
+using System.Text.RegularExpressions;
+using Library;
+using NLog;
+
+namespace Editor;
+
+public static class ShaderErrorParser
+{
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    public static void Parse(string message, Dictionary<FileId, ShaderCode> shaderCodes)
+    {
+        if (message.Contains("Failed to compile"))
+        {
+            FileType? faultyShader = null;
+
+            if (message.Contains("vertex"))
+            {
+                faultyShader = FileType.VertexShader;
+            }
+            else if (message.Contains("fragment"))
+            {
+                faultyShader = FileType.FragmentShader;
+            }
+
+            if (faultyShader != null)
+            {
+                var shaderCode = shaderCodes.FirstOrDefault(s => s.Key.FileType == faultyShader);
+
+                var shaderId = ExtractShaderIdFromMessage(message);
+                if (shaderId == null)
+                    return;
+                shaderCode.Value.ShaderId = shaderId;
+            }
+        }
+        else
+        if (message.Contains("Compile error"))
+        {
+            var shaderId = ExtractShaderIdFromMessage(message);
+            if (shaderId == null)
+                return;
+
+            var shaderCode = shaderCodes.FirstOrDefault(s => s.Value.ShaderId == shaderId);
+
+            var match = Regex.Match(message, "Compile error: ");
+            if (match.Success == false)
+                return;
+
+            message = message.Substring(match.Index
+                                        + match.Length);
+            while (true)
+            {
+               match = Regex.Match(message, @"[0-9]\(");
+                if (match.Success == false)
+                    return;
+
+                var position = match.Index + match.Length;
+
+                match = Regex.Match(message, @"\)");
+                if (match.Success == false)
+                    return;
+
+                var pos2 = match.Index;
+
+                var sub = message.Substring(position, pos2 - position);
+
+                var lineNumber = int.Parse(sub);
+
+                match = Regex.Match(message, @" : ");
+                if (match.Success == false)
+                    return;
+
+                var posStartMessage = match.Index + match.Length;
+
+                int posEndMessage;
+                match = Regex.Match(message, "\n");
+                if (match.Success == false)
+                {
+                    posEndMessage = message.Length;
+                }
+                else
+                    posEndMessage = match.Index + match.Length;
+
+                var errorMessage = message.Substring(posStartMessage, posEndMessage-posStartMessage);
+
+                // TryAdd because I already saw duplicated messages.
+                shaderCode.Value.Errors.TryAdd(lineNumber, errorMessage);
+
+                message = message.Substring(posEndMessage);
+            }
+
+        }
+    }
+
+    private static int? ExtractShaderIdFromMessage(string message)
+    {
+        // get id to track other messages related to that shader
+        var match = Regex.Match(message, @"\x5BID ");
+        if (match.Success == false)
+            return null;
+
+        var position = match.Index + match.Length;
+
+        match = Regex.Match(message, @"\x5D");
+        if (match.Success == false)
+            return null;
+
+        var pos2 = match.Index;
+
+        var sub = message.Substring(position, pos2 - position);
+
+        int? shaderId = null;
+
+        try
+        {
+            shaderId = int.Parse(sub);
+        }
+        catch (FormatException e)
+        {
+            Logger.Error(e);
+        }
+
+        return shaderId;
+    }
+}

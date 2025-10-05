@@ -27,8 +27,7 @@ class EditorController
     private const string MaterialBackupFileExtension = ".mat.bck";
 
     private Camera3D _camera;
-
-
+    
     private Model _currentModel;
     private Shader? _currentShader;
 
@@ -38,7 +37,7 @@ class EditorController
     /// </summary>
     private Shader _defaultShader;
 
-    private Dictionary<FileId, ShaderCode> _shaderCode = new();
+    private static Dictionary<FileId, ShaderCode> _shaderCode = new();
 
 
     private readonly MessageWindow _messageWindow;
@@ -94,8 +93,7 @@ class EditorController
 
         LoadEditorConfiguration();
 
-
-        if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)  
+        if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
             throw new FileLoadException("DataFolderPath is not in cfg file");
 
         _editorControllerData = new(_editorConfiguration);
@@ -179,7 +177,6 @@ class EditorController
     }
 
 
-
     private void ResetCamera()
     {
         _editorConfiguration.CameraSettings = new CameraSettings();
@@ -241,6 +238,8 @@ class EditorController
         var message = Logging.GetLogMessage(new IntPtr(text), new IntPtr(args));
 
         Logger.Log(level, message);
+
+        ShaderErrorParser.Parse(message, EditorController._shaderCode);
     }
 
     public void Run()
@@ -370,12 +369,12 @@ class EditorController
     {
         while (_imageWindowsToRemove.Count > 0)
         {
-            var filePath = _imageWindowsToRemove.First(); 
+            var filePath = _imageWindowsToRemove.First();
             _imageWindowsToRemove.Remove(filePath);
             _imageWindows.Remove(filePath);
             break;
         }
-        
+
         foreach (var (_, imageWindow) in _imageWindows)
         {
             imageWindow.Render();
@@ -945,11 +944,11 @@ class EditorController
 
         var shader = _currentShader.Value;
 
-        var materialIndex = Math.Clamp(_editorControllerData.materialIndexToEdit, 0, _currentModel.MaterialCount - 1);
-        if (materialIndex != _editorControllerData.materialIndexToEdit)
+        var materialIndex = Math.Clamp(_editorControllerData.MaterialIndexToEdit, 0, _currentModel.MaterialCount - 1);
+        if (materialIndex != _editorControllerData.MaterialIndexToEdit)
         {
             Logger.Error($"wrong materialIndex, max is {_currentModel.MaterialCount - 1}");
-            _editorControllerData.materialIndexToEdit = materialIndex;
+            _editorControllerData.MaterialIndexToEdit = materialIndex;
         }
 
         Raylib.SetMaterialShader(ref _currentModel, materialIndex, ref shader);
@@ -968,6 +967,12 @@ class EditorController
         materialPackage.UnloadShader();
 
         var shaderIsValid = false;
+
+        // Clear error messages
+        foreach (var (_, value) in _shaderCode)
+        {
+            value.Errors.Clear();
+        }
 
         try
         {

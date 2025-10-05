@@ -26,7 +26,7 @@ public sealed class MessageQueueTarget : TargetWithLayout
 
     protected override void Write(LogEventInfo logEvent)
     {
-        var logMessage = this.Layout.Render(logEvent);
+        var logMessage = Layout.Render(logEvent);
 
         var logLevel = _logLevels[logEvent.Level];
 

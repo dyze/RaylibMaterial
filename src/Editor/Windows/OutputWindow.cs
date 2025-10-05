@@ -132,7 +132,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                 ImGui.EndCombo();
             }
 
-            ImGui.InputInt("Material index", ref editorControllerData.materialIndexToEdit);
+            ImGui.InputInt("Material index", ref editorControllerData.MaterialIndexToEdit);
 
             ImGui.EndDisabled();
 

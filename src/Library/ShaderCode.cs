@@ -1,6 +1,7 @@
 ﻿using Library.CodeVariable;
 using Library.Helpers;
 using NLog;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
 namespace Library;
@@ -29,10 +30,15 @@ public class ShaderCode
     public string Code;
     public bool IsValid { get; set; } = false;
 
+    // key is line number
+    public Dictionary<int, object> Errors = [];
+
     /// <summary>
     /// List of uniforms detected inside the code
     /// </summary>
     public Dictionary<string, CodeVariableBase> Variables = [];
+
+    public int? ShaderId = null;
 
     /// <summary>
     /// Stores the code of a shader component

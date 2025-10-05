@@ -142,17 +142,8 @@ namespace Editor.Windows
                 ImGui.Text(
                     $"Cur:{textEditor.CursorPosition} SEL: {textEditor.Selection.Start} - {textEditor.Selection.End}"
                 );
-
-                // We force line endings to \n to be able to properly detect modifications on text
-                var currentTextWithLineFeeds = code.Code.ReplaceLineEndings("\n");
-                //textEditor.AllText = currentTextWithLineFeeds;
-
-                //var demoErrors = new Dictionary<int, object>
-                //{
-                //    { 1, "Syntax error etc 1" },
-                //    { 10, "Syntax error etc 10" }
-                //};
-                //textEditor.ErrorMarkers.SetErrorMarkers(demoErrors);
+                
+                textEditor.ErrorMarkers.SetErrorMarkers(code.Errors);
 
                 if (textEditor.Render("EditWindow"))
                 {

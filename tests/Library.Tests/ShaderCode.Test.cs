@@ -1,6 +1,4 @@
-﻿using System.Drawing;
-using Library.CodeVariable;
-using System.Numerics;
+﻿using Library.CodeVariable;
 
 namespace Library.Tests;
 
