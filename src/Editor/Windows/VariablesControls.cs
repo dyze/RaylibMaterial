@@ -11,6 +11,7 @@ namespace Editor.Windows
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly EditorControllerData _editorControllerData;
         private readonly Dictionary<Type, Func<CodeVariableBase, string, bool>> _handlers;
+        private readonly Dictionary<string, Action> _handlersForInternals;
 
         public VariablesControls(EditorControllerData editorControllerData)
         {
@@ -24,10 +25,14 @@ namespace Editor.Windows
                 { typeof(CodeVariableFloat), HandleFloat },
                 { typeof(CodeVariableTexture), HandleTexture },
                 { typeof(CodeVariableColor), HandleColor },
-                { typeof(CodeVariableLight), HandleLight },
+                { typeof(CodeVariableInternal), HandleInternal },
                 { typeof(CodeVariableUnsupported), HandleUnsupported },
             };
-            this._editorControllerData = editorControllerData;
+            _handlersForInternals = new()
+            {
+                { "lights", HandleLights },
+            };
+            _editorControllerData = editorControllerData;
         }
 
 
@@ -53,13 +58,15 @@ namespace Editor.Windows
                     {
                         ImGui.PushID(name);
 
-                        ImGuiTreeNodeFlags flags = variable.Internal == false
+                        var internallyHandled = variable is CodeVariableInternal;
+
+                        var flags = internallyHandled == false
                             ? ImGuiTreeNodeFlags.DefaultOpen
                             : ImGuiTreeNodeFlags.None;
 
                         if (ImGui.TreeNodeEx(name, flags))
                         {
-                            ImGui.BeginDisabled(variable.Internal);
+                            ImGui.BeginDisabled(internallyHandled);
                             ImGui.BeginGroup();
 
                             if (_handlers.TryGetValue(variable.GetType(), out var handler))
@@ -214,21 +221,28 @@ namespace Editor.Windows
             return variableChanged;
         }
 
-        private bool HandleLight(CodeVariableBase variable, string name)
+        private bool HandleInternal(CodeVariableBase variable, string name)
+        {
+            if (_handlersForInternals.TryGetValue(name, out var handler))
+            {
+                handler();
+            }
+
+            return false;
+        }
+
+        private void HandleLights()
         {
             const bool variableChanged = false;
 
             var i = 0;
             foreach (var light in _editorControllerData.Lights)
             {
-                if (ImGui.TreeNodeEx($"light[{i}]", ImGuiTreeNodeFlags.DefaultOpen))
+                if (ImGui.TreeNodeEx($"lights[{i}]", ImGuiTreeNodeFlags.DefaultOpen))
                 {
                     ImGui.Checkbox("Enabled", ref light.Enabled);
-
                     ImGui.LabelText("Type", light.Type.ToString());
-
                     ImGui.InputFloat3("Position", ref light.Position);
-
                     ImGui.InputFloat3("Target", ref light.Target);
 
                     var currentValue = TypeConvertors.ColorToVector4(light.Color);
@@ -241,13 +255,10 @@ namespace Editor.Windows
 
                 i++;
             }
-
-
-            return variableChanged;
         }
 
         private bool HandleUnsupported(CodeVariableBase variable, string name)
-        { 
+        {
             ImGui.LabelText($"##{name}", "unsupported");
             return false;
         }

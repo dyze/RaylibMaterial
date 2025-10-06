@@ -22,4 +22,16 @@ public sealed class MaterialPackageTest
         CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, materialPackage.Files[new FileId(FileType.Image, "image1.png")]);
         CollectionAssert.AreEqual(new byte[] { 4, 5, 6 }, materialPackage.Files[new FileId(FileType.FragmentShader, "shader1.frag")]);
     }
+
+    [TestMethod]
+    public void LoadExistingV1File()
+    {
+        var materialPackage = MaterialPackage.Load("resources/textured.mat");
+
+        Assert.AreEqual(1, materialPackage.Description.Version);
+        Assert.AreEqual("dyze", materialPackage.Description.Author);
+        Assert.AreEqual(2, materialPackage.Files.Count);
+        CollectionAssert.IsSubsetOf(new byte[] { 35, 118, 101 }, materialPackage.Files[new FileId(FileType.FragmentShader, "texture.frag")]);
+        CollectionAssert.IsSubsetOf(new byte[] { 137, 80, 78 }, materialPackage.Files[new FileId(FileType.Image, "test.png")]);
+    }
 }

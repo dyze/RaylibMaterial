@@ -30,5 +30,5 @@ public class Light
     public List<int> IntensityLoc = [];
 
     // Shaders that use light
-    public List<Shader> Shaders;
+    public List<Shader> Shaders = [];
 };

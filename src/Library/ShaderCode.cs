@@ -3,6 +3,7 @@ using Library.Helpers;
 using NLog;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using static Library.Helpers.TypeConvertors;
 
 namespace Library;
 
@@ -78,34 +79,49 @@ public class ShaderCode
 
     private void RegisterUniform(TypeName item, Dictionary<string, CodeVariableBase> variables)
     {
-        var type = TypeConvertors.StringToType(item.Type);
-        if (type != null)
-        {
-            // Special case for colors. It will change the way to edit the value (color picker)
-            var nameLower = item.Name.ToLower();
-            if (type == typeof(CodeVariableVector4) && nameLower.Contains("color") ||
-                nameLower.StartsWith("col"))
-                type = typeof(CodeVariableColor);
+        var typeInScript = StringToStorageType(item.Type);
 
-            var uniformDescription = TypeConvertors.GetUniformDescription(item.Name);
-            var internallyHandled = false;
-            if (uniformDescription != null)
-            {
-                internallyHandled = uniformDescription.InternalHandled;
-                Logger.Error($"{item.Name} is internally handled");
-            }
-
-            var variable = CodeVariableFactory.Build(type);
-            variable.Internal = internallyHandled;
-            variables.Add(item.Name, variable);
-        }
-        else
+        if (typeInScript == null)
         {
-            var variable = CodeVariableFactory.Build(typeof(CodeVariableUnsupported));
-            variables.Add(item.Name, variable);
+            var unsupportedVariable = CodeVariableFactory.Build(typeof(CodeVariableUnsupported));
+            variables.Add(item.Name, unsupportedVariable);
 
             Logger.Error($"{item.Type} not supported");
+
+            return;
         }
+
+        var uniformDescription = GetUniformDescription(item.Name);
+        var internallyHandled = false;
+        if (uniformDescription != null)
+        {
+            internallyHandled = uniformDescription.InternalHandled;
+            if (internallyHandled)
+            {
+                Logger.Trace($"{item.Name} is internally handled");
+
+                if (uniformDescription.Type != null &&
+                    uniformDescription.Type != typeInScript)
+                    throw new TypeAccessException(
+                        $"{item.Name} type should be {uniformDescription.Type} and not {typeInScript} ");
+
+                var selectedType = typeof(CodeVariableInternal);
+                var internalVariable = CodeVariableFactory.Build(selectedType);
+                variables.Add(item.Name, internalVariable);
+
+                return;
+            }
+        }
+
+
+        // Special case for colors. It will change the way to edit the value (color picker)
+        var nameLower = item.Name.ToLower();
+        if (typeInScript == typeof(CodeVariableVector4) && nameLower.Contains("color") ||
+            nameLower.StartsWith("col"))
+            typeInScript = typeof(CodeVariableColor);
+
+        var variable = CodeVariableFactory.Build(typeInScript);
+        variables.Add(item.Name, variable);
     }
 
     private static TypeName ParseUniform(Match match, ref string currentPosition)

@@ -9,7 +9,7 @@ using Library.Lighting;
 
 namespace Editor;
 
-public class EditorControllerData(EditorConfiguration editorConfiguration)
+public class EditorControllerData()
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 

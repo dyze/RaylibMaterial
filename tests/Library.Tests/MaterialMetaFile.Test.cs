@@ -36,4 +36,6 @@ public sealed class MaterialMetaFileTest
         Assert.AreEqual(loadedMaterial.Variables["texture"].GetType(), material.Variables["texture"].GetType());
         //Assert.AreEqual(loadedMaterial.Variables["texture"].Value, material.Variables["texture"].Value);
     }
+
+
 }

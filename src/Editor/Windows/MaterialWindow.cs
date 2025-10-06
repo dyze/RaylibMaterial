@@ -1,5 +1,4 @@
-﻿using Editor.Configuration;
-using Editor.Helpers;
+﻿using Editor.Helpers;
 using ImGuiNET;
 using Library.Packaging;
 using NLog;
@@ -8,9 +7,7 @@ using Library.Helpers;
 
 namespace Editor.Windows;
 
-class MaterialWindow(
-    EditorConfiguration editorConfiguration,
-    EditorControllerData editorControllerData)
+class MaterialWindow(EditorControllerData editorControllerData)
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 

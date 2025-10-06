@@ -5,6 +5,7 @@ namespace Library.Packaging;
 [Serializable]
 public class MaterialDescription
 {
+    [Required] public int Version = 1;
     [Required] public string Description = "";
     [Required] public string Author = "";
     [Required] public List<string> Tags = [];

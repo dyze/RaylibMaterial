@@ -1,16 +1,12 @@
-﻿using System.Text.Json.Serialization;
+﻿using Raylib_cs;
+using System.Text.Json.Serialization;
+using Library.Packaging;
 
 namespace Library.CodeVariable;
 
 [Serializable]
 public abstract class CodeVariableBase
 {
-    /// <summary>
-    /// is true if handled by Raylib or MaterialPackage
-    /// such variable can't be modified by user
-    /// </summary>
-    public bool Internal = false;
-
     /// <summary>
     /// is true when value needs to be sent to shader
     /// </summary>
@@ -19,6 +15,8 @@ public abstract class CodeVariableBase
 
     public override string ToString()
     {
-        return $"Internal={Internal}, SendToShader={SendToShader}";
+        return $"SendToShader={SendToShader}";
     }
+
+    public abstract void Apply(IMaterial material1, Shader shader, Material raylibMaterial, string variableName, int variableLocation);
 }

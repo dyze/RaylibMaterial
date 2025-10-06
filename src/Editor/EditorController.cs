@@ -77,7 +77,7 @@ class EditorController
 
     private readonly SettingsWindow _settingsWindow;
 
-    private readonly string _startupFilePath;
+    private readonly string? _startupFilePath;
 
     // Used to avoid too frequent updates. e.g. when continuously selecting a color in a ImGui Color widget
     private Timer? _timerOnVariablesChanged;
@@ -96,7 +96,7 @@ class EditorController
         if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
             throw new FileLoadException("DataFolderPath is not in cfg file");
 
-        _editorControllerData = new(_editorConfiguration);
+        _editorControllerData = new();
 
         _editorControllerData.DataFileExplorerData.DataFolder.Open(
             _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
@@ -112,8 +112,7 @@ class EditorController
         _shaderCodeWindow = new(_editorConfiguration,
             _editorControllerData);
 
-        _materialWindow = new(_editorConfiguration,
-            _editorControllerData);
+        _materialWindow = new(_editorControllerData);
         _materialWindow.OnSave += _materialWindow_OnSave;
 
         _materialWindow._variablesControls.ImageOpenRequest += ImageOpenRequest;
@@ -206,8 +205,12 @@ class EditorController
 
     private void DiscoverBuiltInModels()
     {
+        var path = _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath;
+        if (path == null)
+            throw new NullReferenceException("path is null");
+
         _editorControllerData.BuiltInModels = Directory.GetFiles(
-                Path.GetFullPath(_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath), "*.*",
+                Path.GetFullPath(path), "*.*",
                 SearchOption.AllDirectories)
             .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
             .ToList();
@@ -597,11 +600,15 @@ class EditorController
     {
         Logger.Info("LoadMaterialAskForFile...");
 
+        var directoryName = Path.GetDirectoryName(_outputFilePath);
+        if (directoryName == null)
+            throw new NullReferenceException($"directory name can't be extracted from {_outputFilePath}");
+
         _fileDialogInfo = new()
         {
             Title = "Please select a material",
             Type = ImGuiFileDialogType.OpenFile,
-            DirectoryPath = new DirectoryInfo(Path.GetDirectoryName(_outputFilePath)),
+            DirectoryPath = new DirectoryInfo(directoryName),
             FileName = "",
             Extensions =
             [
@@ -838,11 +845,15 @@ class EditorController
     {
         Logger.Info("OnSaveAsStart...");
 
+        var directoryName = Path.GetDirectoryName(_outputFilePath);
+        if (directoryName == null)
+            throw new NullReferenceException($"directory name can't be extracted from {_outputFilePath}");
+
         _fileDialogInfo = new()
         {
             Title = "Please select a material",
             Type = ImGuiFileDialogType.SaveFile,
-            DirectoryPath = new DirectoryInfo(Path.GetDirectoryName(_outputFilePath)),
+            DirectoryPath = new DirectoryInfo(directoryName),
             FileName = Path.GetFileName(_outputFilePath),
             Extensions =
             [
@@ -1044,9 +1055,6 @@ class EditorController
 
                 var newVariable = CodeVariableFactory.Build(variable.GetType());
 
-                //todo use Clone instead to avoid some properties?
-                newVariable.Internal = variable.Internal;
-
                 material.Variables.Add(key, newVariable);
             }
             else
@@ -1059,12 +1067,6 @@ class EditorController
                 {
                     Logger.Trace($"{key}: type changed");
                     material.Variables[key] = CodeVariableFactory.Build(variable.GetType());
-                }
-
-                if (materialVariable.Internal != variable.Internal)
-                {
-                    Logger.Trace($"{key}: internal flag changed");
-                    material.Variables[key].Internal = variable.Internal;
                 }
             }
         }

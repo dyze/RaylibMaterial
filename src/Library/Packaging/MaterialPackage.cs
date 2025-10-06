@@ -3,9 +3,7 @@ using NLog;
 using Raylib_cs;
 using System.ComponentModel.DataAnnotations;
 using System.Numerics;
-using ImGuiNET;
 using Newtonsoft.Json;
-using Library.Helpers;
 
 namespace Library.Packaging;
 
@@ -17,7 +15,7 @@ public enum FileType
     Image,
 }
 
-public class MaterialPackage : IDisposable
+public class MaterialPackage : IDisposable, IMaterial
 {
     private readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -377,107 +375,10 @@ public class MaterialPackage : IDisposable
                 continue;
             }
 
-            if (variable.GetType() == typeof(CodeVariableInt))
-            {
-                var currentValue = (variable as CodeVariableInt).Value;
-                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Int);
-            }
-            else if (variable.GetType() == typeof(CodeVariableVector2))
-            {
-                var currentValue = (variable as CodeVariableVector2).Value;
-                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec2);
-            }
-            else if (variable.GetType() == typeof(CodeVariableVector3))
-            {
-                var currentValue = (variable as CodeVariableVector3).Value;
-                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec3);
-            }
-            else if (variable.GetType() == typeof(CodeVariableVector4))
-            {
-                var currentValue = (variable as CodeVariableVector4).Value;
-                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
-            }
-            else if (variable.GetType() == typeof(CodeVariableColor))
-            {
-                var currentValue = TypeConverters.ColorToVector4((variable as CodeVariableColor).Value);
-                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Vec4);
-            }
-            else if (variable.GetType() == typeof(CodeVariableFloat))
-            {
-                var currentValue = (variable as CodeVariableFloat).Value;
-                Raylib.SetShaderValue(Shader.Value, location, currentValue, ShaderUniformDataType.Float);
-            }
-            else if (variable.GetType() == typeof(CodeVariableTexture))
-            {
-                var materialMapIndex = (variable as CodeVariableTexture).MaterialMapIndex;
-
-                if (materialMapIndex == null)
-                    Logger.Debug($"{name}: materialMapIndex not set");
-                else
-                    SetUniformTexture(name,
-                        (variable as CodeVariableTexture).Value,
-                        raylibMaterial,
-                        materialMapIndex.Value);
-            }
-            else
-                Logger.Debug($"{variable.GetType()} not supported");
+            variable.Apply(this, Shader.Value, raylibMaterial, name, location);
         }
     }
-
-    private void SetUniformTexture(string variableName,
-        string fileName,
-        Material raylibMaterial,
-        MaterialMapIndex materialMapIndex)
-    {
-        Logger.Trace("SetUniformTexture...");
-
-        if (fileName == "")
-        {
-            Logger.Trace("No filename set");
-            return;
-        }
-
-        var extension = Path.GetExtension(fileName);
-        if (extension == null)
-            throw new NullReferenceException($"No file extension found in {fileName}");
-
-        var file = GetFile(FileType.Image, fileName);
-        if (file == null)
-            throw new NullReferenceException($"No file {fileName} found");
-
-        var image = Raylib.LoadImageFromMemory(extension, file); // ignore period
-        if (Raylib.IsImageValid(image) == false)
-        {
-            Logger.Debug($"image {fileName} is not valid");
-            return;
-        }
-
-        var texture = Raylib.LoadTextureFromImage(image);
-
-        Raylib.UnloadImage(image);
-
-        if (Raylib.IsTextureValid(texture) == false)
-        {
-            Logger.Debug($"texture {variableName} is not valid");
-            return;
-        }
-
-        unsafe
-        {
-            var index = TypeConvertors.MaterialMapIndexToShaderLocationIndex(materialMapIndex);
-            if (index == null)
-            {
-                Logger.Debug($"ShaderLocationIndex for {materialMapIndex} not found");
-                return;
-            }
-
-            Shader.Value.Locs[(int)index] = Raylib.GetShaderLocation(Shader.Value, variableName);
-        }
-
-        Raylib.SetMaterialTexture(ref raylibMaterial, materialMapIndex, texture);
-        Logger.Trace($"{variableName}={fileName}, materialMapIndex={materialMapIndex}");
-    }
-
+    
     public void UpdateFileReferences()
     {
         ClearFileReferences();
@@ -532,3 +433,4 @@ public class MaterialPackage : IDisposable
         );
     }
 }
+

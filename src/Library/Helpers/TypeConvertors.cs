@@ -1,12 +1,13 @@
 ﻿using Library.CodeVariable;
 using System.Numerics;
+using Library.Lighting;
 using Raylib_cs;
 
 namespace Library.Helpers;
 
 public static class TypeConvertors
 {
-    public static Type? StringToType(string input)
+    public static Type? StringToStorageType(string input)
     {
         Dictionary<string, Type> table = new()
         {
@@ -16,10 +17,7 @@ public static class TypeConvertors
             { "vec3", typeof(CodeVariableVector3) },
             { "vec4", typeof(CodeVariableVector4) },
             { "mat4", typeof(CodeVariableMatrix4x4) },
-            //{ "int", typeof(int) },
-            //{ "uint", typeof(uint) },
             { "sampler2D", typeof(CodeVariableTexture) },
-            { "Light", typeof(CodeVariableLight) },
         };
 
         return table.GetValueOrDefault(input);
@@ -57,7 +55,7 @@ public static class TypeConvertors
         { MaterialMapIndex.Cubemap, ShaderLocationIndex.MapCubemap },
         { MaterialMapIndex.Irradiance, ShaderLocationIndex.MapIrradiance },
         { MaterialMapIndex.Prefilter, ShaderLocationIndex.MapPrefilter },
-        {  MaterialMapIndex.Brdf, ShaderLocationIndex.MapBrdf },
+        { MaterialMapIndex.Brdf, ShaderLocationIndex.MapBrdf },
     };
 
     public static ShaderLocationIndex? MaterialMapIndexToShaderLocationIndex(MaterialMapIndex materialMapIndex)
@@ -67,39 +65,41 @@ public static class TypeConvertors
 
     public class UniformDescription
     {
-        public UniformDescription(bool internalHandled, string description)
+        public UniformDescription(Type? type, bool internalHandled, string description)
         {
             InternalHandled = internalHandled;
             Description = description;
+            Type = type;
         }
 
         public bool InternalHandled { get; private set; }
         public string Description { get; private set; }
+        public Type? Type { get; private set; }
     }
 
     public static UniformDescription? GetUniformDescription(string name)
     {
         Dictionary<string, UniformDescription> internalUniforms = new()
         {
-            { "mvp", new UniformDescription(true, "model-view-projection matrix") },
-            { "matView", new UniformDescription(true, "view matrix") },
-            { "matProjection", new UniformDescription(true, "projection matrix") },
-            { "matModel", new UniformDescription(true, "model matrix") },
-            { "matNormal",new UniformDescription( true, "normal matrix (transpose(inverse(matModelView))") },
-            { "colDiffuse",new UniformDescription( true, "color diffuse (base tint color, multiplied by texture color)") },
-            { "viewPos", new UniformDescription( true, "Location of camera") },
-            { "lights", new UniformDescription(true, "Lights in our scene") },
-            { "texture0", new UniformDescription( false, "Albedo, also called diffuse") },
-            { "texture1", new UniformDescription( false, "Metalness, also called Specular") },
-            { "texture2", new UniformDescription( false, "Normal") },
-            { "texture3", new UniformDescription( false, "Roughness") },
-            { "texture4", new UniformDescription( false, "Occlusion") },
-            { "texture5", new UniformDescription( false, "Emission") },
-            { "texture6", new UniformDescription( false, "Height") },
-            { "texture7", new UniformDescription( false, "Cubemap") },
-            { "texture8", new UniformDescription( false, "Irradiance") },
-            { "texture9", new UniformDescription( false, "Prefilter") },
-            { "texture10", new UniformDescription( false, "Brdf") }
+            { "mvp", new UniformDescription(typeof(CodeVariableMatrix4x4), true, "model-view-projection matrix") },
+            { "matView", new UniformDescription(typeof(CodeVariableMatrix4x4), true, "view matrix") },
+            { "matProjection", new UniformDescription(typeof(CodeVariableMatrix4x4), true, "projection matrix") },
+            { "matModel", new UniformDescription(typeof(CodeVariableMatrix4x4), true, "model matrix") },
+            { "matNormal",new UniformDescription(typeof(CodeVariableMatrix4x4),  true, "normal matrix (transpose(inverse(matModelView))") },
+            { "colDiffuse",new UniformDescription(typeof(CodeVariableVector4),  true, "color diffuse (base tint color, multiplied by texture color)") },
+            { "viewPos", new UniformDescription(typeof(CodeVariableVector3),  true, "Location of camera") },
+            { "lights", new UniformDescription(null, true, "Lights in our scene") },
+            { "texture0", new UniformDescription(typeof(CodeVariableTexture),  false, "Albedo, also called diffuse") },
+            { "texture1", new UniformDescription(typeof(CodeVariableTexture),  false, "Metalness, also called Specular") },
+            { "texture2", new UniformDescription(typeof(CodeVariableTexture),  false, "Normal") },
+            { "texture3", new UniformDescription(typeof(CodeVariableTexture),  false, "Roughness") },
+            { "texture4", new UniformDescription(typeof(CodeVariableTexture),  false, "Occlusion") },
+            { "texture5", new UniformDescription(typeof(CodeVariableTexture),  false, "Emission") },
+            { "texture6", new UniformDescription(typeof(CodeVariableTexture),  false, "Height") },
+            { "texture7", new UniformDescription(typeof(CodeVariableTexture),  false, "Cubemap") },
+            { "texture8", new UniformDescription(typeof(CodeVariableTexture),  false, "Irradiance") },
+            { "texture9", new UniformDescription(typeof(CodeVariableTexture),  false, "Prefilter") },
+            { "texture10", new UniformDescription(typeof(CodeVariableTexture),  false, "Brdf") }
         };
 
         return internalUniforms.GetValueOrDefault(name);
