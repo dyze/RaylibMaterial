@@ -6,7 +6,7 @@ using Library.Packaging;
 namespace Library.CodeVariable;
 
 [Serializable]
-public class CodeVariableUiVector3 : CodeVariableBase
+public class CodeVariableUVector3 : CodeVariableBase
 {
     [Required][JsonProperty("Value")] public readonly uint[] Value = new uint[3];
 

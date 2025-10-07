@@ -24,9 +24,9 @@ public static class TypeConvertors
             { "ivec4", typeof(CodeVariableIVector4) },
 
             { "uint", typeof(CodeVariableInt) },
-            { "uivec2", typeof(CodeVariableUiVector2) },
-            { "uivec3", typeof(CodeVariableUiVector3) },
-            { "uivec4", typeof(CodeVariableUiVector4) },
+            { "uvec2", typeof(CodeVariableUVector2) },
+            { "uvec3", typeof(CodeVariableUVector3) },
+            { "uvec4", typeof(CodeVariableUVector4) },
 
             { "sampler2D", typeof(CodeVariableTexture) },
 

@@ -23,10 +23,10 @@ namespace Editor.Windows
                 { typeof(CodeVariableIVector3), HandleIVector3 },
                 { typeof(CodeVariableIVector4), HandleIVector4 },
                 /// uints
-                { typeof(CodeVariableInt), HandleUInt },
-                { typeof(CodeVariableUiVector2), HandleUiVector2 },
-                { typeof(CodeVariableUiVector3), HandleUiVector3 },
-                { typeof(CodeVariableUiVector4), HandleUiVector4 },
+                { typeof(CodeVariableUInt), HandleUInt },
+                { typeof(CodeVariableUVector2), HandleUVector2 },
+                { typeof(CodeVariableUVector3), HandleUVector3 },
+                { typeof(CodeVariableUVector4), HandleUVector4 },
                 /// floats
                 { typeof(CodeVariableFloat), HandleFloat },
                 { typeof(CodeVariableVector2), HandleVector2 },
