@@ -19,6 +19,9 @@ public class MaterialPackage : IDisposable, IMaterial
 {
     private readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    private static readonly Version MinSupportedVersionIncluded = new(0, 1);
+    private static readonly Version MaxSupportedVersionExcluded = new(1, 0);
+
     /// <summary>
     /// Triggered when a file is added or removed
     /// </summary>
@@ -117,6 +120,19 @@ public class MaterialPackage : IDisposable, IMaterial
             Logger.Error(e);
             inputDataAccess.Close();
             throw new FileLoadException($"{packageFilePath} can't be read. Serialization issue.");
+        }
+
+        // Check version
+        if (metaFileObject.Version < MinSupportedVersionIncluded)
+        {
+            throw new NotSupportedException(
+                $"Version {metaFileObject.Version} is not supported. Package version must be at least equal to {MinSupportedVersionIncluded}");
+        }
+
+        if (metaFileObject.Version >= MaxSupportedVersionExcluded)
+        {
+            throw new NotSupportedException(
+                $"Version {metaFileObject.Version} is not supported. Package version must be lower than {MaxSupportedVersionExcluded}");
         }
 
         var materialPackage = new MaterialPackage();

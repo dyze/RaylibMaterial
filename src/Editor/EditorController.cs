@@ -631,9 +631,17 @@ class EditorController
         }
         catch (Exception ex)
         {
-            if (ex is FileNotFoundException or FileLoadException or DirectoryNotFoundException or IOException)
+            if (ex is FileNotFoundException or FileLoadException or DirectoryNotFoundException or IOException or NotSupportedException)
             {
                 Logger.Error(ex);
+
+                _messageDialogConfiguration = new("Material can't be loaded",
+                    ex.Message,
+                    [
+                        new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Ok, "Continue", null,
+                            System.Drawing.Color.OrangeRed)
+                    ]);
+
                 return;
             }
 

@@ -33,4 +33,22 @@ public sealed class MaterialPackageTest
         CollectionAssert.IsSubsetOf(new byte[] { 35, 118, 101 }, materialPackage.Files[new FileId(FileType.FragmentShader, "texture.frag")]);
         CollectionAssert.IsSubsetOf(new byte[] { 137, 80, 78 }, materialPackage.Files[new FileId(FileType.Image, "test.png")]);
     }
+
+    [TestMethod]
+    public void VersionTooHighIsRejected()
+    {
+        Assert.ThrowsException<NotSupportedException>(() => MaterialPackage.Load("resources/version-too-high.mat"));
+    }
+
+    [TestMethod]
+    public void VersionTooLowIsRejected()
+    {
+        Assert.ThrowsException<NotSupportedException>(() => MaterialPackage.Load("resources/version-too-low.mat"));
+    }
+
+    [TestMethod]
+    public void FileDoesntExist()
+    {
+        Assert.ThrowsException<FileNotFoundException>(() => MaterialPackage.Load("resources/don-t-exist.mat"));
+    }
 }
