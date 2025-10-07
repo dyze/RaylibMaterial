@@ -631,7 +631,7 @@ class EditorController
         }
         catch (Exception ex)
         {
-            if (ex is FileNotFoundException or FileLoadException or DirectoryNotFoundException)
+            if (ex is FileNotFoundException or FileLoadException or DirectoryNotFoundException or IOException)
             {
                 Logger.Error(ex);
                 return;

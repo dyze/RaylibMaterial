@@ -26,12 +26,16 @@ class MaterialWindow(EditorControllerData editorControllerData)
             RenderProperties();
             RenderFiles();
 
+            ImGui.BeginChild("Variables");
+
             var material = editorControllerData.MaterialPackage;
             if (_variablesControls.Render(material.Variables))
             {
                 material.SetModified();
                 material.TriggerVariablesChanged();
             }
+
+            ImGui.EndChild();
         }
 
         ImGui.End();
