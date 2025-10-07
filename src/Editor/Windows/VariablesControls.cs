@@ -17,12 +17,24 @@ namespace Editor.Windows
         {
             _handlers = new()
             {
+                // ints
                 { typeof(CodeVariableInt), HandleInt },
+                { typeof(CodeVariableIVector2), HandleIVector2 },
+                { typeof(CodeVariableIVector3), HandleIVector3 },
+                { typeof(CodeVariableIVector4), HandleIVector4 },
+                /// uints
+                { typeof(CodeVariableInt), HandleUInt },
+                { typeof(CodeVariableUiVector2), HandleUiVector2 },
+                { typeof(CodeVariableUiVector3), HandleUiVector3 },
+                { typeof(CodeVariableUiVector4), HandleUiVector4 },
+                /// floats
+                { typeof(CodeVariableFloat), HandleFloat },
                 { typeof(CodeVariableVector2), HandleVector2 },
                 { typeof(CodeVariableVector3), HandleVector3 },
                 { typeof(CodeVariableVector4), HandleVector4 },
+                ///
                 { typeof(CodeVariableMatrix4x4), HandleMatrix4x4 },
-                { typeof(CodeVariableFloat), HandleFloat },
+
                 { typeof(CodeVariableTexture), HandleTexture },
                 { typeof(CodeVariableColor), HandleColor },
                 { typeof(CodeVariableInternal), HandleInternal },
@@ -107,36 +119,6 @@ namespace Editor.Windows
             }
 
             return atLeastAVariableChanged;
-        }
-
-        private bool HandleInt(CodeVariableBase variable, string name)
-        {
-            var variableChanged = false;
-
-            var currentValue = (variable as CodeVariableInt).Value;
-
-            if (ImGui.InputInt($"##{name}", ref currentValue))
-            {
-                (variable as CodeVariableInt).Value = currentValue;
-                variableChanged = true;
-            }
-
-            return variableChanged;
-        }
-
-        private static bool HandleFloat(CodeVariableBase variable, string name)
-        {
-            var variableChanged = false;
-
-            var currentValue = (variable as CodeVariableFloat).Value;
-
-            if (ImGui.InputFloat($"##{name}", ref currentValue, 0.01f, 0.1f))
-            {
-                (variable as CodeVariableFloat).Value = currentValue;
-                variableChanged = true;
-            }
-
-            return variableChanged;
         }
 
         private static bool HandleMatrix4x4(CodeVariableBase variable, string name)

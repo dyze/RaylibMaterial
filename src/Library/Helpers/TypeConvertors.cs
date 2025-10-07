@@ -1,6 +1,5 @@
 ﻿using Library.CodeVariable;
 using System.Numerics;
-using Library.Lighting;
 using Raylib_cs;
 
 namespace Library.Helpers;
@@ -9,15 +8,29 @@ public static class TypeConvertors
 {
     public static Type? StringToStorageType(string input)
     {
+        // Lists the uniform data types handled by raylib
+        // It must be synced with ShaderUniformDataType enum in raylib\src\raylib.h
         Dictionary<string, Type> table = new()
         {
-            { "int", typeof(CodeVariableInt) },
+
             { "float", typeof(CodeVariableFloat) },
             { "vec2", typeof(CodeVariableVector2) },
             { "vec3", typeof(CodeVariableVector3) },
             { "vec4", typeof(CodeVariableVector4) },
-            { "mat4", typeof(CodeVariableMatrix4x4) },
+
+            { "int", typeof(CodeVariableInt) },
+            { "ivec2", typeof(CodeVariableIVector2) },
+            { "ivec3", typeof(CodeVariableIVector3) },
+            { "ivec4", typeof(CodeVariableIVector4) },
+
+            { "uint", typeof(CodeVariableInt) },
+            { "uivec2", typeof(CodeVariableUiVector2) },
+            { "uivec3", typeof(CodeVariableUiVector3) },
+            { "uivec4", typeof(CodeVariableUiVector4) },
+
             { "sampler2D", typeof(CodeVariableTexture) },
+
+            { "mat4", typeof(CodeVariableMatrix4x4) },      // This one is not in raylib enum but it looks supported through Raylib.SetShaderValueMatrix
         };
 
         return table.GetValueOrDefault(input);
@@ -28,14 +41,14 @@ public static class TypeConvertors
         { "texture0", MaterialMapIndex.Albedo }, // Also called diffuse
         { "texture1", MaterialMapIndex.Metalness }, // Also called Specular
         { "texture2", MaterialMapIndex.Normal },
-        { "texture3", MaterialMapIndex.Roughness },
-        { "texture4", MaterialMapIndex.Occlusion },
-        { "texture5", MaterialMapIndex.Emission },
-        { "texture6", MaterialMapIndex.Height },
-        { "texture7", MaterialMapIndex.Cubemap },
-        { "texture8", MaterialMapIndex.Irradiance },
-        { "texture9", MaterialMapIndex.Prefilter },
-        { "texture10", MaterialMapIndex.Brdf },
+        //{ "texture3", MaterialMapIndex.Roughness },
+        //{ "texture4", MaterialMapIndex.Occlusion },
+        //{ "texture5", MaterialMapIndex.Emission },
+        //{ "texture6", MaterialMapIndex.Height },
+        //{ "texture7", MaterialMapIndex.Cubemap },
+        //{ "texture8", MaterialMapIndex.Irradiance },
+        //{ "texture9", MaterialMapIndex.Prefilter },
+        //{ "texture10", MaterialMapIndex.Brdf },
     };
 
     public static MaterialMapIndex? StringToMaterialMapIndex(string input)
@@ -87,25 +100,30 @@ public static class TypeConvertors
     {
         Dictionary<string, UniformDescription> internalUniforms = new()
         {
+            // They are declared in raylib\src\rlgl.h
             { "mvp", new UniformDescription(true, "model-view-projection matrix") },
             { "matView", new UniformDescription(true, "view matrix") },
             { "matProjection", new UniformDescription(true, "projection matrix") },
             { "matModel", new UniformDescription(true, "model matrix") },
             { "matNormal",new UniformDescription(true, "normal matrix (transpose(inverse(matModelView))") },
             { "colDiffuse",new UniformDescription(true, "color diffuse (base tint color, multiplied by texture color)") },
+
+            // Below are the ones handled by the raylib material library
             { "viewPos", new UniformDescription(true, "Location of camera") },
             { "lights", new UniformDescription(true, "Lights in our scene") },
+            
+            // They are declared in raylib\src\rlgl.h
             { "texture0", new UniformDescription(false, "Albedo, also called diffuse") },
             { "texture1", new UniformDescription(false, "Metalness, also called Specular") },
             { "texture2", new UniformDescription(false, "Normal") },
-            { "texture3", new UniformDescription(false, "Roughness") },
-            { "texture4", new UniformDescription(false, "Occlusion") },
-            { "texture5", new UniformDescription(false, "Emission") },
-            { "texture6", new UniformDescription(false, "Height") },
-            { "texture7", new UniformDescription(false, "Cubemap") },
-            { "texture8", new UniformDescription(false, "Irradiance") },
-            { "texture9", new UniformDescription(false, "Prefilter") },
-            { "texture10", new UniformDescription(false, "Brdf") }
+            //{ "texture3", new UniformDescription(false, "Roughness") },
+            //{ "texture4", new UniformDescription(false, "Occlusion") },
+            //{ "texture5", new UniformDescription(false, "Emission") },
+            //{ "texture6", new UniformDescription(false, "Height") },
+            //{ "texture7", new UniformDescription(false, "Cubemap") },
+            //{ "texture8", new UniformDescription(false, "Irradiance") },
+            //{ "texture9", new UniformDescription(false, "Prefilter") },
+            //{ "texture10", new UniformDescription(false, "Brdf") }
         };
 
         return internalUniforms.GetValueOrDefault(name);

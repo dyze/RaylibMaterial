@@ -24,10 +24,10 @@ The provided **ConsumerSampleApp** project shows how to use those materials:
 The remaining tasks for this first release are:
 * [x] make easy to edit and compile shaders
 * [x] support of models with multiple materials
-* [ ] handle all kinds of uniform types (vec2, vec3...)
+* [ ] handle all kinds of uniform types supported by RayLib (vec2, vec3...)
 * [x] preview material using a 3D model stored on disk (today only primitives are properly supported)
 * [x] use a sky box instead of a plane for background
-* [ ] handle versioning of packages
+* [x] handle versioning of packages
 * [x] produce nuget package for library
 * [ ] Cover 100% of code of the library with tests
 * [ ] Add documentation of the editor and the library
