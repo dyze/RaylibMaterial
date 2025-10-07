@@ -80,6 +80,28 @@ public class ShaderCode
     private void RegisterUniform(TypeName item, Dictionary<string, CodeVariableBase> variables)
     {
         var typeInScript = StringToStorageType(item.Type);
+        var uniformDescription = GetUniformDescription(item.Name);
+
+        if (uniformDescription != null)
+        {
+            if (uniformDescription.Type != null &&
+                uniformDescription.Type != typeInScript)
+                throw new TypeAccessException(
+                    $"{item.Name} is a reserved variable name. Its type should be {uniformDescription.Type} and not {typeInScript}");
+
+            var internallyHandled = uniformDescription.InternalHandled;
+
+            if (internallyHandled)
+            {
+                Logger.Trace($"{item.Name} is internally handled");
+
+                var selectedType = typeof(CodeVariableInternal);
+                var internalVariable = CodeVariableFactory.Build(selectedType);
+                variables.Add(item.Name, internalVariable);
+
+                return;
+            }
+        }
 
         if (typeInScript == null)
         {
@@ -90,29 +112,6 @@ public class ShaderCode
 
             return;
         }
-
-        var uniformDescription = GetUniformDescription(item.Name);
-        var internallyHandled = false;
-        if (uniformDescription != null)
-        {
-            internallyHandled = uniformDescription.InternalHandled;
-            if (internallyHandled)
-            {
-                Logger.Trace($"{item.Name} is internally handled");
-
-                if (uniformDescription.Type != null &&
-                    uniformDescription.Type != typeInScript)
-                    throw new TypeAccessException(
-                        $"{item.Name} type should be {uniformDescription.Type} and not {typeInScript} ");
-
-                var selectedType = typeof(CodeVariableInternal);
-                var internalVariable = CodeVariableFactory.Build(selectedType);
-                variables.Add(item.Name, internalVariable);
-
-                return;
-            }
-        }
-
 
         // Special case for colors. It will change the way to edit the value (color picker)
         var nameLower = item.Name.ToLower();
@@ -157,6 +156,4 @@ public class ShaderCode
         currentPosition = currentPosition.Substring(match.Index + match.Length);
         return new TypeName(typeString, name);
     }
-
-
 }

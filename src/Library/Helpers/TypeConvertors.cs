@@ -65,11 +65,11 @@ public static class TypeConvertors
 
     public class UniformDescription
     {
-        public UniformDescription(Type? type, bool internalHandled, string description)
+        public UniformDescription(bool internalHandled, string description)
         {
             InternalHandled = internalHandled;
             Description = description;
-            Type = type;
+
         }
 
         public bool InternalHandled { get; private set; }
@@ -77,29 +77,35 @@ public static class TypeConvertors
         public Type? Type { get; private set; }
     }
 
+    /// <summary>
+    /// This is the list of reserved variable names
+    /// Some are automatically fed by either RayLib or MaterialPackage library
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
     public static UniformDescription? GetUniformDescription(string name)
     {
         Dictionary<string, UniformDescription> internalUniforms = new()
         {
-            { "mvp", new UniformDescription(typeof(CodeVariableMatrix4x4), true, "model-view-projection matrix") },
-            { "matView", new UniformDescription(typeof(CodeVariableMatrix4x4), true, "view matrix") },
-            { "matProjection", new UniformDescription(typeof(CodeVariableMatrix4x4), true, "projection matrix") },
-            { "matModel", new UniformDescription(typeof(CodeVariableMatrix4x4), true, "model matrix") },
-            { "matNormal",new UniformDescription(typeof(CodeVariableMatrix4x4),  true, "normal matrix (transpose(inverse(matModelView))") },
-            { "colDiffuse",new UniformDescription(typeof(CodeVariableVector4),  true, "color diffuse (base tint color, multiplied by texture color)") },
-            { "viewPos", new UniformDescription(typeof(CodeVariableVector3),  true, "Location of camera") },
-            { "lights", new UniformDescription(null, true, "Lights in our scene") },
-            { "texture0", new UniformDescription(typeof(CodeVariableTexture),  false, "Albedo, also called diffuse") },
-            { "texture1", new UniformDescription(typeof(CodeVariableTexture),  false, "Metalness, also called Specular") },
-            { "texture2", new UniformDescription(typeof(CodeVariableTexture),  false, "Normal") },
-            { "texture3", new UniformDescription(typeof(CodeVariableTexture),  false, "Roughness") },
-            { "texture4", new UniformDescription(typeof(CodeVariableTexture),  false, "Occlusion") },
-            { "texture5", new UniformDescription(typeof(CodeVariableTexture),  false, "Emission") },
-            { "texture6", new UniformDescription(typeof(CodeVariableTexture),  false, "Height") },
-            { "texture7", new UniformDescription(typeof(CodeVariableTexture),  false, "Cubemap") },
-            { "texture8", new UniformDescription(typeof(CodeVariableTexture),  false, "Irradiance") },
-            { "texture9", new UniformDescription(typeof(CodeVariableTexture),  false, "Prefilter") },
-            { "texture10", new UniformDescription(typeof(CodeVariableTexture),  false, "Brdf") }
+            { "mvp", new UniformDescription(true, "model-view-projection matrix") },
+            { "matView", new UniformDescription(true, "view matrix") },
+            { "matProjection", new UniformDescription(true, "projection matrix") },
+            { "matModel", new UniformDescription(true, "model matrix") },
+            { "matNormal",new UniformDescription(true, "normal matrix (transpose(inverse(matModelView))") },
+            { "colDiffuse",new UniformDescription(true, "color diffuse (base tint color, multiplied by texture color)") },
+            { "viewPos", new UniformDescription(true, "Location of camera") },
+            { "lights", new UniformDescription(true, "Lights in our scene") },
+            { "texture0", new UniformDescription(false, "Albedo, also called diffuse") },
+            { "texture1", new UniformDescription(false, "Metalness, also called Specular") },
+            { "texture2", new UniformDescription(false, "Normal") },
+            { "texture3", new UniformDescription(false, "Roughness") },
+            { "texture4", new UniformDescription(false, "Occlusion") },
+            { "texture5", new UniformDescription(false, "Emission") },
+            { "texture6", new UniformDescription(false, "Height") },
+            { "texture7", new UniformDescription(false, "Cubemap") },
+            { "texture8", new UniformDescription(false, "Irradiance") },
+            { "texture9", new UniformDescription(false, "Prefilter") },
+            { "texture10", new UniformDescription(false, "Brdf") }
         };
 
         return internalUniforms.GetValueOrDefault(name);

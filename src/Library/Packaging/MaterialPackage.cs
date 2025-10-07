@@ -413,12 +413,6 @@ public class MaterialPackage : IDisposable, IMaterial
         if (Shader == null)
             return;
 
-        if (Variables.TryGetValue("viewPos", out var variable))
-        {
-            var v = variable as CodeVariableVector3;
-            v.Value = cameraPosition;
-        }
-
         int loc;
         unsafe
         {

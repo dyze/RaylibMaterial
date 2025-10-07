@@ -64,7 +64,9 @@ namespace Editor.Windows
                             ? ImGuiTreeNodeFlags.DefaultOpen
                             : ImGuiTreeNodeFlags.None;
 
-                        if (ImGui.TreeNodeEx(name, flags))
+                        var nameToDisplay = internallyHandled ? $"{name} (internal)" : name;
+
+                        if (ImGui.TreeNodeEx(nameToDisplay, flags))
                         {
                             ImGui.BeginDisabled(internallyHandled);
                             ImGui.BeginGroup();
@@ -107,7 +109,6 @@ namespace Editor.Windows
             return atLeastAVariableChanged;
         }
 
-
         private bool HandleInt(CodeVariableBase variable, string name)
         {
             var variableChanged = false;
@@ -145,7 +146,6 @@ namespace Editor.Windows
             var matrix4X4 = (variable as CodeVariableMatrix4x4).Value;
 
             var currentValue = matrix4X4;
-
 
             {
                 var row1 = new Vector4(currentValue.M11, currentValue.M12, currentValue.M13,
@@ -227,6 +227,8 @@ namespace Editor.Windows
             {
                 handler();
             }
+            else
+                ImGui.Text("This variable is fed internally, there is no available output");
 
             return false;
         }
