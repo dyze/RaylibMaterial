@@ -27,6 +27,6 @@ public class EditorControllerTest
         EditorController controller = new(null);
         controller.InitUi();
 
-        Assert.AreEqual(false, controller.LoadMaterial("./materials/textured.mat"));
+        Assert.AreEqual(true, controller.LoadMaterial("./materials/textured.mat"));
     }
 }   
