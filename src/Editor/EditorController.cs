@@ -18,13 +18,15 @@ using Timer = Editor.Helpers.Timer;
 
 namespace Editor;
 
-class EditorController
+internal class EditorController
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private const string MaterialsPath = "materials";
     private const string MaterialFileExtension = ".mat";
     private const string MaterialBackupFileExtension = ".mat.bck";
+
+    private bool _initUiOk = false;
 
     private Camera3D _camera;
     
@@ -205,7 +207,7 @@ class EditorController
 
     private void DiscoverBuiltInModels()
     {
-        var path = _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath;
+        var path = _editorConfiguration.ResourceModelsPath;
         if (path == null)
             throw new NullReferenceException("path is null");
 
@@ -245,8 +247,17 @@ class EditorController
         ShaderErrorParser.Parse(message, EditorController._shaderCode);
     }
 
-    public void Run()
+    public void InitUi()
     {
+        Logger.Info("InitUi...");
+
+        _initUiOk = false;
+
+        unsafe
+        {
+            Raylib.SetTraceLogCallback(&CustomLog);
+        }
+
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
                               ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
@@ -269,16 +280,9 @@ class EditorController
 
         SelectBackground(_editorConfiguration.Background);
 
-        NewMaterial();
-
         Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 
         PrepareCamera();
-
-        unsafe
-        {
-            Raylib.SetTraceLogCallback(&CustomLog);
-        }
 
         _previousMousePosition = Raylib.GetMousePosition();
 
@@ -289,7 +293,36 @@ class EditorController
 
         _dataFileExplorer.PrepareUi();
 
-        Logger.Info("all is set");
+        _initUiOk = true;
+
+        Logger.Info("InitUi OK");
+    }
+
+    public void CloseUi()
+    {
+        Logger.Info("CloseUi...");
+
+        _initUiOk = false;
+
+        Raylib.UnloadShader(_defaultShader);
+
+        _editorControllerData.MaterialPackage.Dispose();
+
+        rlImGui.Shutdown();
+
+        SaveEditorConfiguration();
+
+        Logger.Info("CloseUi OK");
+    }
+
+    public void Run()
+    {
+        InitUi();
+
+        if (_initUiOk == false)
+            throw new ApplicationException("InitUi has not been called");
+
+        NewMaterial();
 
         while (true)
         {
@@ -360,14 +393,7 @@ class EditorController
             }
         }
 
-
-        Raylib.UnloadShader(_defaultShader);
-
-        _editorControllerData.MaterialPackage.Dispose();
-
-        rlImGui.Shutdown();
-
-        SaveEditorConfiguration();
+        CloseUi();
     }
 
     private void HandleImageWindows()
@@ -545,7 +571,7 @@ class EditorController
             NewMaterial();
     }
 
-    private void NewMaterial()
+    internal void NewMaterial()
     {
         _editorControllerData.MaterialFilePath = null;
 
@@ -620,7 +646,12 @@ class EditorController
         Logger.Info("LoadMaterialAskForFile OK");
     }
 
-    private void LoadMaterial(string filePath)
+    /// <summary>
+    /// Loads the material package set with filePath
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <returns>true if loading OK, false if file can't be read due to file access or unsupported file format, otherwise throws the encountered exception</returns>
+    internal bool LoadMaterial(string filePath)
     {
         Logger.Info("LoadMaterial...");
         Logger.Info($"filePath={filePath}");
@@ -642,7 +673,7 @@ class EditorController
                             System.Drawing.Color.OrangeRed)
                     ]);
 
-                return;
+                return false;
             }
 
             throw;
@@ -662,6 +693,8 @@ class EditorController
         LoadCurrentModel();
         LoadShaderCode();
         LoadShaders();
+
+        return true;
     }
 
     private void MaterialPackageMeta_OnVariablesChanged()

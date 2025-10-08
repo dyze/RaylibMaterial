@@ -21,7 +21,7 @@ class Program
 
         var app = new EditorController(filePath);
         messageQueueTarget.MessageQueue = EditorController.MessageQueue;
-        
+
         app.Run();
     }
 }
