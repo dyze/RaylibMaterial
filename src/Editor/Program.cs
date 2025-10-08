@@ -20,7 +20,7 @@ class Program
             filePath = args[0];
 
         var app = new EditorController(filePath);
-        messageQueueTarget.MessageQueue = EditorController.MessageQueue;
+        messageQueueTarget.MessageQueue = EditorControllerData.MessageQueue;
 
         app.Run();
     }

@@ -1,19 +1,14 @@
-﻿using System.Drawing;
-using Editor.Configuration;
-using Editor.Helpers;
-using Editor.Windows;
-using ImGuiNET;
+﻿using Editor.Configuration;
 using Library;
 using Library.CodeVariable;
+using Library.Lighting;
 using Library.Packaging;
 using NLog;
 using Raylib_cs;
-using rlImGui_cs;
+using System.Drawing;
 using System.Numerics;
-using Color = Raylib_cs.Color;
 using System.Runtime.InteropServices;
-using Library.Dialogs;
-using Library.Lighting;
+using Color = Raylib_cs.Color;
 using Timer = Editor.Helpers.Timer;
 
 namespace Editor;
@@ -22,15 +17,8 @@ internal class EditorController
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    private const string MaterialsPath = "materials";
-    private const string MaterialFileExtension = ".mat";
-    private const string MaterialBackupFileExtension = ".mat.bck";
-
     private bool _initUiOk = false;
 
-    private Camera3D _camera;
-    
-    private Model _currentModel;
     private Shader? _currentShader;
 
     /// <summary>
@@ -41,53 +29,16 @@ internal class EditorController
 
     private static Dictionary<FileId, ShaderCode> _shaderCode = new();
 
-
-    private readonly MessageWindow _messageWindow;
-    public static MessageQueue MessageQueue { get; set; } = new();
-
-    private SkyBox _skyBox;
-
     private readonly EditorControllerData _editorControllerData;
-
-
-    private readonly CodeWindow _shaderCodeWindow;
     private EditorConfiguration _editorConfiguration = new();
-
-    private readonly DataFileExplorer _dataFileExplorer;
-
-    private readonly MaterialWindow _materialWindow;
-
-
-    private FileDialogInfo? _fileDialogInfo;
-    private string _outputFilePath;
-
-    private MessageDialog.Configuration? _messageDialogConfiguration;
-    private bool _processingRequestToClose;
-    private bool _requestToCloseAccepted;
-    private bool _requestToClose;
-    private readonly string[] _supportedModelExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
-    private readonly string[] _supportedImagesExtensions = [".png", ".jpg", ".tga"];
-
-    private const string DefaultMaterialName = "new.mat";
-
-    private string WindowCaption => $"Raylib Material Editor - {_outputFilePath}";
-
-    private readonly OutputWindow _outputWindow;
-
-    private bool _windowSizeChanged; // set to true when switching to fullscreen
-    private Vector2 _previousMousePosition;
-
-    private readonly SettingsWindow _settingsWindow;
 
     private readonly string? _startupFilePath;
 
     // Used to avoid too frequent updates. e.g. when continuously selecting a color in a ImGui Color widget
     private Timer? _timerOnVariablesChanged;
 
-    private readonly Dictionary<string, ImageWindow> _imageWindows = [];
 
-    // We can remove windows while rendering, we postpone
-    private readonly List<string> _imageWindowsToRemove = [];
+    private readonly EditorUi _editorUi;
 
     public EditorController(string? filePath)
     {
@@ -104,27 +55,10 @@ internal class EditorController
             _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
         _editorControllerData.DataFileExplorerData.RefreshDataRootFolder();
 
-        _messageWindow = new(_editorControllerData);
-
-        _dataFileExplorer = new(_editorConfiguration, _editorControllerData,
-            _editorControllerData.DataFileExplorerData);
-
-        _dataFileExplorer.ImageOpenRequest += DateFileExplorer_ImageOpenRequest;
-
-        _shaderCodeWindow = new(_editorConfiguration,
-            _editorControllerData);
-
-        _materialWindow = new(_editorControllerData);
-        _materialWindow.OnSave += _materialWindow_OnSave;
-
-        _materialWindow._variablesControls.ImageOpenRequest += ImageOpenRequest;
-
-        _shaderCodeWindow.BuildPressed += CodeWindow_OnBuildPressed;
-
         if (_editorConfiguration.OutputDirectoryPath == "")
-            _editorConfiguration.OutputDirectoryPath = Path.GetFullPath($"{MaterialsPath}\\");
+            _editorConfiguration.OutputDirectoryPath = Path.GetFullPath($"{EditorControllerData.MaterialsPath}\\");
 
-        _outputFilePath = _editorConfiguration.OutputDirectoryPath;
+        _editorControllerData.OutputFilePath = _editorConfiguration.OutputDirectoryPath;
         Directory.CreateDirectory(_editorConfiguration.OutputDirectoryPath);
 
         DiscoverBuiltInModels();
@@ -135,50 +69,22 @@ internal class EditorController
             _editorConfiguration.CurrentModelFilePath = _editorControllerData.BuiltInModels.First();
         }
 
-        _outputWindow = new(_editorConfiguration,
-            _editorControllerData);
-
-        _outputWindow.ModelTypeChangeRequest += SelectModel;
-        _outputWindow.BackgroundChanged += SelectBackground;
-        _outputWindow.LightingPresetChangeRequest += CreateLights;
-        _outputWindow.ResetCameraIsRequest += ResetCamera;
-
-        _settingsWindow = new(_editorConfiguration);
-        _settingsWindow.SavePressed += SaveEditorConfiguration;
-    }
-
-    private void ImageOpenRequest(string imageName, byte[] imageData)
-    {
-        PopImageWindow(imageName, imageData);
-    }
-
-    private void DateFileExplorer_ImageOpenRequest(string imageFilePath)
-    {
-        var imageData = File.ReadAllBytes(imageFilePath);
-
-        PopImageWindow(imageFilePath, imageData);
-    }
-
-    private void PopImageWindow(string imageFilePath, byte[] imageData)
-    {
-        var imageWindow = new ImageWindow(imageFilePath, imageData);
-
-        imageWindow.CloseRequest += CloseRequest;
-
-        void CloseRequest(ImageWindow imageWindow)
-        {
-            var found = _imageWindows.ContainsKey(imageFilePath);
-            if (found == false)
-                throw new NullReferenceException($"Window {imageFilePath} not found");
-
-            _imageWindowsToRemove.Add(imageFilePath);
-        }
-
-        _imageWindows.Add(imageFilePath, imageWindow);
+        _editorUi = new EditorUi(_editorControllerData,
+            _editorConfiguration);
+        _editorUi.SavePressed += EditorUi_SavePressed;
+        _editorUi.BuildPressed += EditorUi_BuildPressed;
+        _editorUi.SelectModelPressed += EditorUi_SelectModelPressed;
+        _editorUi.SkyBoxChanged += SelectSkyBox;
+        _editorUi.LightingPresetChangeRequest += CreateLights;
+        _editorUi.ResetCameraIsRequest += EditorUi_ResetCamera;
+        _editorUi.NewPressed += NewMaterial;
+        _editorUi.LoadModelFromFile += LoadModelFromFile;
+        _editorUi.LoadMaterial += LoadMaterial;
+        _editorUi.SaveAs += SaveAs;
     }
 
 
-    private void ResetCamera()
+    private void EditorUi_ResetCamera()
     {
         _editorConfiguration.CameraSettings = new CameraSettings();
     }
@@ -187,7 +93,7 @@ internal class EditorController
     {
         var files = Directory.GetFiles(Path.GetFullPath(_editorConfiguration.ResourceSkyBoxesFolderPath), "*.*",
                 SearchOption.AllDirectories)
-            .Where(file => _supportedImagesExtensions.Contains(Path.GetExtension(file)))
+            .Where(file => _editorControllerData.SupportedImagesExtensions.Contains(Path.GetExtension(file)))
             .ToList();
 
         _editorControllerData.Backgrounds = new();
@@ -214,11 +120,11 @@ internal class EditorController
         _editorControllerData.BuiltInModels = Directory.GetFiles(
                 Path.GetFullPath(path), "*.*",
                 SearchOption.AllDirectories)
-            .Where(file => _supportedModelExtensions.Contains(Path.GetExtension(file)))
+            .Where(file => _editorControllerData.SupportedModelExtensions.Contains(Path.GetExtension(file)))
             .ToList();
     }
 
-    private void _materialWindow_OnSave()
+    private void EditorUi_SavePressed()
     {
         OnSave();
     }
@@ -247,9 +153,9 @@ internal class EditorController
         ShaderErrorParser.Parse(message, EditorController._shaderCode);
     }
 
-    public void InitUi()
+    public void Init()
     {
-        Logger.Info("InitUi...");
+        Logger.Info("Init...");
 
         _initUiOk = false;
 
@@ -258,16 +164,7 @@ internal class EditorController
             Raylib.SetTraceLogCallback(&CustomLog);
         }
 
-        Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
-                              ConfigFlags.ResizableWindow); // Enable Multi Sampling Anti Aliasing 4x (if available)
-
-        Raylib.InitWindow(_editorConfiguration.WindowSize.Width, _editorConfiguration.WindowSize.Height, WindowCaption);
-
-        Raylib.SetWindowMonitor(_editorConfiguration.MonitorIndex);
-        Raylib.SetWindowPosition(_editorConfiguration.WindowPosition.X, _editorConfiguration.WindowPosition.Y);
-
-        Raylib.SetExitKey(KeyboardKey.Null);
-        rlImGui.Setup();
+        _editorUi.Init();
 
         LoadUiResources();
 
@@ -278,29 +175,23 @@ internal class EditorController
 
         DiscoverBackgrounds();
 
-        SelectBackground(_editorConfiguration.Background);
+        SelectSkyBox(_editorConfiguration.Background);
 
         Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 
         PrepareCamera();
 
-        _previousMousePosition = Raylib.GetMousePosition();
-
         if (_startupFilePath != null)
-        {
             LoadMaterial(_startupFilePath);
-        }
-
-        _dataFileExplorer.PrepareUi();
 
         _initUiOk = true;
 
-        Logger.Info("InitUi OK");
+        Logger.Info("Init OK");
     }
 
-    public void CloseUi()
+    public void Close()
     {
-        Logger.Info("CloseUi...");
+        Logger.Info("Close...");
 
         _initUiOk = false;
 
@@ -308,269 +199,33 @@ internal class EditorController
 
         _editorControllerData.MaterialPackage.Dispose();
 
-        rlImGui.Shutdown();
+        _editorUi.Close();
+
+
 
         SaveEditorConfiguration();
 
-        Logger.Info("CloseUi OK");
+        Logger.Info("Close OK");
     }
 
     public void Run()
     {
-        InitUi();
+        Init();
 
         if (_initUiOk == false)
-            throw new ApplicationException("InitUi has not been called");
+            throw new ApplicationException("Init has not been called");
 
         NewMaterial();
 
+
         while (true)
         {
-            if (_requestToCloseAccepted)
-                break;
-            if (Raylib.WindowShouldClose() || _requestToClose)
-            {
-                _requestToClose = false;
-                if (RequestCloseAccepted())
-                    break;
-            }
-
-            HandleWindowResize();
-            HandleMouseMovement();
-            HandleFileDrop();
-            UpdateLights();
-
-            if (_timerOnVariablesChanged != null && _timerOnVariablesChanged.IsElapsed(DateTime.Now))
-            {
-                _timerOnVariablesChanged = null;
-                MaterialPackageMeta_OnVariablesChangedTimerCompletion();
-            }
-
-            _editorControllerData.MaterialPackage.SetCameraPosition(_camera.Position);
-
-            Raylib.BeginDrawing();
-            rlImGui.Begin();
-
-            Raylib.ClearBackground(Color.Black);
-
-            RenderMenu();
-            RenderModels();
-
-            RenderFileDialog();
-            RenderMessageDialog();
-            _settingsWindow.Render();
-
-            HandleImageWindows();
-
-
-            var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
-            if (codeIsModified)
-            {
-                foreach (var (key, value) in _shaderCode)
-                {
-                    var array = System.Text.Encoding.UTF8.GetBytes(value.Code);
-                    _editorControllerData.MaterialPackage.UpdateFile(key, array);
-                }
-
-                _editorControllerData.MaterialPackage.SetModified();
-            }
-
-            _outputWindow.RenderOutputWindow();
-            _materialWindow.Render();
-
-            _messageWindow.Render(MessageQueue,
-                ref _editorConfiguration.WorkspaceConfiguration.MessageWindowIsVisible);
-
-            _dataFileExplorer.Render();
-
-            rlImGui.End();
-            Raylib.EndDrawing();
-
-            if (_editorControllerData.WorkspaceLayoutResetRequested)
-            {
-                Logger.Trace("WorkspaceLayoutReset done");
-                _editorControllerData.WorkspaceLayoutResetRequested = false;
-            }
+            _editorUi.Frame();
         }
 
-        CloseUi();
+        Close();
     }
-
-    private void HandleImageWindows()
-    {
-        while (_imageWindowsToRemove.Count > 0)
-        {
-            var filePath = _imageWindowsToRemove.First();
-            _imageWindowsToRemove.Remove(filePath);
-            _imageWindows.Remove(filePath);
-            break;
-        }
-
-        foreach (var (_, imageWindow) in _imageWindows)
-        {
-            imageWindow.Render();
-        }
-    }
-
-    private void HandleWindowResize()
-    {
-        if (Raylib.IsWindowResized() == false
-            && _windowSizeChanged == false)
-            return;
-
-        _windowSizeChanged = false;
-    }
-
-    private void HandleFileDrop()
-    {
-        if (Raylib.IsFileDropped())
-        {
-            var droppedFiles = Raylib.GetDroppedFiles();
-            if (droppedFiles.Length == 1)
-            {
-                var modelPath = droppedFiles.First();
-
-                var extension = Path.GetExtension(modelPath);
-                if (_supportedModelExtensions.Contains(extension))
-                {
-                    _editorConfiguration.CurrentModelFilePath = modelPath;
-                    _editorConfiguration.CurrentModelType = EditorConfiguration.ModelType.Model;
-                    SelectModel(modelPath);
-                }
-                else
-                    Logger.Error(
-                        $"extension {extension} is not supported, only {string.Join(",", _supportedModelExtensions)} are");
-            }
-        }
-    }
-
-    private void RenderMenu()
-    {
-        if (ImGui.BeginMainMenuBar())
-        {
-            if (ImGui.BeginMenu("Package"))
-            {
-                if (ImGui.MenuItem("New", "Ctrl+N"))
-                    OnNewMaterial();
-
-                if (ImGui.MenuItem("Load", "Ctrl+L"))
-                    OnLoadMaterial(null);
-
-                if (ImGui.BeginMenu("Load recent files"))
-                {
-                    if (_editorConfiguration.RecentFiles.Count == 0)
-                        ImGui.MenuItem("empty", null, false, false);
-                    else
-                        foreach (var filePath in _editorConfiguration.RecentFiles)
-                        {
-                            if (ImGui.MenuItem(filePath))
-                            {
-                                OnLoadMaterial(filePath);
-                                break;
-                            }
-                        }
-
-                    ImGui.EndMenu();
-                }
-
-                if (ImGui.MenuItem("Save", "Ctrl+S"))
-                    OnSave();
-
-                if (ImGui.MenuItem("Save as"))
-                    OnSaveAsStart();
-
-                ImGui.Separator();
-
-                if (ImGui.MenuItem("Exit"))
-                    _requestToClose = true;
-
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("Display"))
-            {
-                if (ImGui.MenuItem("Reset workspace layout"))
-                    _editorControllerData.ResetWorkspaceLayout();
-                //if (ImGui.MenuItem("Fullscreen", null, _generalConfiguration.IsFullScreen))
-                //    _generalConfiguration.IsFullScreen = !_generalConfiguration.IsFullScreen;
-
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("View"))
-            {
-                var workspace = _editorConfiguration.WorkspaceConfiguration;
-
-                ImGuiHelpers.RenderCheckedMenuItem("Data file explorer", ref workspace.DataFileExplorerIsVisible);
-                ImGuiHelpers.RenderCheckedMenuItem("Message window", ref workspace.MessageWindowIsVisible);
-
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("Tools"))
-            {
-                if (ImGui.MenuItem("Options"))
-                    _settingsWindow.Show();
-
-                ImGui.EndMenu();
-            }
-        }
-
-        ImGui.EndMainMenuBar();
-    }
-
-    private bool RequestCloseAccepted()
-    {
-        Logger.Info("RequestCloseAccepted...");
-
-        if (_requestToCloseAccepted)
-            return true;
-
-        if (_processingRequestToClose)
-            return false;
-
-
-        if (_editorControllerData.MaterialPackage.IsModified)
-        {
-            _processingRequestToClose = true;
-            _requestToCloseAccepted = false;
-
-            _messageDialogConfiguration = new("Current material has not been saved",
-                "Are you sure you want to continue?",
-                [
-                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Yes, "Yes, I'm sure",
-                        _ => _requestToCloseAccepted = true,
-                        System.Drawing.Color.Red),
-                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.No, "No, I changed my mind",
-                        _ => _processingRequestToClose = false
-                    )
-                ]);
-            return false;
-        }
-
-        return true;
-    }
-
-    private void OnNewMaterial()
-    {
-        Logger.Info("OnNewMaterial...");
-
-        if (_editorControllerData.MaterialPackage.IsModified)
-        {
-            _messageDialogConfiguration = new("Current material has not been saved",
-                "Are you sure you want to continue?",
-                [
-                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Yes, "Yes, I'm sure",
-                        _ => NewMaterial(),
-                        System.Drawing.Color.Red),
-                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.No, "No, I changed my mind"
-                    )
-                ]);
-        }
-        else
-            NewMaterial();
-    }
-
+    
     internal void NewMaterial()
     {
         _editorControllerData.MaterialFilePath = null;
@@ -582,69 +237,16 @@ internal class EditorController
 
         _currentShader = _defaultShader;
 
-        _outputFilePath = $"{_editorConfiguration.OutputDirectoryPath}\\{DefaultMaterialName}";
-        Raylib.SetWindowTitle(WindowCaption);
+        _editorControllerData.OutputFilePath = $"{_editorConfiguration.OutputDirectoryPath}\\{EditorControllerData.DefaultMaterialName}";
+
+        EditorUi.UpdateWindowCaption();
 
         _shaderCode = new();
 
-        LoadCurrentModel();
+        LoadModel();
         LoadShaders();
     }
 
-    private void OnLoadMaterial(string? filePath)
-    {
-        Logger.Info("OnLoadMaterial...");
-
-        if (_editorControllerData.MaterialPackage.IsModified)
-        {
-            _messageDialogConfiguration = new("Current material has not been saved",
-                "Are you sure you want to continue?",
-                [
-                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Yes, "Yes, I'm sure",
-                        _ =>
-                        {
-                            if (filePath == null)
-                                LoadMaterialAskForFile();
-                            else
-                                LoadMaterial(filePath);
-                        },
-                        System.Drawing.Color.Red),
-                    new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.No, "No, I changed my mind"
-                    )
-                ]);
-        }
-        else
-        {
-            if (filePath == null)
-                LoadMaterialAskForFile();
-            else
-                LoadMaterial(filePath);
-        }
-    }
-
-    private void LoadMaterialAskForFile()
-    {
-        Logger.Info("LoadMaterialAskForFile...");
-
-        var directoryName = Path.GetDirectoryName(_outputFilePath);
-        if (directoryName == null)
-            throw new NullReferenceException($"directory name can't be extracted from {_outputFilePath}");
-
-        _fileDialogInfo = new()
-        {
-            Title = "Please select a material",
-            Type = ImGuiFileDialogType.OpenFile,
-            DirectoryPath = new DirectoryInfo(directoryName),
-            FileName = "",
-            Extensions =
-            [
-                new Tuple<string, string>("*" + MaterialFileExtension, "Materials"),
-                new Tuple<string, string>("*" + MaterialBackupFileExtension, "Material backups")
-            ]
-        };
-
-        Logger.Info("LoadMaterialAskForFile OK");
-    }
 
     /// <summary>
     /// Loads the material package set with filePath
@@ -665,14 +267,7 @@ internal class EditorController
             if (ex is FileNotFoundException or FileLoadException or DirectoryNotFoundException or IOException or NotSupportedException)
             {
                 Logger.Error(ex);
-
-                _messageDialogConfiguration = new("Material can't be loaded",
-                    ex.Message,
-                    [
-                        new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Ok, "Continue", null,
-                            System.Drawing.Color.OrangeRed)
-                    ]);
-
+                EditorUi.TriggerErrorMessage("Material can't be loaded", ex.Message);
                 return false;
             }
 
@@ -685,13 +280,13 @@ internal class EditorController
 
         _editorControllerData.MaterialFilePath = filePath;
 
-        _outputFilePath = filePath;
-        Raylib.SetWindowTitle(WindowCaption);
+        _editorControllerData.OutputFilePath = filePath;
+        EditorUi.UpdateWindowCaption();
 
         _editorConfiguration.AddRecentFile(filePath);
 
-        LoadCurrentModel();
-        LoadShaderCode();
+        LoadModel();
+        AnalyseShaderCode();
         LoadShaders();
 
         return true;
@@ -710,11 +305,11 @@ internal class EditorController
         _editorControllerData.MaterialPackage.UpdateFileReferences();
 
         //todo avoid doing that every time.
-        LoadCurrentModel(); // to clean Materials
+        LoadModel(); // to clean Materials
 
         // LoadShaders();
 
-        //_editorControllerData.MaterialPackage.SendVariablesToMaterial(_currentModel, false);
+        //_editorControllerData.MaterialPackage.SendVariablesToMaterial(CurrentModel, false);
     }
 
 
@@ -724,115 +319,45 @@ internal class EditorController
 
     private void MaterialPackage_OnShaderChanged()
     {
-        LoadShaderCode();
+        AnalyseShaderCode();
         LoadShaders();
     }
 
-    private void CodeWindow_OnBuildPressed()
+    private void EditorUi_BuildPressed()
     {
-        LoadCurrentModel(); // to clean Materials
-        LoadShaderCode();
+        LoadModel(); // to clean Materials
+        AnalyseShaderCode();
         LoadShaders();
     }
+    
 
-    private void RenderModels()
-    {
-        Raylib.BeginTextureMode(_editorControllerData.ViewTexture);
-
-        Raylib.BeginMode3D(_camera);
-        Raylib.ClearBackground(Color.Black);
-
-        Rlgl.DisableBackfaceCulling();
-        Rlgl.DisableDepthMask();
-        Raylib.DrawModel(_skyBox.Model, Vector3.Zero, 1f, Color.White);
-        Rlgl.EnableBackfaceCulling();
-        Rlgl.EnableDepthMask();
-
-        Raylib.DrawModel(_currentModel, Vector3.Zero, _editorConfiguration.ModelScale, Color.White);
-
-        if (_editorConfiguration.IsInDebugMode)
-        {
-            RenderLights();
-
-            Raylib.DrawGrid(10, 1.0f);
-        }
-
-        Raylib.EndMode3D();
-
-        Raylib.DrawFPS(10, 10);
-
-        Raylib.EndTextureMode();
-    }
-
-    private void HandleMouseMovement()
-    {
-        var currentPosition = Raylib.GetMousePosition();
-        var mouseDelta = Raylib.GetMouseWheelMove();
-
-        var cameraSettings = _editorConfiguration.CameraSettings;
-
-        if (_outputWindow.IsWindowHovered)
-        {
-            cameraSettings.Distance = Math.Max(CameraSettings.MinDistance,
-                cameraSettings.Distance + mouseDelta * 0.1f);
-
-            var delta = Raymath.Vector2Subtract(_previousMousePosition, currentPosition);
-
-            if (Raylib.IsMouseButtonDown(MouseButton.Middle))
-            {
-                cameraSettings.Target.Y += delta.Y / 100;
-            }
-
-            if (Raylib.IsMouseButtonDown(MouseButton.Right))
-            {
-                cameraSettings.Angles.X -= delta.Y / 100;
-                cameraSettings.Angles.Y += delta.X / 100;
-            }
-        }
-
-        var q = Raymath.QuaternionFromEuler(cameraSettings.Angles.X, cameraSettings.Angles.Y, cameraSettings.Angles.Z);
-        var v = Raymath.Vector3RotateByQuaternion(new Vector3(0, 0, -cameraSettings.Distance), q);
-
-        _camera.Target = cameraSettings.Target;
-        _camera.Position = v;
-
-        _previousMousePosition = currentPosition;
-    }
-
-    private void SelectModel(EditorConfiguration.ModelType modelType, string modelFilePath)
+    private void EditorUi_SelectModelPressed(EditorConfiguration.ModelType modelType, 
+        string modelFilePath)
     {
         Logger.Trace($"{modelType}, {modelFilePath} selected");
         _editorConfiguration.CurrentModelType = modelType;
         _editorConfiguration.CurrentModelFilePath = modelFilePath;
-        LoadCurrentModel();
+        LoadModel();
     }
 
-    private void LoadCurrentModel()
+    private void LoadModel()
     {
-        switch (_editorConfiguration.CurrentModelType)
+        Dictionary<EditorConfiguration.ModelType, Action> actions = new()
         {
-            case EditorConfiguration.ModelType.Cube:
-                _currentModel = GenerateCubeModel();
-                break;
-            case EditorConfiguration.ModelType.Plane:
-                _currentModel = GeneratePlaneModel();
-                break;
-            case EditorConfiguration.ModelType.Sphere:
-                _currentModel = GenerateSphereModel();
-                break;
-            case EditorConfiguration.ModelType.Model:
-                SelectModel(_editorConfiguration.CurrentModelFilePath);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+            {EditorConfiguration.ModelType.Cube, () =>  _editorControllerData.CurrentModel = GenerateCubeModel() },
+            {EditorConfiguration.ModelType.Plane, () => _editorControllerData.CurrentModel = GeneratePlaneModel() },
+            {EditorConfiguration.ModelType.Sphere, () =>_editorControllerData.CurrentModel = GenerateSphereModel() },
+            {EditorConfiguration.ModelType.Model, () => LoadModelFromFile(_editorConfiguration.CurrentModelFilePath) },
+        };
 
-        Logger.Trace($"MeshCount={_currentModel.MeshCount}, MaterialCount={_currentModel.MaterialCount}");
+        actions[_editorConfiguration.CurrentModelType].Invoke();
+        
+        Logger.Trace($"MeshCount={_editorControllerData.CurrentModel.MeshCount}, MaterialCount={_editorControllerData.CurrentModel.MaterialCount}");
 
         ApplyShaderToModel();
     }
 
-    private void SelectModel(string modelFilePath)
+    private void LoadModelFromFile(string modelFilePath)
     {
         if (modelFilePath == "" ||
             File.Exists(Path.GetFullPath(modelFilePath)) == false)
@@ -846,9 +371,7 @@ internal class EditorController
         if (Raylib.IsModelValid(model) == false)
             throw new InvalidDataException("model is not valid");
 
-        _currentModel = model;
-
-        _editorConfiguration.CurrentModelFilePath = modelFilePath;
+        _editorControllerData.CurrentModel = model;
 
         _editorConfiguration.AddCustomModel(modelFilePath);
     }
@@ -869,43 +392,18 @@ internal class EditorController
 
         if (_editorControllerData.MaterialFilePath == null)
         {
-            OnSaveAsStart();
+            _editorUi.OnSaveAsStart();
             return;
         }
 
         _editorControllerData.MaterialPackage.Save(_editorControllerData.MaterialFilePath);
         _editorConfiguration.AddRecentFile(_editorControllerData.MaterialFilePath);
-
-        //var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
-        //System.Diagnostics.Process.Start("explorer.exe", argument);
-
+        
         Logger.Info("OnSave OK");
     }
 
-    private void OnSaveAsStart()
-    {
-        Logger.Info("OnSaveAsStart...");
-
-        var directoryName = Path.GetDirectoryName(_outputFilePath);
-        if (directoryName == null)
-            throw new NullReferenceException($"directory name can't be extracted from {_outputFilePath}");
-
-        _fileDialogInfo = new()
-        {
-            Title = "Please select a material",
-            Type = ImGuiFileDialogType.SaveFile,
-            DirectoryPath = new DirectoryInfo(directoryName),
-            FileName = Path.GetFileName(_outputFilePath),
-            Extensions =
-            [
-                new Tuple<string, string>("*" + MaterialFileExtension, "Materials")
-            ]
-        };
-
-        Logger.Info("OnSaveAsStart OK");
-    }
-
-    private void SaveAs(string filePath)
+    internal void SaveAs(string filePath,
+        bool exploreTo=true)
     {
         Logger.Info("SaveAs...");
 
@@ -914,102 +412,58 @@ internal class EditorController
         _editorControllerData.MaterialPackage.Save(_editorControllerData.MaterialFilePath);
         _editorConfiguration.AddRecentFile(_editorControllerData.MaterialFilePath);
 
-        _outputFilePath = filePath;
-        Raylib.SetWindowTitle(WindowCaption);
+        _editorControllerData.OutputFilePath = filePath;
+        EditorUi.UpdateWindowCaption();
 
-        var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
-        System.Diagnostics.Process.Start("explorer.exe", argument);
+        if (exploreTo)
+        {
+            var argument = "/select, \"" + _editorControllerData.MaterialFilePath + "\"";
+            System.Diagnostics.Process.Start("explorer.exe", argument);
+        }
 
         Logger.Info("SaveAs OK");
     }
-
-    private void RenderFileDialog()
-    {
-        var open = _fileDialogInfo != null;
-        if (FileDialog.Run(ref open, _fileDialogInfo))
-        {
-            if (_fileDialogInfo.Type == ImGuiFileDialogType.OpenFile)
-                LoadMaterial(_fileDialogInfo.ResultPath);
-            else
-            {
-                if (File.Exists(_fileDialogInfo.ResultPath))
-                {
-                    var filePath = _fileDialogInfo.ResultPath;
-
-                    _messageDialogConfiguration = new("A material with same name already exists",
-                        "Are you sure you want to continue?",
-                        [
-                            new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.Yes, "Yes, I'm sure",
-                                _ => SaveAs(filePath),
-                                System.Drawing.Color.Red),
-                            new MessageDialog.ButtonConfiguration(MessageDialog.ButtonId.No, "No, I changed my mind"
-                            )
-                        ]);
-                }
-                else
-                    SaveAs(_fileDialogInfo.ResultPath);
-            }
-        }
-
-        if (open == false)
-            _fileDialogInfo = null;
-    }
-
-    private void RenderMessageDialog()
-    {
-        var buttonPressed = MessageDialog.Run(_messageDialogConfiguration);
-
-        if (buttonPressed != null)
-            _messageDialogConfiguration = null;
-
-        if (buttonPressed != null)
-        {
-            Logger.Trace($"{buttonPressed.Id} has been pressed");
-
-            buttonPressed.OnPressed?.Invoke(buttonPressed);
-        }
-    }
-
-    private void SelectBackground(string? name)
+    
+    private void SelectSkyBox(string? name)
     {
         Logger.Trace($"{name} selected");
 
         if (name == null || _editorControllerData.Backgrounds.TryGetValue(name, out var value) == false)
-        {
             name = _editorControllerData.Backgrounds.Keys.First();
-        }
 
         _editorConfiguration.Background = name;
         var background = _editorControllerData.Backgrounds[name];
 
-        _skyBox = new SkyBox(_editorConfiguration);
+        _editorControllerData.SkyBox = new SkyBox(_editorConfiguration);
 
         var filePath =
             Path.GetFullPath($"{_editorConfiguration.ResourceSkyBoxesFolderPath}/{background.ImageFileName}");
-        _skyBox.GenerateModel(filePath);
+        _editorControllerData.SkyBox.GenerateModel(filePath);
     }
 
     private void ApplyShaderToModel()
     {
-        Logger.Info("ApplyShader...");
+        Logger.Info("ApplyShaderToModel...");
 
         if (_currentShader.HasValue == false)
             return;
 
         var shader = _currentShader.Value;
 
-        var materialIndex = Math.Clamp(_editorControllerData.MaterialIndexToEdit, 0, _currentModel.MaterialCount - 1);
+        var materialIndex = Math.Clamp(_editorControllerData.MaterialIndexToEdit, 0, _editorControllerData.CurrentModel.MaterialCount - 1);
         if (materialIndex != _editorControllerData.MaterialIndexToEdit)
         {
-            Logger.Error($"wrong materialIndex, max is {_currentModel.MaterialCount - 1}");
+            Logger.Error($"wrong materialIndex, max is {_editorControllerData.CurrentModel.MaterialCount - 1}");
             _editorControllerData.MaterialIndexToEdit = materialIndex;
         }
 
-        Raylib.SetMaterialShader(ref _currentModel, materialIndex, ref shader);
+        Raylib.SetMaterialShader(ref _editorControllerData.CurrentModel, materialIndex, ref shader);
 
-        var material = Raylib.GetMaterial(ref _currentModel, materialIndex);
+        var material = Raylib.GetMaterial(ref _editorControllerData.CurrentModel, materialIndex);
 
         _editorControllerData.MaterialPackage.SendVariablesToMaterial(material, true);
+
+        Logger.Info("ApplyShaderToModel OK");
     }
 
     private void LoadShaders()
@@ -1051,9 +505,9 @@ internal class EditorController
         CreateLights(_editorConfiguration.CurrentLightingPreset);
     }
 
-    private void LoadShaderCode()
+    private void AnalyseShaderCode()
     {
-        Logger.Trace("LoadShaderCode...");
+        Logger.Trace("AnalyseShaderCode...");
 
         // Load shader codes
         _shaderCode = new Dictionary<FileId, ShaderCode>();
@@ -1067,10 +521,11 @@ internal class EditorController
                 _shaderCode.Add(result.Item1, result.Item2);
         }
 
-        // Determine variables used
+
+        // Determine variables used in code
         Dictionary<string, CodeVariableBase> allShaderVariables = [];
 
-        foreach (var (key, value) in _shaderCode)
+        foreach (var (_, value) in _shaderCode)
         {
             value.ParseVariables();
 
@@ -1079,14 +534,10 @@ internal class EditorController
             allShaderVariables = allShaderVariables.Concat(shaderVariables).ToDictionary();
         }
 
-
         Logger.Info($"{allShaderVariables.Count} variables detected");
 
 
-        material.ClearFileReferences();
-
-
-        // Sync materialMeta variables
+        // Sync material package variables
         foreach (var (key, variable) in allShaderVariables)
         {
             var result = material.Variables.TryGetValue(key, out var materialVariable);
@@ -1112,11 +563,11 @@ internal class EditorController
             }
         }
 
+        // Remove unused obsolete variables from material package
         List<string> toDelete = [];
         foreach (var (key, _) in material.Variables)
         {
-            var result = allShaderVariables.TryGetValue(key, out var _);
-            if (result == false)
+            if (allShaderVariables.ContainsKey(key) == false)
             {
                 Logger.Trace($"{key}: doesn't exist in code -> remove from materialMeta");
                 toDelete.Add(key);
@@ -1124,16 +575,18 @@ internal class EditorController
         }
 
         foreach (var name in toDelete)
-        {
             material.Variables.Remove(name);
-        }
 
+
+        // Finally update file references
         _editorControllerData.MaterialPackage.UpdateFileReferences();
 
         Logger.Trace($"{toDelete.Count} variables removed from materialMeta");
+
+        Logger.Trace("AnalyseShaderCode OK");
     }
 
-    private Tuple<FileId, ShaderCode>? GetShaderCode(MaterialPackage material,
+    private static Tuple<FileId, ShaderCode>? GetShaderCode(MaterialPackage material,
         FileType shaderType)
     {
         var file = material.GetShaderCode(shaderType);
@@ -1170,7 +623,7 @@ internal class EditorController
     private void PrepareCamera()
     {
         // Define our custom camera to look into our 3d world
-        _camera = new Camera3D(new Vector3(0, 0, -5),
+        _editorControllerData.Camera = new Camera3D(new Vector3(0, 0, -5),
             new Vector3(0.0f, 0.0f, 0.0f),
             new Vector3(0.0f, 1.0f, 0.0f),
             45f,
@@ -1237,7 +690,7 @@ internal class EditorController
             shaders =
             [
                 _currentShader.Value,
-                _skyBox.Model.Materials[0].Shader
+                _editorControllerData.SkyBox.Model.Materials[0].Shader
             ];
         }
 
@@ -1289,42 +742,6 @@ internal class EditorController
                 ));
                 break;
 
-            //case EditorConfiguration.LightingPreset.YellowRedGreenBlue:
-            //    _editorControllerData.Lights.Add(LightManager.CreateLight(
-            //        LightType.Point,
-            //        new Vector3(-2, 1, -2),
-            //        Vector3.Zero,
-            //        Color.Yellow,
-            //        4.0f,
-            //        shaders
-            //    ));
-            //    _editorControllerData.Lights.Add(LightManager.CreateLight(
-            //        LightType.Point,
-            //        new Vector3(2, 1, 2),
-            //        Vector3.Zero,
-            //        Color.Red,
-            //        8.0f,
-            //        shaders
-            //    ));
-            //    _editorControllerData.Lights.Add(LightManager.CreateLight(
-            //        LightType.Point,
-            //        new Vector3(-2, 1, 2),
-            //        Vector3.Zero,
-            //        Color.Green,
-            //        4.0f,
-            //        shaders
-            //    ));
-            //    _editorControllerData.Lights.Add(LightManager.CreateLight(
-            //        LightType.Point,
-            //        new Vector3(2, 1, -2),
-            //        Vector3.Zero,
-            //        Color.Blue,
-            //        4.0f,
-            //        shaders
-            //    ));
-            //    break;
-
-
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -1332,15 +749,7 @@ internal class EditorController
         _editorConfiguration.CurrentLightingPreset = preset;
     }
 
-    public void RenderLights()
-    {
-        foreach (var light in _editorControllerData.Lights)
-        {
-            Raylib.DrawSphereEx(light.Position, 0.2f, 8, 8, light.Color);
-        }
-    }
-
-    private void UpdateLights()
+    public void UpdateLights()
     {
         foreach (var light in _editorControllerData.Lights)
         {

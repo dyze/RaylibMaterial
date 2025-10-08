@@ -13,7 +13,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     public event Action<EditorConfiguration.ModelType, string>? ModelTypeChangeRequest;
-    public event Action<string>? BackgroundChanged;
+    public event Action<string>? SkyBoxChanged;
     public event Action<EditorConfiguration.LightingPreset>? LightingPresetChangeRequest;
     public event Action? ResetCameraIsRequest;
 
@@ -176,7 +176,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
             ModelTypeChangeRequest?.Invoke(wantedModelType, wantedModelFilePath);
 
         if(backgroundChangeIsRequested)
-            BackgroundChanged?.Invoke(wantedBackground);
+            SkyBoxChanged?.Invoke(wantedBackground);
 
         if(lightingPresetChangeIsRequested)
             LightingPresetChangeRequest?.Invoke(wantedLightingPreset);

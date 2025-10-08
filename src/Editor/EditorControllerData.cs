@@ -68,6 +68,24 @@ public class EditorControllerData()
 
     public int MaterialIndexToEdit = 0;
 
+    public string OutputFilePath;
+
+    public readonly string[] SupportedModelExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
+    public readonly string[] SupportedImagesExtensions = [".png", ".jpg", ".tga"];
+
+    public const string DefaultMaterialName = "new.mat";
+
+    public const string MaterialsPath = "materials";
+    public const string MaterialFileExtension = ".mat";
+    public const string MaterialBackupFileExtension = ".mat.bck";
+
+    public Camera3D Camera;
+    public SkyBox SkyBox;
+    public Model CurrentModel;
+
+    public static MessageQueue MessageQueue { get; set; } = new();
+
+
     public Vector2 UpdateWindowPosAndSize(WindowId windowId)
     {
         var manWindowSize = new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());

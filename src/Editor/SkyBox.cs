@@ -6,7 +6,7 @@ namespace Editor;
 /// <summary>
 /// This class prepares and holds a sky box model
 /// </summary>
-internal class SkyBox(EditorConfiguration editorConfiguration)
+public class SkyBox(EditorConfiguration editorConfiguration)
 {
     public Model Model;
 
