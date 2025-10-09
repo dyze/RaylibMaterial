@@ -69,16 +69,13 @@ public class MaterialPackage : IDisposable, IMaterial
     public Shader? Shader { get; private set; }
 
 
-    public MaterialPackage()
-    {
-    }
-
-
     public void Clear()
     {
         Description = new();
         _files = [];
         _fileReferences = [];
+
+        UnloadShader();
     }
 
     public void ClearFileReferences()
@@ -321,7 +318,7 @@ public class MaterialPackage : IDisposable, IMaterial
     /// </summary>
     /// <returns>A Raylib Shader object</returns>
     /// <exception cref="InvalidDataException">If the Shader is not valid</exception>
-    public Shader LoadShader()
+    public Shader LoadAndBuildShader()
     {
         var vertexShader = GetShaderCode(FileType.VertexShader);
         var fragmentShader = GetShaderCode(FileType.FragmentShader);
@@ -363,7 +360,7 @@ public class MaterialPackage : IDisposable, IMaterial
 
     public void Dispose()
     {
-        UnloadShader();
+        Clear();
     }
 
     public void SendVariablesToMaterial(Material raylibMaterial, bool force=false)

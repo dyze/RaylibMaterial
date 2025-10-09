@@ -1,4 +1,6 @@
-﻿namespace Editor.Tests;
+﻿using Editor.EditorControllerNS;
+
+namespace Editor.Tests;
 
 [TestClass]
 public class EditorControllerTest

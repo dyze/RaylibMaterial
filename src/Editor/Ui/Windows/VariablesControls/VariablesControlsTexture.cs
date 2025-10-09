@@ -5,7 +5,7 @@ using Library.Helpers;
 using Library.Packaging;
 using Raylib_cs;
 
-namespace Editor.Windows
+namespace Editor.Ui.Windows.VariablesControls
 {
     partial class VariablesControls
     {

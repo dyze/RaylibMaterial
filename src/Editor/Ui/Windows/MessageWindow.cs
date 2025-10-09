@@ -1,9 +1,11 @@
 ﻿using System.Numerics;
+using Editor.EditorControllerNS;
+using Editor.Messaging;
 using ImGuiNET;
 using Color = System.Drawing.Color;
 
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows;
 
 internal class MessageWindow(EditorControllerData editorControllerData)
 {

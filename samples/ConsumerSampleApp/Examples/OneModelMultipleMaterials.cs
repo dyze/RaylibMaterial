@@ -44,7 +44,7 @@ internal class OneModelMultipleMaterials : ExampleBase
                _materialPackage = MaterialPackage.Load(filePath);
                
                // Load the shader
-               var shader = _materialPackage.LoadShader();
+               var shader = _materialPackage.LoadAndBuildShader();
                _currentShader = shader;
                
                // Create the lights of the scene. Light properties will be sent to each referenced shader
@@ -156,7 +156,7 @@ internal class OneModelMultipleMaterials : ExampleBase
         var materialPackage = MaterialPackage.Load(filePath);
 
         // Load the shader
-        var shader = materialPackage.LoadShader();
+        var shader = materialPackage.LoadAndBuildShader();
 
         _materialPackages[materialIndex] = materialPackage;
 

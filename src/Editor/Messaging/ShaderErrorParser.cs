@@ -2,9 +2,8 @@
 using System.Text.RegularExpressions;
 using Library;
 using NLog;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace Editor;
+namespace Editor.Messaging;
 
 /// <summary>
 /// This class parse the shader compilation error sent thru Raylib.

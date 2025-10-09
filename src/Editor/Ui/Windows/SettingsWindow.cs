@@ -4,7 +4,7 @@ using Editor.Configuration;
 using ImGuiNET;
 
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows;
 
 internal class SettingsWindow(EditorConfiguration editorConfiguration)
 {
@@ -12,10 +12,10 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
 
     private bool _isVisible;
 
-    private string OutputDirectoryPath;
-    private string ResourceDirectoryPath;
+    private string? _outputDirectoryPath;
+    private string? _resourceDirectoryPath;
 
-    private string ErrorMessage = "";
+    private string _errorMessage = "";
     private bool _selectFolderDialogIsOpen;
 
     private FileDialogInfo? _fileDialogInfo;
@@ -24,9 +24,9 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
 
     public void Show()
     {
-        ErrorMessage = "";
-        OutputDirectoryPath = editorConfiguration.OutputDirectoryPath;
-        ResourceDirectoryPath = editorConfiguration.DataFileExplorerConfiguration.DataFolderPath;
+        _errorMessage = "";
+        _outputDirectoryPath = editorConfiguration.OutputDirectoryPath;
+        _resourceDirectoryPath = editorConfiguration.DataFileExplorerConfiguration.DataFolderPath;
         _isVisible = true;
     }
 
@@ -40,28 +40,28 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
         {
             ImGui.PushID("Output directory");
             {
-                ImGui.InputText("Output directory", ref OutputDirectoryPath, 200);
+                ImGui.InputText("Output directory", ref _outputDirectoryPath, 200);
 
                 ImGui.SameLine();
 
                 if (ImGui.Button("Select"))
                 {
-                    TriggerSelectFolder(OutputDirectoryPath ,
-                        () => OutputDirectoryPath = _fileDialogInfo.ResultPath);
+                    TriggerSelectFolder(_outputDirectoryPath ,
+                        () => _outputDirectoryPath = _fileDialogInfo.ResultPath);
                 }
             }
             ImGui.PopID();
 
             ImGui.PushID("Resource directory");
             {
-                ImGui.InputText("Resource directory", ref ResourceDirectoryPath, 200);
+                ImGui.InputText("Resource directory", ref _resourceDirectoryPath, 200);
 
                 ImGui.SameLine();
 
                 if (ImGui.Button("Select"))
                 {
-                    TriggerSelectFolder(ResourceDirectoryPath,
-                        () => ResourceDirectoryPath = _fileDialogInfo.ResultPath);
+                    TriggerSelectFolder(_resourceDirectoryPath,
+                        () => _resourceDirectoryPath = _fileDialogInfo.ResultPath);
                 }
             }
             ImGui.PopID();
@@ -81,7 +81,7 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
                 OnSave();
             }
 
-            ImGui.TextColored(TypeConverters.ColorToVector4(Color.Red), ErrorMessage);
+            ImGui.TextColored(TypeConverters.ColorToVector4(Color.Red), _errorMessage);
 
             if (FileDialog.Run(ref _selectFolderDialogIsOpen, _fileDialogInfo))
             {
@@ -109,23 +109,23 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
 
     private void OnSave()
     {
-        if (Directory.Exists(OutputDirectoryPath) == false)
+        if (Directory.Exists(_outputDirectoryPath) == false)
         {
-            ErrorMessage = $"{OutputDirectoryPath} doesn't exist";
+            _errorMessage = $"{_outputDirectoryPath} doesn't exist";
             return;
         }
 
-        editorConfiguration.OutputDirectoryPath = OutputDirectoryPath;
+        editorConfiguration.OutputDirectoryPath = _outputDirectoryPath;
 
-        if (Directory.Exists(ResourceDirectoryPath) == false)
+        if (Directory.Exists(_resourceDirectoryPath) == false)
         {
-            ErrorMessage = $"{ResourceDirectoryPath} doesn't exist";
+            _errorMessage = $"{_resourceDirectoryPath} doesn't exist";
             return;
         }
 
-        editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = ResourceDirectoryPath;
+        editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = _resourceDirectoryPath;
 
-        ErrorMessage = "";
+        _errorMessage = "";
         SavePressed?.Invoke();
         ImGui.CloseCurrentPopup();
         _isVisible = false;

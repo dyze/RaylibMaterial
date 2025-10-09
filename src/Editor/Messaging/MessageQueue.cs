@@ -1,4 +1,4 @@
-﻿namespace Editor;
+﻿namespace Editor.Messaging;
 
 public enum LogLevel
 {
@@ -10,17 +10,12 @@ public enum LogLevel
     Fatal,
 }
 
-public class Message
+public class Message(
+    LogLevel logLevel,
+    string text)
 {
-    public  LogLevel LogLevel { get; }
-    public  string Text { get; }
-
-    public Message(LogLevel logLevel,
-        string text)
-    {
-        this.LogLevel = logLevel;
-        this.Text = text;
-    }
+    public  LogLevel LogLevel { get; } = logLevel;
+    public  string Text { get; } = text;
 }
 
 public class MessageQueue
@@ -32,8 +27,6 @@ public class MessageQueue
     {
         if (Messages.Count >= NbMessages)
             Messages.Dequeue();
-
-        //var concat = string.Format("{0}{1}", message, message2);
 
         Messages.Enqueue(message);
     }

@@ -4,8 +4,9 @@ using rlImGui_cs;
 using System.Numerics;
 using NLog;
 using Raylib_cs;
+using Editor.EditorControllerNS;
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows;
 
 class OutputWindow(EditorConfiguration editorConfiguration,
     EditorControllerData editorControllerData)
@@ -29,7 +30,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
         var lightingPresetChangeIsRequested = false;
         var resetCameraIsRequested = false;
 
-        var wantedBackground = editorConfiguration.Background;
+        var wantedSkyBox = editorConfiguration.SkyBox;
         var wantedModelFilePath = editorConfiguration.CurrentModelFilePath;
         var wantedModelType = editorConfiguration.CurrentModelType;
 
@@ -70,7 +71,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
 
             ImGui.SameLine();
 
-            foreach (var (key, background) in editorControllerData.Backgrounds)
+            foreach (var (key, background) in editorControllerData.SkyBoxes)
             {
                 ImGui.SameLine();
                 if (rlImGui.ImageButtonSize(background.Name,
@@ -78,7 +79,7 @@ class OutputWindow(EditorConfiguration editorConfiguration,
                         new Vector2(32, 32)))
                 {
                     backgroundChangeIsRequested = true;
-                    wantedBackground = key;
+                    wantedSkyBox = key;
                     break;
                 }
             }
@@ -175,8 +176,8 @@ class OutputWindow(EditorConfiguration editorConfiguration,
         if (modelTypeChangeIsRequested)
             ModelTypeChangeRequest?.Invoke(wantedModelType, wantedModelFilePath);
 
-        if(backgroundChangeIsRequested)
-            SkyBoxChanged?.Invoke(wantedBackground);
+        if(backgroundChangeIsRequested && wantedSkyBox != null)
+            SkyBoxChanged?.Invoke(wantedSkyBox);
 
         if(lightingPresetChangeIsRequested)
             LightingPresetChangeRequest?.Invoke(wantedLightingPreset);

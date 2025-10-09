@@ -1,6 +1,6 @@
 ﻿using Library.Packaging;
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows;
 
 public class DataFileExplorerData
 {

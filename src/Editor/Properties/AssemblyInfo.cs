@@ -2,7 +2,7 @@
 
 [assembly: InternalsVisibleTo("Editor.Tests")]
 
-namespace Editor;
+namespace Editor.Properties;
 
 internal class AssemblyInfo
 {

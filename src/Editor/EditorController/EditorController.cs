@@ -1,4 +1,6 @@
 ﻿using Editor.Configuration;
+using Editor.Messaging;
+using Editor.Ui;
 using Library;
 using Library.CodeVariable;
 using Library.Lighting;
@@ -8,16 +10,15 @@ using Raylib_cs;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using Color = Raylib_cs.Color;
 using Timer = Editor.Helpers.Timer;
 
-namespace Editor;
+namespace Editor.EditorControllerNS;
 
 internal class EditorController
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    private bool _initUiOk = false;
+    private bool _initUiOk;
 
     private Shader? _currentShader;
 
@@ -27,7 +28,7 @@ internal class EditorController
     /// </summary>
     private Shader _defaultShader;
 
-    private static Dictionary<FileId, ShaderCode> _shaderCode = new();
+
 
     private readonly EditorControllerData _editorControllerData;
     private EditorConfiguration _editorConfiguration = new();
@@ -89,27 +90,7 @@ internal class EditorController
         _editorConfiguration.CameraSettings = new CameraSettings();
     }
 
-    private void DiscoverBackgrounds()
-    {
-        var files = Directory.GetFiles(Path.GetFullPath(_editorConfiguration.ResourceSkyBoxesFolderPath), "*.*",
-                SearchOption.AllDirectories)
-            .Where(file => _editorControllerData.SupportedImagesExtensions.Contains(Path.GetExtension(file)))
-            .ToList();
 
-        _editorControllerData.Backgrounds = new();
-
-        foreach (var filePath in files)
-        {
-            var fileName = Path.GetFileNameWithoutExtension(filePath);
-
-            var background = new BackgroundConfig(fileName, Path.GetFileName(filePath));
-            var image = Raylib.LoadImage(filePath);
-            background.Texture = Raylib.LoadTextureFromImage(image);
-            Raylib.UnloadImage(image);
-
-            _editorControllerData.Backgrounds.Add(fileName, background);
-        }
-    }
 
     private void DiscoverBuiltInModels()
     {
@@ -146,11 +127,11 @@ internal class EditorController
 
         var level = levels.GetValueOrDefault((TraceLogLevel)logLevel, NLog.LogLevel.Warn);
 
-        var message = Logging.GetLogMessage(new IntPtr(text), new IntPtr(args));
+        var message = Logging.GetLogMessage(new nint(text), new nint(args));
 
         Logger.Log(level, message);
 
-        ShaderErrorParser.Parse(message, EditorController._shaderCode);
+        ShaderErrorParser.Parse(message, EditorControllerData._shaderCode);
     }
 
     public void Init()
@@ -166,18 +147,12 @@ internal class EditorController
 
         _editorUi.Init();
 
-        LoadUiResources();
-
         _defaultShader = Raylib.LoadShader($"{_editorConfiguration.ResourceShaderFolderPath}\\base.vert",
             $"{_editorConfiguration.ResourceShaderFolderPath}\\base.frag");
 
         _editorControllerData.ViewTexture = Raylib.LoadRenderTexture(400, 300);
 
-        DiscoverBackgrounds();
-
-        SelectSkyBox(_editorConfiguration.Background);
-
-        Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+        SelectSkyBox(_editorConfiguration.SkyBox);
 
         PrepareCamera();
 
@@ -201,8 +176,6 @@ internal class EditorController
 
         _editorUi.Close();
 
-
-
         SaveEditorConfiguration();
 
         Logger.Info("Close OK");
@@ -220,12 +193,26 @@ internal class EditorController
 
         while (true)
         {
-            _editorUi.Frame();
+            UpdateLights();
+
+            _editorControllerData.MaterialPackage.SetCameraPosition(_editorControllerData.Camera.Position);
+
+            if (_timerOnVariablesChanged != null && _timerOnVariablesChanged.IsElapsed(DateTime.Now))
+            {
+                _timerOnVariablesChanged = null;
+                MaterialPackage_OnVariablesChangedTimerCompletion();
+            }
+
+            if (_editorUi.Frame())
+                break;
         }
 
         Close();
     }
-    
+
+    /// <summary>
+    /// Clean everything, start with new material
+    /// </summary>
     internal void NewMaterial()
     {
         _editorControllerData.MaterialFilePath = null;
@@ -233,18 +220,26 @@ internal class EditorController
         _editorControllerData.MaterialPackage = new();
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
-        _editorControllerData.MaterialPackage.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
+        _editorControllerData.MaterialPackage.OnVariablesChanged += MaterialPackage_OnVariablesChanged;
 
-        _currentShader = _defaultShader;
+        _editorControllerData.OutputFilePath =
+            $"{_editorConfiguration.OutputDirectoryPath}\\{EditorControllerData.DefaultMaterialName}";
 
-        _editorControllerData.OutputFilePath = $"{_editorConfiguration.OutputDirectoryPath}\\{EditorControllerData.DefaultMaterialName}";
+        _editorUi.UpdateWindowCaption();
 
-        EditorUi.UpdateWindowCaption();
+        AssignDefaultShader();
 
-        _shaderCode = new();
+        EditorControllerData._shaderCode = new();
 
         LoadModel();
-        LoadShaders();
+        BuildShader();
+        AnalyseShaderCode();
+        SendVariablesToMaterial();
+    }
+
+    private void AssignDefaultShader()
+    {
+        _currentShader = _defaultShader;
     }
 
 
@@ -264,10 +259,11 @@ internal class EditorController
         }
         catch (Exception ex)
         {
-            if (ex is FileNotFoundException or FileLoadException or DirectoryNotFoundException or IOException or NotSupportedException)
+            if (ex is FileNotFoundException or FileLoadException or DirectoryNotFoundException or IOException
+                or NotSupportedException)
             {
                 Logger.Error(ex);
-                EditorUi.TriggerErrorMessage("Material can't be loaded", ex.Message);
+                _editorUi.TriggerErrorMessage("Material can't be loaded", ex.Message);
                 return false;
             }
 
@@ -276,40 +272,38 @@ internal class EditorController
 
         _editorControllerData.MaterialPackage.OnFilesChanged += MaterialPackage_OnFilesChanged;
         _editorControllerData.MaterialPackage.OnShaderChanged += MaterialPackage_OnShaderChanged;
-        _editorControllerData.MaterialPackage.OnVariablesChanged += MaterialPackageMeta_OnVariablesChanged;
+        _editorControllerData.MaterialPackage.OnVariablesChanged += MaterialPackage_OnVariablesChanged;
 
         _editorControllerData.MaterialFilePath = filePath;
 
         _editorControllerData.OutputFilePath = filePath;
-        EditorUi.UpdateWindowCaption();
+        _editorUi.UpdateWindowCaption();
 
         _editorConfiguration.AddRecentFile(filePath);
 
+        AssignDefaultShader();
+
         LoadModel();
+        BuildShader();
         AnalyseShaderCode();
-        LoadShaders();
+        SendVariablesToMaterial();
 
         return true;
     }
 
-    private void MaterialPackageMeta_OnVariablesChanged()
+    private void MaterialPackage_OnVariablesChanged()
     {
         _timerOnVariablesChanged = null;
         _timerOnVariablesChanged = new Timer(DateTime.Now, TimeSpan.FromSeconds(1));
     }
 
-    private void MaterialPackageMeta_OnVariablesChangedTimerCompletion()
+    private void MaterialPackage_OnVariablesChangedTimerCompletion()
     {
-        Logger.Trace("MaterialPackageMeta_OnVariablesChangedTimerCompletion...");
+        Logger.Trace("MaterialPackage_OnVariablesChangedTimerCompletion...");
 
         _editorControllerData.MaterialPackage.UpdateFileReferences();
 
-        //todo avoid doing that every time.
-        LoadModel(); // to clean Materials
-
-        // LoadShaders();
-
-        //_editorControllerData.MaterialPackage.SendVariablesToMaterial(CurrentModel, false);
+        SendVariablesToMaterial();
     }
 
 
@@ -319,19 +313,24 @@ internal class EditorController
 
     private void MaterialPackage_OnShaderChanged()
     {
+        AssignDefaultShader();
+        LoadModel(); // to clean Materials
+        BuildShader();
         AnalyseShaderCode();
-        LoadShaders();
+        SendVariablesToMaterial();
     }
 
     private void EditorUi_BuildPressed()
     {
+        AssignDefaultShader();
         LoadModel(); // to clean Materials
+        BuildShader();
         AnalyseShaderCode();
-        LoadShaders();
+        SendVariablesToMaterial();
     }
-    
 
-    private void EditorUi_SelectModelPressed(EditorConfiguration.ModelType modelType, 
+
+    private void EditorUi_SelectModelPressed(EditorConfiguration.ModelType modelType,
         string modelFilePath)
     {
         Logger.Trace($"{modelType}, {modelFilePath} selected");
@@ -344,15 +343,16 @@ internal class EditorController
     {
         Dictionary<EditorConfiguration.ModelType, Action> actions = new()
         {
-            {EditorConfiguration.ModelType.Cube, () =>  _editorControllerData.CurrentModel = GenerateCubeModel() },
-            {EditorConfiguration.ModelType.Plane, () => _editorControllerData.CurrentModel = GeneratePlaneModel() },
-            {EditorConfiguration.ModelType.Sphere, () =>_editorControllerData.CurrentModel = GenerateSphereModel() },
-            {EditorConfiguration.ModelType.Model, () => LoadModelFromFile(_editorConfiguration.CurrentModelFilePath) },
+            { EditorConfiguration.ModelType.Cube, () => _editorControllerData.CurrentModel = GenerateCubeModel() },
+            { EditorConfiguration.ModelType.Plane, () => _editorControllerData.CurrentModel = GeneratePlaneModel() },
+            { EditorConfiguration.ModelType.Sphere, () => _editorControllerData.CurrentModel = GenerateSphereModel() },
+            { EditorConfiguration.ModelType.Model, () => LoadModelFromFile(_editorConfiguration.CurrentModelFilePath) },
         };
 
         actions[_editorConfiguration.CurrentModelType].Invoke();
-        
-        Logger.Trace($"MeshCount={_editorControllerData.CurrentModel.MeshCount}, MaterialCount={_editorControllerData.CurrentModel.MaterialCount}");
+
+        Logger.Trace(
+            $"MeshCount={_editorControllerData.CurrentModel.MeshCount}, MaterialCount={_editorControllerData.CurrentModel.MaterialCount}");
 
         ApplyShaderToModel();
     }
@@ -376,15 +376,7 @@ internal class EditorController
         _editorConfiguration.AddCustomModel(modelFilePath);
     }
 
-    private void LoadUiResources()
-    {
-        foreach (var (_, tool) in _editorControllerData.Tools)
-        {
-            var image = Raylib.LoadImage($"{_editorConfiguration.ResourceToolBoarFolderPath}/{tool.ImageFileName}");
-            tool.Texture = Raylib.LoadTextureFromImage(image);
-            Raylib.UnloadImage(image);
-        }
-    }
+
 
     private void OnSave()
     {
@@ -398,12 +390,12 @@ internal class EditorController
 
         _editorControllerData.MaterialPackage.Save(_editorControllerData.MaterialFilePath);
         _editorConfiguration.AddRecentFile(_editorControllerData.MaterialFilePath);
-        
+
         Logger.Info("OnSave OK");
     }
 
     internal void SaveAs(string filePath,
-        bool exploreTo=true)
+        bool exploreTo = true)
     {
         Logger.Info("SaveAs...");
 
@@ -413,7 +405,7 @@ internal class EditorController
         _editorConfiguration.AddRecentFile(_editorControllerData.MaterialFilePath);
 
         _editorControllerData.OutputFilePath = filePath;
-        EditorUi.UpdateWindowCaption();
+        _editorUi.UpdateWindowCaption();
 
         if (exploreTo)
         {
@@ -423,16 +415,16 @@ internal class EditorController
 
         Logger.Info("SaveAs OK");
     }
-    
+
     private void SelectSkyBox(string? name)
     {
         Logger.Trace($"{name} selected");
 
-        if (name == null || _editorControllerData.Backgrounds.TryGetValue(name, out var value) == false)
-            name = _editorControllerData.Backgrounds.Keys.First();
+        if (name == null || _editorControllerData.SkyBoxes.TryGetValue(name, out var value) == false)
+            name = _editorControllerData.SkyBoxes.Keys.First();
 
-        _editorConfiguration.Background = name;
-        var background = _editorControllerData.Backgrounds[name];
+        _editorConfiguration.SkyBox = name;
+        var background = _editorControllerData.SkyBoxes[name];
 
         _editorControllerData.SkyBox = new SkyBox(_editorConfiguration);
 
@@ -450,7 +442,8 @@ internal class EditorController
 
         var shader = _currentShader.Value;
 
-        var materialIndex = Math.Clamp(_editorControllerData.MaterialIndexToEdit, 0, _editorControllerData.CurrentModel.MaterialCount - 1);
+        var materialIndex = Math.Clamp(_editorControllerData.MaterialIndexToEdit, 0,
+            _editorControllerData.CurrentModel.MaterialCount - 1);
         if (materialIndex != _editorControllerData.MaterialIndexToEdit)
         {
             Logger.Error($"wrong materialIndex, max is {_editorControllerData.CurrentModel.MaterialCount - 1}");
@@ -459,16 +452,25 @@ internal class EditorController
 
         Raylib.SetMaterialShader(ref _editorControllerData.CurrentModel, materialIndex, ref shader);
 
-        var material = Raylib.GetMaterial(ref _editorControllerData.CurrentModel, materialIndex);
-
-        _editorControllerData.MaterialPackage.SendVariablesToMaterial(material, true);
-
         Logger.Info("ApplyShaderToModel OK");
     }
 
-    private void LoadShaders()
+    private void SendVariablesToMaterial()
     {
-        Logger.Info("LoadShaders...");
+        Logger.Info("SendVariablesToMaterial...");
+
+        var material = Raylib.GetMaterial(ref _editorControllerData.CurrentModel, _editorControllerData.MaterialIndexToEdit);
+
+        _editorControllerData.MaterialPackage.SendVariablesToMaterial(material, true);
+
+        Logger.Info("SendVariablesToMaterial OK");
+    }
+
+    private void BuildShader()
+    {
+        Logger.Info("BuildShader...");
+
+        AssignDefaultShader();
 
         var materialPackage = _editorControllerData.MaterialPackage;
 
@@ -477,24 +479,23 @@ internal class EditorController
         var shaderIsValid = false;
 
         // Clear error messages
-        foreach (var (_, value) in _shaderCode)
+        foreach (var (_, value) in EditorControllerData._shaderCode)
         {
             value.Errors.Clear();
         }
 
         try
         {
-            _currentShader = materialPackage.LoadShader();
+            _currentShader = materialPackage.LoadAndBuildShader();
             shaderIsValid = true;
             Logger.Info($"shader id={_currentShader.Value.Id}");
         }
         catch (InvalidDataException e)
         {
             Logger.Error(e.Message);
-            _currentShader = _defaultShader;
         }
 
-        foreach (var (_, value) in _shaderCode)
+        foreach (var (_, value) in EditorControllerData._shaderCode)
         {
             value.IsValid = shaderIsValid;
             value.NeedsRebuild = !shaderIsValid;
@@ -503,6 +504,8 @@ internal class EditorController
         ApplyShaderToModel();
 
         CreateLights(_editorConfiguration.CurrentLightingPreset);
+
+        Logger.Info("BuildShader OK");
     }
 
     private void AnalyseShaderCode()
@@ -510,7 +513,7 @@ internal class EditorController
         Logger.Trace("AnalyseShaderCode...");
 
         // Load shader codes
-        _shaderCode = new Dictionary<FileId, ShaderCode>();
+        EditorControllerData._shaderCode = new Dictionary<FileId, ShaderCode>();
 
         var material = _editorControllerData.MaterialPackage;
 
@@ -518,14 +521,14 @@ internal class EditorController
         {
             var result = GetShaderCode(material, fileType);
             if (result != null)
-                _shaderCode.Add(result.Item1, result.Item2);
+                EditorControllerData._shaderCode.Add(result.Item1, result.Item2);
         }
 
 
         // Determine variables used in code
         Dictionary<string, CodeVariableBase> allShaderVariables = [];
 
-        foreach (var (_, value) in _shaderCode)
+        foreach (var (_, value) in EditorControllerData._shaderCode)
         {
             value.ParseVariables();
 
@@ -683,67 +686,25 @@ internal class EditorController
         LightManager.Clear();
         _editorControllerData.Lights.Clear();
 
-        List<Shader> shaders;
+        List<Shader> shaders =
+        [
+            _currentShader.Value
+        ];
+        if (_editorControllerData.SkyBox.Shader.HasValue)
+            shaders.Add(_editorControllerData.SkyBox.Shader.Value);
 
-        unsafe
+        var lights = _editorConfiguration.LightingPresets[preset];
+
+        foreach (var light in lights)
         {
-            shaders =
-            [
-                _currentShader.Value,
-                _editorControllerData.SkyBox.Model.Materials[0].Shader
-            ];
-        }
-
-        switch (preset)
-        {
-            case EditorConfiguration.LightingPreset.SingleWhiteLight:
-                _editorControllerData.Lights.Add(LightManager.CreateLight(
-                    LightType.Point,
-                    new Vector3(-2, 1, -2),
-                    Vector3.Zero,
-                    Color.White,
-                    4.0f,
-                    shaders
-                ));
-                break;
-
-            case EditorConfiguration.LightingPreset.YellowRedGreenBlue:
-                _editorControllerData.Lights.Add(LightManager.CreateLight(
-                    LightType.Point,
-                    new Vector3(-1.0f, 1.0f, -2.0f),
-                    Vector3.Zero,
-                    Color.Yellow,
-                    4.0f,
-                    shaders
-                ));
-                _editorControllerData.Lights.Add(LightManager.CreateLight(
-                    LightType.Point,
-                    new Vector3(2.0f, 1.0f, 1.0f),
-                    Vector3.Zero,
-                    Color.Green,
-                    3.3f,
-                    shaders
-                ));
-                _editorControllerData.Lights.Add(LightManager.CreateLight(
-                    LightType.Point,
-                    new Vector3(-2.0f, 1.0f, 1.0f),
-                    Vector3.Zero,
-                    Color.Red,
-                    8.3f,
-                    shaders
-                ));
-                _editorControllerData.Lights.Add(LightManager.CreateLight(
-                    LightType.Point,
-                    new Vector3(1.0f, 1.0f, -2.0f),
-                    Vector3.Zero,
-                    Color.Blue,
-                    2.0f,
-                    shaders
-                ));
-                break;
-
-            default:
-                throw new ArgumentOutOfRangeException();
+            _editorControllerData.Lights.Add(LightManager.CreateLight(
+                light.Type,
+                light.Position,
+                light.Target,
+                light.Color,
+                light.Intensity,
+                shaders
+            ));
         }
 
         _editorConfiguration.CurrentLightingPreset = preset;

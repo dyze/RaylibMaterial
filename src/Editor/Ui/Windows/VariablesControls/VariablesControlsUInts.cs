@@ -1,8 +1,7 @@
 ﻿using ImGuiNET;
 using Library.CodeVariable;
-using NLog.LayoutRenderers;
 
-namespace Editor.Windows
+namespace Editor.Ui.Windows.VariablesControls
 {
     partial class VariablesControls
     {

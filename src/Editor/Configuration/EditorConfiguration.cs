@@ -1,6 +1,9 @@
 ﻿using System.Drawing;
+using System.Numerics;
 using Editor.Helpers;
+using Library.Lighting;
 using Newtonsoft.Json;
+using Color = Raylib_cs.Color;
 
 namespace Editor.Configuration;
 
@@ -40,7 +43,7 @@ public class EditorConfiguration
     public string CurrentModelFilePath = "";
 
 
-    [JsonProperty("Background")] public string Background { get; set; }
+    [JsonProperty("SkyBox")] public string? SkyBox { get; set; }
     [JsonProperty("WindowPosition")] public Point WindowPosition { get; set; } = new(40, 40);
     [JsonProperty("WindowSize")] public Size WindowSize = new(1600, 900);
     [JsonProperty("MonitorIndex")] public int MonitorIndex { get; set; } = 0;
@@ -61,10 +64,68 @@ public class EditorConfiguration
     public enum LightingPreset
     {
         SingleWhiteLight = 0,
+        FourWhiteLights,
         YellowRedGreenBlue,
     }
 
     [JsonProperty("CurrentLightingPreset")] public LightingPreset CurrentLightingPreset = LightingPreset.SingleWhiteLight;
+
+    public Dictionary<LightingPreset, List<Light>> LightingPresets = new()
+    {
+        { LightingPreset.SingleWhiteLight, [
+                new Light(
+                    LightType.Point,
+                    new Vector3(-2, 1, -2),
+                    Vector3.Zero,
+                    Color.White,
+                    4.0f)
+            ]
+        },
+        { LightingPreset.FourWhiteLights, [
+            new Light(LightType.Point,
+                new Vector3(-2.0f, 1.0f, -2.0f),
+                Vector3.Zero,
+                Color.White,
+                8f),
+            new Light(LightType.Point,
+                new Vector3(2.0f, 1.0f, 2.0f),
+                Vector3.Zero,
+                Color.White,
+                8f),
+            new Light(LightType.Point,
+                new Vector3(-2.0f, 1.0f, 2.0f),
+                Vector3.Zero,
+                Color.White,
+                8f),
+            new Light(LightType.Point,
+                new Vector3(2.0f, 1.0f, -2.0f),
+                Vector3.Zero,
+                Color.White,
+                8f)
+        ]},
+        { LightingPreset.YellowRedGreenBlue, [
+            new Light(LightType.Point,
+                new Vector3(-1.0f, 1.0f, -2.0f),
+                Vector3.Zero,
+                Color.Yellow,
+                4.0f),
+            new Light(LightType.Point,
+                new Vector3(2.0f, 1.0f, 1.0f),
+                Vector3.Zero,
+                Color.Green,
+                3.3f),
+            new Light(LightType.Point,
+                new Vector3(-2.0f, 1.0f, 1.0f),
+                Vector3.Zero,
+                Color.Red,
+                8.3f),
+            new Light(LightType.Point,
+                new Vector3(1.0f, 1.0f, -2.0f),
+                Vector3.Zero,
+                Color.Blue,
+                2.0f)
+            ]}
+    };
 
     [JsonProperty("CameraSettings")] public CameraSettings CameraSettings = new();
 

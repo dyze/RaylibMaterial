@@ -24,12 +24,6 @@
     <ProjectReference Include="..\Library\Library.csproj" />
   </ItemGroup>
 
-
-
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
-
 	<Target Name="CopyCustomContent" AfterTargets="AfterBuild">
 		<Copy SourceFiles="DataFiles\editor.cfg" DestinationFolder="$(OutDir)" Condition="!Exists('$(OutDir)\editor.cfg')" />
 	</Target>

@@ -5,8 +5,10 @@ using Library;
 using Library.Packaging;
 using ImGuiColorTextEditNet;
 using NLog;
+using Editor.EditorControllerNS;
+using Editor.Ui.Windows.GlSlTextEditor;
 
-namespace Editor.Windows
+namespace Editor.Ui.Windows
 {
     /// <summary>
     /// Handles the display and the modification of code

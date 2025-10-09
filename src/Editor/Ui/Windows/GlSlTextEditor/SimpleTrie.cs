@@ -1,6 +1,6 @@
 using System.Buffers;
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows.GlSlTextEditor;
 
 internal class SimpleTrie<TInfo>
     where TInfo : class

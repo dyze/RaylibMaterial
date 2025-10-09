@@ -31,4 +31,13 @@ public class Light
 
     // Shaders that use light
     public List<Shader> Shaders = [];
+
+    public Light(LightType type, Vector3 position, Vector3 target, Color color, float intensity)
+    {
+        Type = type;
+        Position = position;
+        Target = target;
+        Color = color;
+        Intensity = intensity;
+    }
 };

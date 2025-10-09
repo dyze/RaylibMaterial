@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using Editor.Configuration;
+using Editor.EditorControllerNS;
 using Editor.Helpers;
 using Editor.Processes;
 using ImGuiNET;
@@ -9,7 +10,7 @@ using NLog;
 using Raylib_cs;
 using rlImGui_cs;
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows;
 
 public class DataFileExplorer
 {
@@ -43,7 +44,7 @@ public class DataFileExplorer
 
     private readonly Dictionary<string, Action<DataFileExplorer>> _mainActions = new()
     {
-        { "refresh", (renderer => renderer.OnRefresh()) },
+        { "refresh", renderer => renderer.OnRefresh() },
     };
 
     private readonly Dictionary<string, Action<DataFileExplorer, FolderContent>> _folderActions = new()
@@ -197,7 +198,7 @@ public class DataFileExplorer
                         //TODO avoid giving a fake parameter
                         var i = 1;
                         int* tesnum = &i;
-                        ImGui.SetDragDropPayload(dragDropItemType, new IntPtr(tesnum), sizeof(int));
+                        ImGui.SetDragDropPayload(dragDropItemType, new nint(tesnum), sizeof(int));
                     }
 
                     ImGui.Text($"{fileName}");

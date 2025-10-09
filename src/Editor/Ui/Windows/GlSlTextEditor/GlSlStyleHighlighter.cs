@@ -1,7 +1,7 @@
 using ImGuiColorTextEditNet;
 using ImGuiColorTextEditNet.Syntax;
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows.GlSlTextEditor;
 
 /// <summary>
 /// A syntax highlighter for glsl language.

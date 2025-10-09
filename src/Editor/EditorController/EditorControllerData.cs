@@ -1,13 +1,16 @@
 ﻿using Editor.Configuration;
-using Editor.Windows;
+using Editor.Messaging;
+using Editor.Ui;
+using Editor.Ui.Windows;
 using ImGuiNET;
+using Library;
+using Library.Lighting;
 using Library.Packaging;
 using NLog;
 using Raylib_cs;
 using System.Numerics;
-using Library.Lighting;
 
-namespace Editor;
+namespace Editor.EditorControllerNS;
 
 public class EditorControllerData()
 {
@@ -35,7 +38,7 @@ public class EditorControllerData()
     public List<string> BuiltInModels = [];
 
 
-    public Dictionary<string, BackgroundConfig> Backgrounds = new();
+    public Dictionary<string, SkyBoxConfig> SkyBoxes = new();
 
     public bool WorkspaceLayoutResetRequested { get; set; }
 
@@ -68,7 +71,7 @@ public class EditorControllerData()
 
     public int MaterialIndexToEdit = 0;
 
-    public string OutputFilePath;
+    public string? OutputFilePath;
 
     public readonly string[] SupportedModelExtensions = [".obj", ".gltf", ".glb", ".vox", ".iqm", ".m3d"];
     public readonly string[] SupportedImagesExtensions = [".png", ".jpg", ".tga"];
@@ -80,10 +83,12 @@ public class EditorControllerData()
     public const string MaterialBackupFileExtension = ".mat.bck";
 
     public Camera3D Camera;
-    public SkyBox SkyBox;
+    public SkyBox? SkyBox;
     public Model CurrentModel;
 
     public static MessageQueue MessageQueue { get; set; } = new();
+
+    internal static Dictionary<FileId, ShaderCode> _shaderCode = new();
 
 
     public Vector2 UpdateWindowPosAndSize(WindowId windowId)

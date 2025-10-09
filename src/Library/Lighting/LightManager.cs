@@ -32,12 +32,13 @@ public static class LightManager
     /// <param name="position"></param>
     /// <param name="target"></param>
     /// <param name="color"></param>
-    /// <param name="materials"></param>
+    /// <param name="intensity"></param>
+    /// <param name="shaders">list of shaders that will receive light values</param>
     /// <returns></returns>
     /// <exception cref="IndexOutOfRangeException"></exception>
     public static Light CreateLight(LightType type, Vector3 position, Vector3 target, Color color, float intensity, List<Shader> shaders)
     {
-        Light light = new();
+        Light light = new(type, position, target, color, intensity);
 
         if (_lightsCount >= MaxLights)
             throw new IndexOutOfRangeException($"Count of lights {_lightsCount} exceeds {MaxLights}");

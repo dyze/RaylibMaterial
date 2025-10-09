@@ -5,7 +5,7 @@ using rlImGui_cs;
 using NLog;
 using Raylib_cs;
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows;
 
 class ImageWindow
 {
@@ -92,8 +92,8 @@ class ImageWindow
             var available = ImGui.GetContentRegionAvail();
 
             // Preserve image ratio
-            var ratioX = (double)available.X / (double)textureSize.Width;
-            var ratioY = (double)available.Y / (double)textureSize.Height;
+            var ratioX = available.X / (double)textureSize.Width;
+            var ratioY = available.Y / (double)textureSize.Height;
 
             var ratio = ratioX < ratioY ? ratioX : ratioY;
 

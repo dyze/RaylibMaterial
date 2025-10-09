@@ -4,8 +4,9 @@ using Library.Packaging;
 using NLog;
 using System.Text;
 using Library.Helpers;
+using Editor.EditorControllerNS;
 
-namespace Editor.Windows;
+namespace Editor.Ui.Windows;
 
 class MaterialWindow(EditorControllerData editorControllerData)
 {
@@ -14,7 +15,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
     public event Action? OnSave;
 
     //todo avoid public
-    public readonly VariablesControls _variablesControls = new(editorControllerData);
+    public readonly VariablesControls.VariablesControls _variablesControls = new(editorControllerData);
 
     public void Render()
     {

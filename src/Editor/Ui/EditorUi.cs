@@ -1,6 +1,7 @@
 ﻿using Editor.Configuration;
+using Editor.EditorControllerNS;
 using Editor.Helpers;
-using Editor.Windows;
+using Editor.Ui.Windows;
 using ImGuiNET;
 using Library.Dialogs;
 using NLog;
@@ -8,10 +9,10 @@ using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
 
-namespace Editor;
+namespace Editor.Ui;
 
 
-internal class EditorUi
+internal class EditorUi : IDisposable
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -52,7 +53,7 @@ internal class EditorUi
     public event Action? SaveEditorConfiguration;
     public event Action<string>? LoadModelFromFile;
     public event Func<string, bool>? LoadMaterial;
-    public event Action<string, bool> SaveAs;
+    public event Action<string, bool>? SaveAs;
 
     public EditorUi(EditorControllerData editorControllerData,
         EditorConfiguration editorConfiguration)
@@ -89,6 +90,12 @@ internal class EditorUi
         _settingsWindow.SavePressed += () => SaveEditorConfiguration?.Invoke();
     }
 
+
+    public void Dispose()
+    {
+        Close();
+    }
+
     public void Init()
     {
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint |
@@ -105,6 +112,11 @@ internal class EditorUi
         _dataFileExplorer.PrepareUi();
 
         _previousMousePosition = Raylib.GetMousePosition();
+
+        Raylib.SetTargetFPS(60);
+
+        LoadUiResources();
+        DiscoverSkyBoxes();
     }
 
     public void Close()
@@ -112,6 +124,37 @@ internal class EditorUi
         rlImGui.Shutdown();
     }
 
+    private void LoadUiResources()
+    {
+        foreach (var (_, tool) in _editorControllerData.Tools)
+        {
+            var image = Raylib.LoadImage($"{_editorConfiguration.ResourceToolBoarFolderPath}/{tool.ImageFileName}");
+            tool.Texture = Raylib.LoadTextureFromImage(image);
+            Raylib.UnloadImage(image);
+        }
+    }
+
+    private void DiscoverSkyBoxes()
+    {
+        var files = Directory.GetFiles(Path.GetFullPath(_editorConfiguration.ResourceSkyBoxesFolderPath), "*.*",
+                SearchOption.AllDirectories)
+            .Where(file => _editorControllerData.SupportedImagesExtensions.Contains(Path.GetExtension(file)))
+            .ToList();
+
+        _editorControllerData.SkyBoxes = new();
+
+        foreach (var filePath in files)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(filePath);
+
+            var config = new SkyBoxConfig(fileName, Path.GetFileName(filePath));
+            var image = Raylib.LoadImage(filePath);
+            config.Texture = Raylib.LoadTextureFromImage(image);
+            Raylib.UnloadImage(image);
+
+            _editorControllerData.SkyBoxes.Add(fileName, config);
+        }
+    }
 
     private void HandleImageWindows()
     {
@@ -546,15 +589,7 @@ internal class EditorUi
         HandleWindowResize();
         HandleMouseMovement();
         HandleFileDrop();
-        UpdateLights();
 
-        if (_timerOnVariablesChanged != null && _timerOnVariablesChanged.IsElapsed(DateTime.Now))
-        {
-            _timerOnVariablesChanged = null;
-            MaterialPackageMeta_OnVariablesChangedTimerCompletion();
-        }
-
-        _editorControllerData.MaterialPackage.SetCameraPosition(_editorControllerData.Camera.Position);
 
         Raylib.BeginDrawing();
         rlImGui.Begin();
@@ -570,10 +605,10 @@ internal class EditorUi
 
         HandleImageWindows();
 
-        var codeIsModified = _shaderCodeWindow.Render(_shaderCode);
+        var codeIsModified = _shaderCodeWindow.Render(EditorControllerData._shaderCode);
         if (codeIsModified)
         {
-            foreach (var (key, value) in _shaderCode)
+            foreach (var (key, value) in EditorControllerData._shaderCode)
             {
                 var array = System.Text.Encoding.UTF8.GetBytes(value.Code);
                 _editorControllerData.MaterialPackage.UpdateFile(key, array);
@@ -585,7 +620,7 @@ internal class EditorUi
         _outputWindow.RenderOutputWindow();
         _materialWindow.Render();
 
-        _messageWindow.Render(MessageQueue,
+        _messageWindow.Render(EditorControllerData.MessageQueue,
             ref _editorConfiguration.WorkspaceConfiguration.MessageWindowIsVisible);
 
         _dataFileExplorer.Render();
@@ -622,4 +657,5 @@ internal class EditorUi
     {
         SkyBoxChanged?.Invoke(name);
     }
+
 }

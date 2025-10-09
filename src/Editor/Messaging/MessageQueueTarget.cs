@@ -1,11 +1,11 @@
 ﻿using NLog;
 using NLog.Targets;
 
-namespace Editor;
+namespace Editor.Messaging;
 
 
 [Target("MessageQueue")]
-public sealed class MessageQueueTarget : TargetWithLayout
+public sealed class MessageQueueTarget(MessageQueue? messageQueue = null) : TargetWithLayout
 {
     private readonly Dictionary<NLog.LogLevel, LogLevel> _logLevels = new()
     {
@@ -17,12 +17,7 @@ public sealed class MessageQueueTarget : TargetWithLayout
         { NLog.LogLevel.Fatal, LogLevel.Fatal },
     };
 
-    public MessageQueueTarget(MessageQueue? messageQueue = null)
-    {
-        MessageQueue = messageQueue;
-    }
-
-    public MessageQueue? MessageQueue { get; set; }
+    public MessageQueue? MessageQueue { get; set; } = messageQueue;
 
     protected override void Write(LogEventInfo logEvent)
     {

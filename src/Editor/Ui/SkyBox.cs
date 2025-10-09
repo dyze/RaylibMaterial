@@ -1,7 +1,7 @@
 ﻿using Editor.Configuration;
 using Raylib_cs;
 
-namespace Editor;
+namespace Editor.Ui;
 
 /// <summary>
 /// This class prepares and holds a sky box model
@@ -9,6 +9,7 @@ namespace Editor;
 public class SkyBox(EditorConfiguration editorConfiguration)
 {
     public Model Model;
+    public Shader? Shader;
 
     public Model GenerateModel(string filePath)
     {
@@ -17,22 +18,23 @@ public class SkyBox(EditorConfiguration editorConfiguration)
         var meshCube = Raylib.GenMeshCube(1.0f, 1.0f, 1.0f);
         Model = Raylib.LoadModelFromMesh(meshCube);
 
-        var shader = Raylib.LoadShader($"{editorConfiguration.ResourceSkyBoxesFolderPath}/skybox.vert",
+        Shader = Raylib.LoadShader($"{editorConfiguration.ResourceSkyBoxesFolderPath}/skybox.vert",
             $"{editorConfiguration.ResourceSkyBoxesFolderPath}/skybox.frag");
 
-        Raylib.SetShaderValue(shader,
-            Raylib.GetShaderLocation(shader, "environmentMap"),
+        Raylib.SetShaderValue(Shader.Value,
+            Raylib.GetShaderLocation(Shader.Value, "environmentMap"),
             MaterialMapIndex.Cubemap,
             ShaderUniformDataType.Int);
 
         // 0=None, 1=Vertical only, 2=Horizontal only, 3=both 
         Raylib.SetShaderValue(
-            shader,
-            Raylib.GetShaderLocation(shader, "flipMode"),
+            Shader.Value,
+            Raylib.GetShaderLocation(Shader.Value, "flipMode"),
             2,
             ShaderUniformDataType.Int
         );
 
+        var shader = Shader.Value;
         Raylib.SetMaterialShader(ref Model, 0, ref shader);
 
         var image = Raylib.LoadImage(filePath);

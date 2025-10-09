@@ -1,14 +1,14 @@
 ﻿using Raylib_cs;
 
-namespace Editor;
+namespace Editor.Ui;
 
-public class BackgroundConfig
+public class SkyBoxConfig
 {
     public string Name { get; set; }
     public string? ImageFileName;
     public Texture2D Texture;
 
-    public BackgroundConfig(string name,
+    public SkyBoxConfig(string name,
         string? imageFileName)
     {
         ImageFileName = imageFileName;
