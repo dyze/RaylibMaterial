@@ -5,68 +5,60 @@ namespace Editor.Ui.Windows.VariablesControls
 {
     partial class VariablesControls
     {
-        private bool HandleUInt(CodeVariableBase variable, string name)
+        private bool HandleUInt(CodeVariableUInt variable, string name)
         {
-            var variableChanged = false;
+            var currentValue = (int)variable.Value;
 
-            var currentValue = (variable as CodeVariableUInt).Value;
-            var temp = (int)currentValue;
+            var variableChanged = ImGui.InputInt($"##{name}", ref currentValue, 1, 10);
+            if (variableChanged)
+                variable.Value = (uint)currentValue;
 
-            if (ImGui.InputInt($"##{name}", ref temp))
+            return variableChanged;
+        }
+
+        private bool HandleUVector2(CodeVariableUVector2 variable, string name)
+        {
+            var currentValue = variable.Value;
+            var temp = new[] { (int)currentValue.X, (int)currentValue.Y};
+
+            var variableChanged = ImGui.InputInt2($"##{name}", ref temp[0]);
+            if (variableChanged)
             {
-                (variable as CodeVariableUInt).Value = (uint)temp; 
-                variableChanged = true;
+                currentValue.X = (uint)temp[0];
+                currentValue.Y = (uint)temp[1];
             }
 
             return variableChanged;
         }
 
-        private bool HandleUVector2(CodeVariableBase variable, string name)
+        private bool HandleUVector3(CodeVariableUVector3 variable, string name)
         {
-            var variableChanged = false;
+            var currentValue = variable.Value;
+            var temp = new[] { (int)currentValue.X, (int)currentValue.Y, (int)currentValue.Z };
 
-            var currentValue = (variable as CodeVariableUVector2).Value;
-            var temp = new int[] { (int)currentValue[0], (int)currentValue[1] };
-
-            if (ImGui.InputInt2($"##{name}", ref temp[0]))
+            var variableChanged = ImGui.InputInt3($"##{name}", ref temp[0]);
+            if (variableChanged)
             {
-                for (var i = 0; i < temp.Length; i++)
-                    currentValue[i] = (uint)temp[i];
-                variableChanged = true;
+                currentValue.X = (uint)temp[0];
+                currentValue.Y = (uint)temp[1];
+                currentValue.Z = (uint)temp[2];
             }
 
             return variableChanged;
         }
 
-        private bool HandleUVector3(CodeVariableBase variable, string name)
+        private static bool HandleUVector4(CodeVariableUVector4 variable, string name)
         {
-            var variableChanged = false;
+            var currentValue = variable.Value;
+            var temp = new[] { (int)currentValue.X, (int)currentValue.Y, (int)currentValue.Z, (int)currentValue.W };
 
-            var currentValue = (variable as CodeVariableUVector3).Value;
-            var temp = new int[] { (int)currentValue[0], (int)currentValue[1], (int)currentValue[2] };
-
-            if (ImGui.InputInt3($"##{name}", ref temp[0]))
+            var variableChanged = ImGui.InputInt4($"##{name}", ref temp[0]);
+            if (variableChanged)
             {
-                for (var i = 0; i < temp.Length; i++)
-                    currentValue[i] = (uint)temp[i];
-                variableChanged = true;
-            }
-
-            return variableChanged;
-        }
-
-        private static bool HandleUVector4(CodeVariableBase variable, string name)
-        {
-            var variableChanged = false;
-
-            var currentValue = (variable as CodeVariableUVector4).Value;
-            var temp = new int[] { (int)currentValue[0], (int)currentValue[1], (int)currentValue[2], (int)currentValue[3] };
-
-            if (ImGui.InputInt4($"##{name}", ref temp[0]))
-            {
-                for (var i = 0; i < temp.Length; i++)
-                    currentValue[i] = (uint)temp[i];
-                variableChanged = true;
+                currentValue.X = (uint)temp[0];
+                currentValue.Y = (uint)temp[1];
+                currentValue.Z = (uint)temp[2];
+                currentValue.W = (uint)temp[3];
             }
 
             return variableChanged;

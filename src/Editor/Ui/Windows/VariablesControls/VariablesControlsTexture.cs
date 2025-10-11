@@ -11,11 +11,11 @@ namespace Editor.Ui.Windows.VariablesControls
     {
         public Action<string, byte[]>? ImageOpenRequest;
 
-        private bool HandleTexture(CodeVariableBase variable, string name)
+        private bool HandleTexture(CodeVariableTexture variable, string name)
         {
             var variableChanged = false;
 
-            var currentValue = (variable as CodeVariableTexture).Value;
+            var currentValue = variable.Value;
 
 
             {
@@ -24,7 +24,7 @@ namespace Editor.Ui.Windows.VariablesControls
                 
                 if (ImGui.Combo("Image", ref currentIndex, files.ToArray(), files.Count))
                 {
-                    (variable as CodeVariableTexture).Value = files[currentIndex];
+                    variable.Value = files[currentIndex];
                     variableChanged = true;
                 }
             }
@@ -51,7 +51,7 @@ namespace Editor.Ui.Windows.VariablesControls
                     _editorControllerData.MaterialPackage.AddFile(draggedFileName,
                         readBinaryFile);
 
-                    (variable as CodeVariableTexture).Value = draggedFileName;
+                    variable.Value = draggedFileName;
                     variableChanged = true;
 
                     _editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
@@ -67,7 +67,7 @@ namespace Editor.Ui.Windows.VariablesControls
                 var enumValues = Enum.GetValues<MaterialMapIndex>().ToList();
 
                 var index = -1;
-                var materialMapIndex = (variable as CodeVariableTexture).MaterialMapIndex;
+                var materialMapIndex = variable.MaterialMapIndex;
                 if (materialMapIndex != null)
                 {
                     index = enumValues.FindIndex(0, v => v == materialMapIndex);
@@ -76,16 +76,16 @@ namespace Editor.Ui.Windows.VariablesControls
                 if (ImGui.Combo("MaterialMapIndex", ref index, enumNames))
                 {
                     variableChanged = true;
-                    (variable as CodeVariableTexture).MaterialMapIndex = enumValues[index];
+                    variable.MaterialMapIndex = enumValues[index];
                 }
 
                 {
-                    if ((variable as CodeVariableTexture).Value != "")
+                    if (variable.Value != "")
                     {
                         if (ImGui.Button("unassign"))
                         {
-                            (variable as CodeVariableTexture).Value = "";
-                            (variable as CodeVariableTexture).MaterialMapIndex = null;
+                            variable.Value = "";
+                            variable.MaterialMapIndex = null;
                             variableChanged = true;
                         }
                         ImGui.SameLine();

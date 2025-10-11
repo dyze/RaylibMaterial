@@ -5,31 +5,48 @@ namespace Editor.Ui.Windows.VariablesControls
 {
     partial class VariablesControls
     {
-        private bool HandleInt(CodeVariableBase variable, string name)
+        private bool HandleInt(CodeVariableInt variable, string name)
         {
-            var currentValue = (variable as CodeVariableInt).Value;
+            var currentValue = variable.Value;
 
-            return ImGui.InputInt($"##{name}", ref currentValue);
+            var variableChanged = ImGui.InputInt($"##{name}", ref currentValue, 1, 10);
+            if (variableChanged)
+                variable.Value = currentValue;
+
+            return variableChanged;
         }
 
-        private bool HandleIVector2(CodeVariableBase variable, string name)
+        private bool HandleIVector2(CodeVariableIVector2 variable, string name)
         {
-            var currentValue = (variable as CodeVariableIVector2).Value;
-            
-            return ImGui.InputInt2($"##{name}", ref currentValue[0]);
+            var currentValue = variable.Value;
+
+            var variableChanged = ImGui.InputInt2($"##{name}", ref currentValue.X);
+            if (variableChanged)
+                variable.Value = currentValue;
+
+            return variableChanged;
         }
 
-        private bool HandleIVector3(CodeVariableBase variable, string name)
+        private bool HandleIVector3(CodeVariableIVector3 variable, string name)
         {
-            var currentValue = (variable as CodeVariableIVector3).Value;
+            var currentValue = variable.Value;
 
-            return ImGui.InputInt3($"##{name}", ref currentValue[0]);
+            var variableChanged = ImGui.InputInt3($"##{name}", ref currentValue.X);
+            if (variableChanged)
+                variable.Value = currentValue;
+
+            return variableChanged;
         }
 
-        private static bool HandleIVector4(CodeVariableBase variable, string name)
+        private static bool HandleIVector4(CodeVariableIVector4 variable, string name)
         {
-            var currentValue = (variable as CodeVariableIVector4).Value;
-            return ImGui.InputInt4($"##{name}", ref currentValue[0]);
+            var currentValue = variable.Value;
+
+            var variableChanged = ImGui.InputInt4($"##{name}", ref currentValue.X);
+            if (variableChanged)
+                variable.Value = currentValue;
+
+            return variableChanged;
         }
     }
 }

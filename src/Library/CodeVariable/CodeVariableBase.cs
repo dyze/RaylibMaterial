@@ -10,8 +10,7 @@ public abstract class CodeVariableBase
     /// <summary>
     /// is true when value needs to be sent to shader
     /// </summary>
-    [JsonIgnore]
-    public bool SendToShader = true;
+    [JsonIgnore] public bool SendToShader = true;
 
     public override string ToString()
     {

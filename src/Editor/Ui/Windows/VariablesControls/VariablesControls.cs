@@ -19,25 +19,25 @@ partial class VariablesControls
         _handlers = new()
         {
             // ints
-            { typeof(CodeVariableInt), HandleInt },
-            { typeof(CodeVariableIVector2), HandleIVector2 },
-            { typeof(CodeVariableIVector3), HandleIVector3 },
-            { typeof(CodeVariableIVector4), VariablesControls.HandleIVector4 },
+            { typeof(CodeVariableInt), (v, s) => HandleInt(v as CodeVariableInt, s) },
+            { typeof(CodeVariableIVector2), (v, s) => HandleIVector2(v as CodeVariableIVector2, s) },
+            { typeof(CodeVariableIVector3), (v, s) => HandleIVector3(v as CodeVariableIVector3, s) },
+            { typeof(CodeVariableIVector4), (v, s) => HandleIVector4(v as CodeVariableIVector4, s) },
             /// uints
-            { typeof(CodeVariableUInt), HandleUInt },
-            { typeof(CodeVariableUVector2), HandleUVector2 },
-            { typeof(CodeVariableUVector3), HandleUVector3 },
-            { typeof(CodeVariableUVector4), VariablesControls.HandleUVector4 },
+            { typeof(CodeVariableUInt), (v, s) => HandleUInt(v as CodeVariableUInt, s) },
+            { typeof(CodeVariableUVector2), (v, s) => HandleUVector2(v as CodeVariableUVector2, s) },
+            { typeof(CodeVariableUVector3), (v, s) => HandleUVector3(v as CodeVariableUVector3, s) },
+            { typeof(CodeVariableUVector4), (v, s) => HandleUVector4(v as CodeVariableUVector4, s) },
             /// floats
-            { typeof(CodeVariableFloat), VariablesControls.HandleFloat },
-            { typeof(CodeVariableVector2), HandleVector2 },
-            { typeof(CodeVariableVector3), HandleVector3 },
-            { typeof(CodeVariableVector4), VariablesControls.HandleVector4 },
+            { typeof(CodeVariableFloat),  (v, s) => HandleFloat(v as CodeVariableFloat, s) },
+            { typeof(CodeVariableVector2), (v, s) => HandleVector2(v as CodeVariableVector2, s) },
+            { typeof(CodeVariableVector3), (v, s) => HandleVector3(v as CodeVariableVector3, s) },
+            { typeof(CodeVariableVector4), (v, s) => HandleVector4(v as CodeVariableVector4, s) },
             ///
-            { typeof(CodeVariableMatrix4x4), HandleMatrix4x4 },
+            { typeof(CodeVariableMatrix4x4), (v, s) => HandleMatrix4x4(v as CodeVariableMatrix4x4, s) },
 
-            { typeof(CodeVariableTexture), HandleTexture },
-            { typeof(CodeVariableColor), HandleColor },
+            { typeof(CodeVariableTexture), (v, s) => HandleTexture(v as CodeVariableTexture, s) },
+            { typeof(CodeVariableColor), (v, s) => HandleColor(v as CodeVariableColor, s) },
             { typeof(CodeVariableInternal), HandleInternal },
             { typeof(CodeVariableUnsupported), HandleUnsupported },
         };
@@ -122,11 +122,11 @@ partial class VariablesControls
         return atLeastAVariableChanged;
     }
 
-    private static bool HandleMatrix4x4(CodeVariableBase variable, string name)
+    private static bool HandleMatrix4x4(CodeVariableMatrix4x4 variable, string name)
     {
         var variableChanged = false;
 
-        var matrix4X4 = (variable as CodeVariableMatrix4x4).Value;
+        var matrix4X4 = variable.Value;
 
         var currentValue = matrix4X4;
 
@@ -189,17 +189,13 @@ partial class VariablesControls
         return variableChanged;
     }
 
-    private bool HandleColor(CodeVariableBase variable, string name)
+    private bool HandleColor(CodeVariableColor variable, string name)
     {
-        var variableChanged = false;
+        var currentValue = TypeConverters.ColorToVector4(variable.Value);
 
-        var currentValue = TypeConverters.ColorToVector4((variable as CodeVariableColor).Value);
-
-        if (ImGui.ColorEdit4($"##{name}", ref currentValue))
-        {
-            (variable as CodeVariableColor).Value = TypeConverters.Vector4ToColor(currentValue);
-            variableChanged = true;
-        }
+        var variableChanged = ImGui.ColorEdit4($"##{name}", ref currentValue);
+        if (variableChanged)
+            variable.Value = TypeConverters.Vector4ToColor(currentValue);
 
         return variableChanged;
     }
@@ -207,9 +203,7 @@ partial class VariablesControls
     private bool HandleInternal(CodeVariableBase variable, string name)
     {
         if (_handlersForInternals.TryGetValue(name, out var handler))
-        {
             handler();
-        }
         else
             ImGui.Text("This variable is fed internally, there is no available output");
 

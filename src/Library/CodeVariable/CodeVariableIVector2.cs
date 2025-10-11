@@ -1,14 +1,16 @@
-﻿using Newtonsoft.Json;
+﻿using Library.Packaging;
+using Newtonsoft.Json;
 using Raylib_cs;
 using System.ComponentModel.DataAnnotations;
-using Library.Packaging;
+
+using IVector2 = Library.Types.GenericVector2<int>;
 
 namespace Library.CodeVariable;
 
 [Serializable]
 public class CodeVariableIVector2 : CodeVariableBase
 {
-    [Required][JsonProperty("Value")] public readonly int[] Value = new int[2];
+    [Required] [JsonProperty("Value")] public IVector2 Value { get; set; }
 
     public override void Apply(IMaterial material1, Shader shader, Material raylibMaterial, string variableName, int variableLocation)
     {
