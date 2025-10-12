@@ -41,13 +41,13 @@ namespace Editor.Ui.Windows.VariablesControls
 
                 if (isDropping)
                 {
-                    var draggedRelativeFilePath = _editorControllerData.DataFileExplorerData
-                        .DraggedRelativeFilePath;
-                    Logger.Trace($"dropped {draggedRelativeFilePath}");
+                    //var draggedRelativeFilePath = _editorControllerData.DataFileExplorerData
+                    //    .DraggedRelativeFilePath;
+                    //Logger.Trace($"dropped {draggedRelativeFilePath}");
 
-                    var draggedFileName = _editorControllerData.DataFileExplorerData.DraggedFileName;
-                    var readBinaryFile =
-                        _editorControllerData.DataFileExplorerData.DataFolder.ReadBinaryFile(draggedRelativeFilePath);
+                    var draggedFileName = Path.GetFileName(_editorControllerData.DataFileExplorerData.DraggedFullFilePath);
+                    var readBinaryFile = File.ReadAllBytes(_editorControllerData.DataFileExplorerData.DraggedFullFilePath);
+
                     _editorControllerData.MaterialPackage.AddFile(draggedFileName,
                         readBinaryFile);
 
@@ -55,7 +55,7 @@ namespace Editor.Ui.Windows.VariablesControls
                     variableChanged = true;
 
                     _editorControllerData.DataFileExplorerData.DraggedFullFilePath = "";
-                    _editorControllerData.DataFileExplorerData.DraggedFileName = "";
+                    //_editorControllerData.DataFileExplorerData.DraggedFileName = "";
                 }
 
                 ImGui.EndDragDropTarget();

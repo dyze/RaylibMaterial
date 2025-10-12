@@ -26,7 +26,7 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
     {
         _errorMessage = "";
         _outputDirectoryPath = editorConfiguration.OutputDirectoryPath;
-        _resourceDirectoryPath = editorConfiguration.DataFileExplorerConfiguration.DataFolderPath;
+        //_resourceDirectoryPath = editorConfiguration.DataFileExplorerConfiguration.DataFolderPath;
         _isVisible = true;
     }
 
@@ -123,7 +123,7 @@ internal class SettingsWindow(EditorConfiguration editorConfiguration)
             return;
         }
 
-        editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = _resourceDirectoryPath;
+       // editorConfiguration.DataFileExplorerConfiguration.DataFolderPath = _resourceDirectoryPath;
 
         _errorMessage = "";
         SavePressed?.Invoke();

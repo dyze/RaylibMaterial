@@ -89,7 +89,7 @@ class MaterialWindow(EditorControllerData editorControllerData)
                 {
                     var fileContent = File.ReadAllText(draggedFullFilePath);
 
-                    string draggedFileName = editorControllerData.DataFileExplorerData.DraggedFileName;
+                    var draggedFileName = Path.GetFileName(editorControllerData.DataFileExplorerData.DraggedFullFilePath);
                     editorControllerData.MaterialPackage.AddFile(draggedFileName,
                         Encoding.ASCII.GetBytes(fileContent));
 

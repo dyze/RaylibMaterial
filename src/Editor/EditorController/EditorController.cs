@@ -47,14 +47,10 @@ internal class EditorController
 
         LoadEditorConfiguration();
 
-        if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
-            throw new FileLoadException("DataFolderPath is not in cfg file");
+        //if (_editorConfiguration.DataFileExplorerConfiguration.DataFolderPath == null)
+        //    throw new FileLoadException("DataFolderPath is not in cfg file");
 
         _editorControllerData = new();
-
-        _editorControllerData.DataFileExplorerData.DataFolder.Open(
-            _editorConfiguration.DataFileExplorerConfiguration.DataFolderPath, AccessMode.Read);
-        _editorControllerData.DataFileExplorerData.RefreshDataRootFolder();
 
         if (_editorConfiguration.OutputDirectoryPath == "")
             _editorConfiguration.OutputDirectoryPath = Path.GetFullPath($"{EditorControllerData.MaterialsPath}\\");
@@ -94,7 +90,7 @@ internal class EditorController
 
     private void DiscoverBuiltInModels()
     {
-        var path = _editorConfiguration.ResourceModelsPath;
+        var path = _editorConfiguration.EditorResourcesPath;
         if (path == null)
             throw new NullReferenceException("path is null");
 
@@ -640,6 +636,14 @@ internal class EditorController
         try
         {
             _editorConfiguration = EditorConfigurationStorage.Load(".");
+
+            //TODO move
+            for (var index = 0; index < _editorConfiguration.FavouriteDirectories.Count; index++)
+            {
+                var editorConfigurationFavouriteDirectory = _editorConfiguration.FavouriteDirectories[index];
+                editorConfigurationFavouriteDirectory = Path.GetFullPath(editorConfigurationFavouriteDirectory);
+                _editorConfiguration.FavouriteDirectories[index] = editorConfigurationFavouriteDirectory;
+            }
         }
         catch (Exception e)
         {

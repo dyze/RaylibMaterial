@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-using System.Numerics;
-using Editor.Configuration;
+﻿using Editor.Configuration;
 using Editor.EditorControllerNS;
 using Editor.Helpers;
 using Editor.Processes;
@@ -9,6 +7,8 @@ using Library.Packaging;
 using NLog;
 using Raylib_cs;
 using rlImGui_cs;
+using System.Diagnostics;
+using System.Numerics;
 
 namespace Editor.Ui.Windows;
 
@@ -18,9 +18,32 @@ public class DataFileExplorer
 
     private readonly EditorConfiguration _editorConfiguration;
     private readonly DataFileExplorerData _dataFileExplorerData;
-    private readonly DataFileExplorerConfiguration _dataFileExplorerConfiguration;
 
-    private FolderContent? _selectedFolder;
+    public DirectoryInfo? DirectoryPath;
+
+    public List<FileInfo> CurrentFiles = [];
+    public List<DirectoryInfo> CurrentDirectories = [];
+    public int CurrentDirectoryIndex = -1;
+
+    public DirectoryInfo? CurrentDirectory
+    {
+        get
+        {
+            if (CurrentDirectoryIndex < 0)
+                return null;
+            return CurrentDirectories[CurrentDirectoryIndex];
+        }
+    }
+
+    private string _currentExtension = "*.*";
+
+
+    /// <summary>
+    /// true to trig a refresh of information during next tick
+    /// </summary>
+    private bool _refreshInfo;
+
+    //private FolderContent? _selectedFolder;
 
     private readonly Dictionary<string, Texture2D> _fileTypeTextures = [];
 
@@ -45,11 +68,23 @@ public class DataFileExplorer
     private readonly Dictionary<string, Action<DataFileExplorer>> _mainActions = new()
     {
         { "refresh", renderer => renderer.OnRefresh() },
+        { "add to favourite", renderer => renderer.AddToFavourite() },
+        { "remove favourite", renderer => renderer.RemoveFavourite() },
     };
 
-    private readonly Dictionary<string, Action<DataFileExplorer, FolderContent>> _folderActions = new()
+    private void AddToFavourite()
     {
-        { "explore folder", (_, folder) => Process.Start("explorer.exe", Path.GetFullPath(folder.FullPath)) },
+        _editorConfiguration.AddToFavourite(DirectoryPath.FullName);
+    }
+
+    private void RemoveFavourite()
+    {
+        _editorConfiguration.RemoveFavourite();
+    }
+
+    private readonly Dictionary<string, Action<DataFileExplorer, string>> _folderActions = new()
+    {
+        { "explore folder", (_, path) => Process.Start("explorer.exe", path) },
     };
 
     private readonly EditorControllerData _editorControllerData;
@@ -62,8 +97,6 @@ public class DataFileExplorer
     {
         _editorConfiguration = editorConfiguration;
         _editorControllerData = editorControllerData;
-        _dataFileExplorerData = dataFileExplorerData;
-        _dataFileExplorerConfiguration = editorConfiguration.DataFileExplorerConfiguration;
     }
 
     public void PrepareUi()
@@ -99,6 +132,24 @@ public class DataFileExplorer
         if (ImGui.Begin("Data file explorer",
                 ref _editorConfiguration.WorkspaceConfiguration.DataFileExplorerIsVisible, windowFlags))
         {
+            //TODO move code
+            if (_editorConfiguration.ResourcesPath == null)
+            {
+                if (_editorConfiguration.FavouriteDirectoryIndex < 0)
+                    _editorConfiguration.FavouriteDirectoryIndex = 0;
+                _editorConfiguration.ResourcesPath = _editorConfiguration.FavouriteDirectory;
+            }
+
+            if (DirectoryPath == null ||
+               _refreshInfo)
+                RetrieveInfo();
+
+            RenderFavouriteDirectories();
+
+            ImGui.LabelText("Current path", DirectoryPath.FullName);
+
+            ImGui.Separator();
+
             RenderMainActions();
 
             ImGui.Separator();
@@ -110,17 +161,7 @@ public class DataFileExplorer
                 ImGui.BeginChild("Folders", new Vector2(ImGui.GetContentRegionAvail().X * 0.5f, 0),
                     ImGuiChildFlags.None, windowFlags);
 
-                var rootFolder = _dataFileExplorerData.DataRootFolder;
-                if (rootFolder == null)
-                    throw new NullReferenceException("rootFolder is null");
-
-                RenderFolderContent(rootFolder.RelativePath,
-                    rootFolder);
-
-                if (_selectedFolder != null)
-                    _dataFileExplorerData.SelectedFolder = _selectedFolder.RelativePath;
-                else
-                    _dataFileExplorerData.SelectedFolder = "";
+                RenderDirectories();
 
                 ImGui.EndChild();
             }
@@ -144,14 +185,124 @@ public class DataFileExplorer
         ImGui.End();
     }
 
+    private void RenderDirectories()
+    {
+        var contentRegionWidth = ImGui.GetContentRegionAvail().X;
+
+        for (var index = 0; index < CurrentDirectories.Count; ++index)
+        {
+            if (index == 0)
+            {
+                if (ImGui.Selectable(".",
+                        CurrentDirectoryIndex == index,
+                        ImGuiSelectableFlags.AllowDoubleClick,
+                        new Vector2(contentRegionWidth, 0)))
+                {
+                    CurrentDirectoryIndex = index;
+                    _refreshInfo = true;
+                }
+                continue;
+            }
+
+            if (index == 1)
+            {
+                if (ImGui.Selectable("..",
+                        CurrentDirectoryIndex == index,
+                        ImGuiSelectableFlags.AllowDoubleClick,
+                        new Vector2(contentRegionWidth, 0)))
+                {
+                    CurrentDirectoryIndex = index;
+                    _refreshInfo = true;
+
+                    if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                    {
+                        _editorConfiguration.ResourcesPath = DirectoryPath.Parent.FullName;
+                        _refreshInfo = true;
+                    }
+                }
+                continue;
+            }
+
+
+            var directoryEntry = CurrentDirectories[index];
+            var directoryName = directoryEntry.Name;
+
+            contentRegionWidth = ImGui.GetContentRegionAvail().X;
+
+            if (ImGui.Selectable(directoryName, CurrentDirectoryIndex == index,
+                    ImGuiSelectableFlags.AllowDoubleClick, new Vector2(contentRegionWidth, 0)))
+            {
+                CurrentDirectoryIndex = index;
+                _refreshInfo = true;
+
+                if (ImGui.IsMouseDoubleClicked(0))
+                {
+                    _editorConfiguration.ResourcesPath = directoryEntry.FullName;
+                    _refreshInfo = true;
+                }
+            }
+
+            if (ImGui.BeginPopupContextItem())
+            {
+                RenderDirectoryActions(directoryEntry.FullName);
+                ImGui.EndPopup();
+            }
+        }
+    }
+
+    private void RenderFavouriteDirectories()
+    {
+        if (ImGui.Combo("Favourites",
+                ref _editorConfiguration.FavouriteDirectoryIndex,
+                _editorConfiguration.FavouriteDirectories.ToArray(),
+                _editorConfiguration.FavouriteDirectories.Count))
+        {
+            Logger.Trace($"FavouriteDirectoryIndex changed {_editorConfiguration.FavouriteDirectoryIndex}");
+
+            _editorConfiguration.ResourcesPath =
+                _editorConfiguration.FavouriteDirectories[_editorConfiguration.FavouriteDirectoryIndex];
+
+            _refreshInfo = true;
+        }
+    }
+
+    private void RetrieveInfo()
+    {
+        _refreshInfo = false;
+
+        CurrentFiles.Clear();
+        CurrentDirectories.Clear();
+
+        DirectoryPath = new DirectoryInfo(_editorConfiguration.ResourcesPath);
+        CurrentDirectories = DirectoryPath.GetDirectories().ToList();
+
+        CurrentDirectories.Insert(0, null); // For "."
+        CurrentDirectories.Insert(1, null); // For ".."
+
+        var currentDirectory = CurrentDirectory;
+        if (currentDirectory != null)
+            CurrentFiles = new DirectoryInfo(CurrentDirectory.FullName).GetFiles(CurrentExtension).ToList();
+        else
+            CurrentFiles = DirectoryPath.GetFiles(CurrentExtension).ToList();
+    }
+
+
+    public string CurrentExtension
+    {
+        get => _currentExtension;
+
+        set
+        {
+            _currentExtension = value;
+            RetrieveInfo();
+        }
+    }
+
     private void RenderFiles()
     {
-        if (_selectedFolder == null)
-            return;
-
-        foreach (var fileName in _selectedFolder.Files)
+        foreach (var file in CurrentFiles)
         {
-            var extension = Path.GetExtension(fileName);
+            var extension = Path.GetExtension(file.FullName);
 
             var texture = _fileTypeTextures.GetValueOrDefault(extension, _fileTypeTextures["?"]);
 
@@ -159,8 +310,7 @@ public class DataFileExplorer
 
             ImGui.SameLine();
 
-
-            ImGui.Selectable(fileName);
+            ImGui.Selectable(file.Name);
 
             FileType? fileType = MaterialPackage.ExtensionToFileType.GetValueOrDefault(extension);
 
@@ -176,7 +326,7 @@ public class DataFileExplorer
                 ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) &&
                 fileType == FileType.Image)
             {
-                var imagePath = Path.GetFullPath(Path.Combine(_selectedFolder.FullPath, fileName));
+                var imagePath = file.FullName;
                 ImageOpenRequest?.Invoke(imagePath);
             }
 
@@ -187,11 +337,7 @@ public class DataFileExplorer
                     if (_dataFileExplorerData.DraggedFullFilePath == "")
                         Logger.Trace("Begin drag");
 
-                    _dataFileExplorerData.DraggedRelativeFilePath =
-                        Path.Combine(_selectedFolder.RelativePath, fileName);
-
-                    _dataFileExplorerData.DraggedFullFilePath = Path.Combine(_selectedFolder.FullPath, fileName);
-                    _dataFileExplorerData.DraggedFileName = fileName;
+                    _dataFileExplorerData.DraggedFullFilePath = file.FullName;
 
                     unsafe
                     {
@@ -201,7 +347,7 @@ public class DataFileExplorer
                         ImGui.SetDragDropPayload(dragDropItemType, new nint(tesnum), sizeof(int));
                     }
 
-                    ImGui.Text($"{fileName}");
+                    ImGui.Text($"{file}");
 
                     ImGui.EndDragDropSource();
                 }
@@ -225,46 +371,46 @@ public class DataFileExplorer
     }
 
 
-    private void RenderFolderContent(string name,
-        FolderContent folderContent)
-    {
-        var flags = ImGuiTreeNodeFlags.OpenOnArrow;
+    //private void RenderFolderContent(string name,
+    //    FolderContent folderContent)
+    //{
+    //    var flags = ImGuiTreeNodeFlags.OpenOnArrow;
 
-        if (_dataFileExplorerConfiguration.IsFolderOpen(folderContent.RelativePath))
-            ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+    //    if (_dataFileExplorerConfiguration.IsFolderOpen(folderContent.RelativePath))
+    //        ImGui.SetNextItemOpen(true, ImGuiCond.Always);
 
-        if (_selectedFolder == folderContent)
-            flags |= ImGuiTreeNodeFlags.Selected;
+    //    if (_editorConfiguration.ResourcesPath == folderContent)
+    //        flags |= ImGuiTreeNodeFlags.Selected;
 
-        var openFolder = ImGui.TreeNodeEx(name.Length == 0 ? "\\" : name,
-            flags);
-        if (ImGui.IsItemClicked() && !ImGui.IsItemToggledOpen())
-            _selectedFolder = folderContent;
+    //    var openFolder = ImGui.TreeNodeEx(name.Length == 0 ? "\\" : name,
+    //        flags);
+    //    if (ImGui.IsItemClicked() && !ImGui.IsItemToggledOpen())
+    //        _selectedFolder = folderContent;
 
-        if (ImGui.BeginPopupContextItem())
-        {
-            RenderFolderActions(folderContent);
-            ImGui.EndPopup();
-        }
+    //    if (ImGui.BeginPopupContextItem())
+    //    {
+    //        RenderDirectoryActions(folderContent);
+    //        ImGui.EndPopup();
+    //    }
 
-        _dataFileExplorerConfiguration.AddRemoveOpenFolder(folderContent.RelativePath,
-            openFolder);
+    //    _dataFileExplorerConfiguration.AddRemoveOpenFolder(folderContent.RelativePath,
+    //        openFolder);
 
-        if (openFolder)
-        {
-            foreach (var (subName, folder) in folderContent.Folders)
-                RenderFolderContent(subName, folder);
+    //    if (openFolder)
+    //    {
+    //        foreach (var (subName, folder) in folderContent.Folders)
+    //            RenderFolderContent(subName, folder);
 
-            ImGui.TreePop();
-        }
-    }
+    //        ImGui.TreePop();
+    //    }
+    //}
 
     private void RenderMainActions()
     {
         var first = true;
         foreach (var (key, action) in _mainActions)
         {
-            if (first)
+            if (first == false)
                 ImGui.SameLine();
 
             if (ImGui.Button(key))
@@ -274,12 +420,12 @@ public class DataFileExplorer
         }
     }
 
-    private void RenderFolderActions(FolderContent folder)
+    private void RenderDirectoryActions(string path)
     {
         foreach (var (key, action) in _folderActions)
         {
             if (ImGui.Selectable(key))
-                action(this, folder);
+                action(this, path);
         }
     }
 

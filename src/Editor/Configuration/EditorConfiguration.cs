@@ -10,18 +10,23 @@ namespace Editor.Configuration;
 
 public class EditorConfiguration
 {
-    [JsonProperty("DataFileExplorer")] public DataFileExplorerConfiguration DataFileExplorerConfiguration = new();
+   [JsonProperty("ResourcesPath")] public string ResourcesPath;
 
-    public string ResourcesPath => DataFileExplorerConfiguration.DataFolderPath;
+   [JsonProperty("EditorResourcesPath")] public string EditorResourcesPath;
 
-    public string ResourceUiPath => $"{ResourcesPath}/ui";
-    public string ResourceSkyBoxesFolderPath => $"{ResourceUiPath}/skybox";
-    public string ResourceToolBoarFolderPath => $"{ResourceUiPath}/toolbar";
+    [JsonProperty("FavouriteDirectories")] public List<string> FavouriteDirectories = [];
 
+    [JsonIgnore] public int FavouriteDirectoryIndex = -1;
 
-    public string ResourceModelsPath => $"{ResourcesPath}/models";
-    public string ResourceShaderFolderPath => $"{ResourcesPath}/shaders";
-    private string ResourceImageFolderPath => $"{ResourcesPath}/images";
+    [JsonIgnore] public string FavouriteDirectory => FavouriteDirectories[FavouriteDirectoryIndex];
+
+    [JsonIgnore] public string ResourceUiPath => $"{EditorResourcesPath}/ui";
+    [JsonIgnore] public string ResourceSkyBoxesFolderPath => $"{ResourceUiPath}/skybox";
+    [JsonIgnore] public string ResourceToolBoarFolderPath => $"{ResourceUiPath}/toolbar";
+
+    [JsonIgnore] public string ResourceModelsPath => $"{ResourcesPath}/models";
+    [JsonIgnore] public string ResourceShaderFolderPath => $"{ResourcesPath}/shaders";
+    [JsonIgnore] public string ResourceImageFolderPath => $"{ResourcesPath}/images";
 
     [JsonProperty("WorkspaceConfiguration")] public WorkspaceConfiguration WorkspaceConfiguration = new();
 
@@ -137,4 +142,23 @@ public class EditorConfiguration
 
     public void AddCustomModel(string filePath) =>
         CollectionHelpers.AddEntryToHistory(CustomModels, filePath, MaxCustomModels);
+
+    public void AddToFavourite(string path)
+    {
+        if (FavouriteDirectories.Contains(path))
+            return;
+
+        FavouriteDirectories.Add(path);
+        FavouriteDirectoryIndex =
+            FavouriteDirectories.FindIndex(s => s == path);
+    }
+
+    public void RemoveFavourite()
+    {
+        if (FavouriteDirectoryIndex < 0)
+            return;
+
+        FavouriteDirectories.RemoveAt(FavouriteDirectoryIndex);
+        FavouriteDirectoryIndex = -1;
+    }
 }
