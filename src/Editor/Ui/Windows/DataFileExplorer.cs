@@ -43,8 +43,6 @@ public class DataFileExplorer
     /// </summary>
     private bool _refreshInfo;
 
-    //private FolderContent? _selectedFolder;
-
     private readonly Dictionary<string, Texture2D> _fileTypeTextures = [];
 
     private readonly Dictionary<string, string> _textureNames = new()
@@ -68,8 +66,7 @@ public class DataFileExplorer
     private readonly Dictionary<string, Action<DataFileExplorer>> _mainActions = new()
     {
         { "refresh", renderer => renderer.OnRefresh() },
-        { "add to favourite", renderer => renderer.AddToFavourite() },
-        { "remove favourite", renderer => renderer.RemoveFavourite() },
+        { "pin path", renderer => renderer.AddToFavourite() },
     };
 
     private void AddToFavourite()
@@ -77,9 +74,9 @@ public class DataFileExplorer
         _editorConfiguration.AddToFavourite(DirectoryPath.FullName);
     }
 
-    private void RemoveFavourite()
+    private void RemoveFavourite(int index)
     {
-        _editorConfiguration.RemoveFavourite();
+        _editorConfiguration.RemoveFavourite(index);
     }
 
     private readonly Dictionary<string, Action<DataFileExplorer, string>> _folderActions = new()
@@ -97,6 +94,7 @@ public class DataFileExplorer
     {
         _editorConfiguration = editorConfiguration;
         _editorControllerData = editorControllerData;
+        _dataFileExplorerData = dataFileExplorerData; 
     }
 
     public void PrepareUi()
@@ -132,21 +130,11 @@ public class DataFileExplorer
         if (ImGui.Begin("Data file explorer",
                 ref _editorConfiguration.WorkspaceConfiguration.DataFileExplorerIsVisible, windowFlags))
         {
-            //TODO move code
-            if (_editorConfiguration.ResourcesPath == null)
-            {
-                if (_editorConfiguration.FavouriteDirectoryIndex < 0)
-                    _editorConfiguration.FavouriteDirectoryIndex = 0;
-                _editorConfiguration.ResourcesPath = _editorConfiguration.FavouriteDirectory;
-            }
-
             if (DirectoryPath == null ||
                _refreshInfo)
                 RetrieveInfo();
 
-            RenderFavouriteDirectories();
-
-            ImGui.LabelText("Current path", DirectoryPath.FullName);
+            RenderPaths();
 
             ImGui.Separator();
 
@@ -214,10 +202,14 @@ public class DataFileExplorer
                     CurrentDirectoryIndex = index;
                     _refreshInfo = true;
 
-                    if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                    if(DirectoryPath.Parent != null)
                     {
-                        _editorConfiguration.ResourcesPath = DirectoryPath.Parent.FullName;
-                        _refreshInfo = true;
+                        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                        {
+                            _editorConfiguration.ResourcesPath = DirectoryPath.Parent.FullName;
+                            CurrentDirectoryIndex = -1;
+                            _refreshInfo = true;
+                        }
                     }
                 }
                 continue;
@@ -238,6 +230,7 @@ public class DataFileExplorer
                 if (ImGui.IsMouseDoubleClicked(0))
                 {
                     _editorConfiguration.ResourcesPath = directoryEntry.FullName;
+                    CurrentDirectoryIndex = -1;
                     _refreshInfo = true;
                 }
             }
@@ -250,19 +243,47 @@ public class DataFileExplorer
         }
     }
 
-    private void RenderFavouriteDirectories()
+    private void RenderPaths()
     {
-        if (ImGui.Combo("Favourites",
-                ref _editorConfiguration.FavouriteDirectoryIndex,
-                _editorConfiguration.FavouriteDirectories.ToArray(),
-                _editorConfiguration.FavouriteDirectories.Count))
+        var directories = _editorConfiguration.FavouriteDirectories.ToArray();
+
+        if (ImGui.BeginCombo("Paths", _editorConfiguration.ResourcesPath))
         {
-            Logger.Trace($"FavouriteDirectoryIndex changed {_editorConfiguration.FavouriteDirectoryIndex}");
+            // Always show current path first
+            ImGui.Text(_editorConfiguration.ResourcesPath);
 
-            _editorConfiguration.ResourcesPath =
-                _editorConfiguration.FavouriteDirectories[_editorConfiguration.FavouriteDirectoryIndex];
+            ImGui.SeparatorText("Favourites");
 
-            _refreshInfo = true;
+            for (var i = 0; i < directories.Length; i++)
+            {
+                var directory = directories[i];
+
+                ImGui.PushID(i);
+
+                ImGui.SetNextItemAllowOverlap();
+
+                if (ImGui.Selectable(directory, false))
+                {
+                    Logger.Trace($"FavouriteDirectory changed {directory}");
+
+                    _editorConfiguration.ResourcesPath = directory;
+
+                    CurrentDirectoryIndex = -1;
+                    _refreshInfo = true;
+                }
+
+                if (i >= 1)        // 0=editor resource path, can't be unpin
+                {
+                    ImGui.SameLine();
+                    if (ImGui.Button("unpin"))
+                        RemoveFavourite(i);
+                }
+
+                ImGui.PopID();
+            }
+
+
+            ImGui.EndCombo();
         }
     }
 
@@ -279,11 +300,18 @@ public class DataFileExplorer
         CurrentDirectories.Insert(0, null); // For "."
         CurrentDirectories.Insert(1, null); // For ".."
 
-        var currentDirectory = CurrentDirectory;
-        if (currentDirectory != null)
-            CurrentFiles = new DirectoryInfo(CurrentDirectory.FullName).GetFiles(CurrentExtension).ToList();
-        else
-            CurrentFiles = DirectoryPath.GetFiles(CurrentExtension).ToList();
+        try
+        {
+            var currentDirectory = CurrentDirectory;
+            if (currentDirectory != null)
+                CurrentFiles = new DirectoryInfo(CurrentDirectory.FullName).GetFiles(CurrentExtension).ToList();
+            else
+                CurrentFiles = DirectoryPath.GetFiles(CurrentExtension).ToList();
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
+        }
     }
 
 
@@ -370,41 +398,6 @@ public class DataFileExplorer
         }
     }
 
-
-    //private void RenderFolderContent(string name,
-    //    FolderContent folderContent)
-    //{
-    //    var flags = ImGuiTreeNodeFlags.OpenOnArrow;
-
-    //    if (_dataFileExplorerConfiguration.IsFolderOpen(folderContent.RelativePath))
-    //        ImGui.SetNextItemOpen(true, ImGuiCond.Always);
-
-    //    if (_editorConfiguration.ResourcesPath == folderContent)
-    //        flags |= ImGuiTreeNodeFlags.Selected;
-
-    //    var openFolder = ImGui.TreeNodeEx(name.Length == 0 ? "\\" : name,
-    //        flags);
-    //    if (ImGui.IsItemClicked() && !ImGui.IsItemToggledOpen())
-    //        _selectedFolder = folderContent;
-
-    //    if (ImGui.BeginPopupContextItem())
-    //    {
-    //        RenderDirectoryActions(folderContent);
-    //        ImGui.EndPopup();
-    //    }
-
-    //    _dataFileExplorerConfiguration.AddRemoveOpenFolder(folderContent.RelativePath,
-    //        openFolder);
-
-    //    if (openFolder)
-    //    {
-    //        foreach (var (subName, folder) in folderContent.Folders)
-    //            RenderFolderContent(subName, folder);
-
-    //        ImGui.TreePop();
-    //    }
-    //}
-
     private void RenderMainActions()
     {
         var first = true;
@@ -443,6 +436,6 @@ public class DataFileExplorer
 
     private void OnRefresh()
     {
-        _dataFileExplorerData.RefreshDataRootFolder();
+        _refreshInfo = true;
     }
 }

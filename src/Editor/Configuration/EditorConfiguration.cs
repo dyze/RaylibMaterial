@@ -10,15 +10,12 @@ namespace Editor.Configuration;
 
 public class EditorConfiguration
 {
-   [JsonProperty("ResourcesPath")] public string ResourcesPath;
+    [JsonProperty("ResourcesPath")] public string ResourcesPath;
 
-   [JsonProperty("EditorResourcesPath")] public string EditorResourcesPath;
+    [JsonProperty("EditorResourcesPath")] public string EditorResourcesPath;
 
     [JsonProperty("FavouriteDirectories")] public List<string> FavouriteDirectories = [];
-
-    [JsonIgnore] public int FavouriteDirectoryIndex = -1;
-
-    [JsonIgnore] public string FavouriteDirectory => FavouriteDirectories[FavouriteDirectoryIndex];
+    [JsonIgnore] public const int MaxFavouriteDirectories = 5;
 
     [JsonIgnore] public string ResourceUiPath => $"{EditorResourcesPath}/ui";
     [JsonIgnore] public string ResourceSkyBoxesFolderPath => $"{ResourceUiPath}/skybox";
@@ -148,17 +145,17 @@ public class EditorConfiguration
         if (FavouriteDirectories.Contains(path))
             return;
 
-        FavouriteDirectories.Add(path);
-        FavouriteDirectoryIndex =
-            FavouriteDirectories.FindIndex(s => s == path);
-    }
-
-    public void RemoveFavourite()
-    {
-        if (FavouriteDirectoryIndex < 0)
+        if(FavouriteDirectories.Count >= MaxFavouriteDirectories)
             return;
 
-        FavouriteDirectories.RemoveAt(FavouriteDirectoryIndex);
-        FavouriteDirectoryIndex = -1;
+        FavouriteDirectories.Add(path);
+    }
+
+    public void RemoveFavourite(int index)
+    {
+        if (index < 1)        // 0=editor resource path
+            return;
+
+        FavouriteDirectories.RemoveAt(index);
     }
 }
