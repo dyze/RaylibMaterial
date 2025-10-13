@@ -85,7 +85,7 @@ internal class EditorController
 
     private void DiscoverBuiltInModels()
     {
-        var path = _editorConfiguration.EditorResourcesPath;
+        var path = _editorConfiguration.ResourceModelsPath;
         if (path == null)
             throw new NullReferenceException("path is null");
 
@@ -642,12 +642,8 @@ internal class EditorController
             _editorConfiguration = EditorConfigurationStorage.Load(".");
 
             //TODO move
-            for (var index = 0; index < _editorConfiguration.FavouriteDirectories.Count; index++)
-            {
-                var editorConfigurationFavouriteDirectory = _editorConfiguration.FavouriteDirectories[index];
-                editorConfigurationFavouriteDirectory = Path.GetFullPath(editorConfigurationFavouriteDirectory);
-                _editorConfiguration.FavouriteDirectories[index] = editorConfigurationFavouriteDirectory;
-            }
+            var dataFileExplorerConfiguration = _editorConfiguration.DataFileExplorerConfiguration;
+            dataFileExplorerConfiguration.SolveFullPaths();
         }
         catch (Exception e)
         {

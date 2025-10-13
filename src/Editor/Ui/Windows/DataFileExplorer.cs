@@ -17,6 +17,7 @@ public class DataFileExplorer
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private readonly EditorConfiguration _editorConfiguration;
+    private readonly DataFileExplorerConfiguration _dataFileExplorerConfiguration;
     private readonly DataFileExplorerData _dataFileExplorerData;
 
     public DirectoryInfo? DirectoryPath;
@@ -69,16 +70,6 @@ public class DataFileExplorer
         { "pin path", renderer => renderer.AddToFavourite() },
     };
 
-    private void AddToFavourite()
-    {
-        _editorConfiguration.AddToFavourite(DirectoryPath.FullName);
-    }
-
-    private void RemoveFavourite(int index)
-    {
-        _editorConfiguration.RemoveFavourite(index);
-    }
-
     private readonly Dictionary<string, Action<DataFileExplorer, string>> _folderActions = new()
     {
         { "explore folder", (_, path) => Process.Start("explorer.exe", path) },
@@ -93,6 +84,7 @@ public class DataFileExplorer
         DataFileExplorerData dataFileExplorerData)
     {
         _editorConfiguration = editorConfiguration;
+        _dataFileExplorerConfiguration = editorConfiguration.DataFileExplorerConfiguration;
         _editorControllerData = editorControllerData;
         _dataFileExplorerData = dataFileExplorerData; 
     }
@@ -206,7 +198,7 @@ public class DataFileExplorer
                     {
                         if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                         {
-                            _editorConfiguration.ResourcesPath = DirectoryPath.Parent.FullName;
+                            _dataFileExplorerConfiguration.ResourcesPath = DirectoryPath.Parent.FullName;
                             CurrentDirectoryIndex = -1;
                             _refreshInfo = true;
                         }
@@ -229,7 +221,7 @@ public class DataFileExplorer
 
                 if (ImGui.IsMouseDoubleClicked(0))
                 {
-                    _editorConfiguration.ResourcesPath = directoryEntry.FullName;
+                    _dataFileExplorerConfiguration.ResourcesPath = directoryEntry.FullName;
                     CurrentDirectoryIndex = -1;
                     _refreshInfo = true;
                 }
@@ -245,12 +237,12 @@ public class DataFileExplorer
 
     private void RenderPaths()
     {
-        var directories = _editorConfiguration.FavouriteDirectories.ToArray();
+        var directories = _dataFileExplorerConfiguration.FavouriteDirectories.ToArray();
 
-        if (ImGui.BeginCombo("Paths", _editorConfiguration.ResourcesPath))
+        if (ImGui.BeginCombo("Paths", _dataFileExplorerConfiguration.ResourcesPath))
         {
             // Always show current path first
-            ImGui.Text(_editorConfiguration.ResourcesPath);
+            ImGui.Text(_dataFileExplorerConfiguration.ResourcesPath);
 
             ImGui.SeparatorText("Favourites");
 
@@ -266,7 +258,7 @@ public class DataFileExplorer
                 {
                     Logger.Trace($"FavouriteDirectory changed {directory}");
 
-                    _editorConfiguration.ResourcesPath = directory;
+                    _dataFileExplorerConfiguration.ResourcesPath = directory;
 
                     CurrentDirectoryIndex = -1;
                     _refreshInfo = true;
@@ -294,7 +286,7 @@ public class DataFileExplorer
         CurrentFiles.Clear();
         CurrentDirectories.Clear();
 
-        DirectoryPath = new DirectoryInfo(_editorConfiguration.ResourcesPath);
+        DirectoryPath = new DirectoryInfo(_dataFileExplorerConfiguration.ResourcesPath);
         CurrentDirectories = DirectoryPath.GetDirectories().ToList();
 
         CurrentDirectories.Insert(0, null); // For "."
@@ -422,7 +414,6 @@ public class DataFileExplorer
         }
     }
 
-
     private void RenderActiveProcess()
     {
         if (_activeProcess != null)
@@ -437,5 +428,15 @@ public class DataFileExplorer
     private void OnRefresh()
     {
         _refreshInfo = true;
+    }
+
+    private void AddToFavourite()
+    {
+        _dataFileExplorerConfiguration.AddToFavourite(DirectoryPath.FullName);
+    }
+
+    private void RemoveFavourite(int index)
+    {
+        _dataFileExplorerConfiguration.RemoveFavourite(index);
     }
 }

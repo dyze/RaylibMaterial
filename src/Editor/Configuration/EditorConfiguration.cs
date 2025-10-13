@@ -10,20 +10,15 @@ namespace Editor.Configuration;
 
 public class EditorConfiguration
 {
-    [JsonProperty("ResourcesPath")] public string ResourcesPath;
-
+    /// <summary>
+    /// This directory stores all resources needed by the editor
+    /// </summary>
     [JsonProperty("EditorResourcesPath")] public string EditorResourcesPath;
-
-    [JsonProperty("FavouriteDirectories")] public List<string> FavouriteDirectories = [];
-    [JsonIgnore] public const int MaxFavouriteDirectories = 5;
-
     [JsonIgnore] public string ResourceUiPath => $"{EditorResourcesPath}/ui";
+    [JsonIgnore] public string ResourceShaderFolderPath => $"{EditorResourcesPath}/shaders";
     [JsonIgnore] public string ResourceSkyBoxesFolderPath => $"{ResourceUiPath}/skybox";
     [JsonIgnore] public string ResourceToolBoarFolderPath => $"{ResourceUiPath}/toolbar";
-
-    [JsonIgnore] public string ResourceModelsPath => $"{ResourcesPath}/models";
-    [JsonIgnore] public string ResourceShaderFolderPath => $"{ResourcesPath}/shaders";
-    [JsonIgnore] public string ResourceImageFolderPath => $"{ResourcesPath}/images";
+    [JsonIgnore] public string ResourceModelsPath => $"{EditorResourcesPath}/models";
 
     [JsonProperty("WorkspaceConfiguration")] public WorkspaceConfiguration WorkspaceConfiguration = new();
 
@@ -133,29 +128,11 @@ public class EditorConfiguration
 
     [JsonProperty("OutputDirectoryPath")] public string OutputDirectoryPath = "";
 
+    [JsonProperty("DataFileExplorerConfiguration")] public DataFileExplorerConfiguration DataFileExplorerConfiguration = new();
 
     public void AddRecentFile(string filePath) =>
         CollectionHelpers.AddEntryToHistory(RecentFiles, filePath, MaxRecentFiles);
 
     public void AddCustomModel(string filePath) =>
         CollectionHelpers.AddEntryToHistory(CustomModels, filePath, MaxCustomModels);
-
-    public void AddToFavourite(string path)
-    {
-        if (FavouriteDirectories.Contains(path))
-            return;
-
-        if(FavouriteDirectories.Count >= MaxFavouriteDirectories)
-            return;
-
-        FavouriteDirectories.Add(path);
-    }
-
-    public void RemoveFavourite(int index)
-    {
-        if (index < 1)        // 0=editor resource path
-            return;
-
-        FavouriteDirectories.RemoveAt(index);
-    }
 }
