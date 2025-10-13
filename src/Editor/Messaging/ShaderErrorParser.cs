@@ -17,6 +17,12 @@ namespace Editor.Messaging;
 /// 0(43) : error C1503: undefined variable "fragNormal"
 /// 0(45) : error C1503: undefined variable "fragNormal"
 /// 0(47) : error C1503: undefined variable "fragNormal"
+///
+/// Second case:
+/// SHADER: [ID 9] Failed to compile fragment shader code
+/// Then:
+/// SHADER: [ID 9] Compile error: ERROR: 0:20: 'finalColor' : undeclared identifier
+/// ERROR: 0:20: 'assign' :  cannot convert from '4-component vector of highp float' to 'highp float'
 /// </summary>
 public static class ShaderErrorParser
 {
@@ -26,26 +32,23 @@ public static class ShaderErrorParser
     {
         if (message.Contains("Failed to compile"))
         {
-            FileType? faultyShader = null;
+            FileType? faultyShader;
 
             if (message.Contains("vertex"))
-            {
                 faultyShader = FileType.VertexShader;
-            }
             else if (message.Contains("fragment"))
-            {
                 faultyShader = FileType.FragmentShader;
-            }
+            else
+                return;
 
-            if (faultyShader != null)
-            {
-                var shaderCode = shaderCodes.FirstOrDefault(s => s.Key.FileType == faultyShader);
+            var shaderCode = shaderCodes.FirstOrDefault(s => s.Key.FileType == faultyShader);
 
-                var shaderId = ExtractShaderIdFromMessage(message);
-                if (shaderId == null)
-                    return;
-                shaderCode.Value.ShaderId = shaderId;
-            }
+            var shaderId = ExtractShaderIdFromMessage(message);
+            if (shaderId == null)
+                return;
+
+            shaderCode.Value.ShaderId = shaderId;
+
         }
         else
         if (message.Contains("Compile error"))
@@ -64,23 +67,22 @@ public static class ShaderErrorParser
                                         + match.Length);
             while (true)
             {
-               match = Regex.Match(message, @"[0-9]\(");
-                if (match.Success == false)
-                    return;
+                var lineNumber = -1;
+                var newPos = -1;
 
-                var position = match.Index + match.Length;
+                // Try first case
+                var firstCaseOk = FirstCase(message, ref lineNumber, ref newPos);
+                if (firstCaseOk == false)
+                {
+                    // Try second case
+                    if (SecondCase(message, ref lineNumber, ref newPos) == false)
+                        return;
+                }
 
-                match = Regex.Match(message, @"\)");
-                if (match.Success == false)
-                    return;
+                message = message.Substring(newPos);
 
-                var pos2 = match.Index;
 
-                var sub = message.Substring(position, pos2 - position);
-
-                var lineNumber = int.Parse(sub);
-
-                match = Regex.Match(message, @" : ");
+                match = Regex.Match(message, ": ");
                 if (match.Success == false)
                     return;
 
@@ -93,16 +95,82 @@ public static class ShaderErrorParser
                 else
                     posEndMessage = match.Index + match.Length;
 
-                var errorMessage = message.Substring(posStartMessage, posEndMessage-posStartMessage);
+                var errorMessage = message.Substring(posStartMessage, posEndMessage - posStartMessage);
                 errorMessage = errorMessage.ReplaceLineEndings("");
 
-                // TryAdd because I already saw duplicated messages.
-                shaderCode.Value.Errors.TryAdd(lineNumber, errorMessage);
+                // Sometimes there are duplicated messages.
+                // Moreover, several messages can be associated to the same line of code
+
+                if (shaderCode.Value.Errors.TryGetValue(lineNumber, out var existingMessage))
+                {
+                    if (errorMessage != (string)existingMessage)
+                        errorMessage = string.Concat(existingMessage, "\n", errorMessage);
+                }
+
+                shaderCode.Value.Errors[lineNumber] = errorMessage;
 
                 message = message.Substring(posEndMessage);
             }
 
         }
+    }
+
+    /// <summary>
+    /// Tries to extract the error line number from a message such as "ERROR: 0:20: 'finalColor' : undeclared identifier"
+    /// </summary>
+    /// <param name="message">the message to analyse</param>
+    /// <param name="lineNumber">resulting code line number</param>
+    /// <returns>true if message understood and lineNumber extracted</returns>
+    private static bool SecondCase(string message, ref int lineNumber, ref int newPos)
+    {
+        var match = Regex.Match(message, "ERROR: [0-9]*:");
+        if (match.Success == false)
+            return false;
+
+        var position = match.Index + match.Length;
+
+        match = Regex.Match(message.Substring(position), ":");
+        if (match.Success == false)
+            return false;
+
+        var pos2 = match.Index + position;
+
+        var sub = message.Substring(position, pos2 - position);
+
+        lineNumber = int.Parse(sub);
+
+        newPos = pos2;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to extract the error line number from a message such as "0(41) : error C1503: undefined variable "fragNormal""
+    /// </summary>
+    /// <param name="message">the message to analyse</param>
+    /// <param name="lineNumber">resulting code line number</param>
+    /// <returns>true if message understood and lineNumber extracted</returns>
+    private static bool FirstCase(string message, ref int lineNumber, ref int newPos)
+    {
+        var match = Regex.Match(message, @"[0-9]\(");
+        if (match.Success == false)
+            return false;
+
+        var position = match.Index + match.Length;
+
+        match = Regex.Match(message, @"\)");
+        if (match.Success == false)
+            return false;
+
+        var pos2 = match.Index;
+
+        var sub = message.Substring(position, pos2 - position);
+
+        lineNumber = int.Parse(sub);
+
+        newPos = pos2;
+
+        return true;
     }
 
     private static int? ExtractShaderIdFromMessage(string message)
