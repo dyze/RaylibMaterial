@@ -23,9 +23,6 @@ public sealed class MaterialMetaFileTest
         var loadedMaterial = MaterialMetaFileStorage.Load("MaterialMetaTest/test.mat");
         Assert.IsNotNull(loadedMaterial != null);
 
-        if (loadedMaterial == null)
-            throw new NullReferenceException("loadedMaterial is null");
-
         Assert.AreEqual(loadedMaterial.Tags.Count, material.Tags.Count);
         Assert.AreEqual(loadedMaterial.Tags[0], material.Tags[0]);
         Assert.AreEqual(loadedMaterial.Tags[1], material.Tags[1]);

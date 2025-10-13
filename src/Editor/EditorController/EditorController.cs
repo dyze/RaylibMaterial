@@ -28,8 +28,6 @@ internal class EditorController
     /// </summary>
     private Shader _defaultShader;
 
-
-
     private readonly EditorControllerData _editorControllerData;
     private EditorConfiguration _editorConfiguration = new();
 
@@ -84,13 +82,10 @@ internal class EditorController
         _editorUi.SaveAs += SaveAs;
     }
 
-
     private void EditorUi_ResetCamera()
     {
         _editorConfiguration.CameraSettings = new CameraSettings();
     }
-
-
 
     private void DiscoverBuiltInModels()
     {
@@ -232,6 +227,7 @@ internal class EditorController
         EditorControllerData._shaderCode = new();
 
         LoadModel();
+        LoadShaderCode();
         BuildShader();
         AnalyseShaderCode();
         SendVariablesToMaterial();
@@ -284,6 +280,7 @@ internal class EditorController
         AssignDefaultShader();
 
         LoadModel();
+        LoadShaderCode();
         BuildShader();
         AnalyseShaderCode();
         SendVariablesToMaterial();
@@ -315,6 +312,7 @@ internal class EditorController
     {
         AssignDefaultShader();
         LoadModel(); // to clean Materials
+        LoadShaderCode();
         BuildShader();
         AnalyseShaderCode();
         SendVariablesToMaterial();
@@ -324,6 +322,7 @@ internal class EditorController
     {
         AssignDefaultShader();
         LoadModel(); // to clean Materials
+        LoadShaderCode();
         BuildShader();
         AnalyseShaderCode();
         SendVariablesToMaterial();
@@ -512,17 +511,7 @@ internal class EditorController
     {
         Logger.Trace("AnalyseShaderCode...");
 
-        // Load shader codes
-        EditorControllerData._shaderCode = new Dictionary<FileId, ShaderCode>();
-
         var material = _editorControllerData.MaterialPackage;
-
-        foreach (var fileType in new[] { FileType.VertexShader, FileType.FragmentShader })
-        {
-            var result = GetShaderCode(material, fileType);
-            if (result != null)
-                EditorControllerData._shaderCode.Add(result.Item1, result.Item2);
-        }
 
 
         // Determine variables used in code
@@ -587,6 +576,21 @@ internal class EditorController
         Logger.Trace($"{toDelete.Count} variables removed from materialMeta");
 
         Logger.Trace("AnalyseShaderCode OK");
+    }
+
+    private void LoadShaderCode()
+    {
+        // Load shader codes
+        EditorControllerData._shaderCode = new Dictionary<FileId, ShaderCode>();
+
+        var material = _editorControllerData.MaterialPackage;
+
+        foreach (var fileType in new[] { FileType.VertexShader, FileType.FragmentShader })
+        {
+            var result = GetShaderCode(material, fileType);
+            if (result != null)
+                EditorControllerData._shaderCode.Add(result.Item1, result.Item2);
+        }
     }
 
     private static Tuple<FileId, ShaderCode>? GetShaderCode(MaterialPackage material,

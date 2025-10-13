@@ -1,6 +1,4 @@
-﻿using Raylib_cs;
-
-namespace Library.CodeVariable;
+﻿namespace Library.CodeVariable;
 
 
 public static class CodeVariableFactory
