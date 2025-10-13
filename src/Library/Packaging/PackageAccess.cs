@@ -187,11 +187,6 @@ public class PackageAccess : IDisposable, IDataContainerAccess
         return files;
     }
 
-    public FolderContent GetAllFoldersAndContent()
-    {
-        throw new NotImplementedException();
-    }
-
     /// <inheritdoc />
     public void DeleteFile(string filePath)
     {

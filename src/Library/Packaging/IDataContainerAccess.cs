@@ -83,11 +83,6 @@ public interface IDataContainerAccess
     /// <exception cref="AccessViolationException"></exception>
     string[] GetAllFiles();
 
-    /// <summary>
-    /// Gets the list of files and folders in data container
-    /// </summary>
-    /// <returns>A chained list of FolderContent</returns>
-    public FolderContent GetAllFoldersAndContent();
 
     /// <summary>
     /// Deletes a file
